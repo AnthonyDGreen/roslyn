@@ -2394,6 +2394,32 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             End If
         End Sub
 
+        Private Function ParseCollectionInitializerOrJsonObject() As ExpressionSyntax
+
+            Dim openBrace As PunctuationSyntax = Nothing
+            If Not TryGetTokenAndEatNewLine(SyntaxKind.OpenBraceToken, openBrace, createIfMissing:=True) Then
+                Return SyntaxFactory.CollectionInitializer(openBrace, Nothing, InternalSyntaxFactory.MissingPunctuation(SyntaxKind.CloseBraceToken))
+            End If
+
+            Dim expressions As SeparatedSyntaxListBuilder(Of ExpressionSyntax) = Nothing
+            Dim firstExpression As ExpressionSyntax = Nothing
+
+            If CurrentToken.Kind <> SyntaxKind.CloseBraceToken Then
+                expressions = _pool.AllocateSeparated(Of ExpressionSyntax)()
+                firstExpression = ParseExpressionCore(OperatorPrecedence.PrecedenceNone)
+
+                ' This is a name-value pair. Parse as JSON object.
+                If CurrentToken.Kind = SyntaxKind.ColonToken Then
+
+                    firstExpression = ParseJsonNameValuePairExpression(firstExpression)
+
+                    Return ParseJsonObject(openBrace, expressions, firstExpression)
+                End If
+            End If
+
+            Return ParseCollectionInitializer(openBrace, expressions, firstExpression)
+
+        End Function
 
         ''' <summary>
         '''  Parses a CollectionInitializer 
@@ -2403,28 +2429,42 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
         ''' </summary>
         ''' <returns>CollectionInitializerSyntax</returns>
         ''' <remarks>In the grammar ArrayLiteralExpression is a rename of CollectionInitializer</remarks>
-        Private Function ParseCollectionInitializer() As CollectionInitializerSyntax
+        Private Function ParseCollectionInitializer(
+                             Optional openBrace As PunctuationSyntax = Nothing,
+                             Optional expressions As SeparatedSyntaxListBuilder(Of ExpressionSyntax) = Nothing,
+                             Optional initializer As ExpressionSyntax = Nothing
+                         ) As CollectionInitializerSyntax
 
-            Dim openBrace As PunctuationSyntax = Nothing
+            If initializer IsNot Nothing Then
+                Debug.Assert(Not expressions.IsNull)
+                GoTo AfterFirstInitializer
+            End If
+            If openBrace IsNot Nothing Then GoTo AfterOpenBrace
+            Debug.Assert(expressions.IsNull)
+
+            openBrace = Nothing
             If Not TryGetTokenAndEatNewLine(SyntaxKind.OpenBraceToken, openBrace, createIfMissing:=True) Then
                 Return SyntaxFactory.CollectionInitializer(openBrace, Nothing, InternalSyntaxFactory.MissingPunctuation(SyntaxKind.CloseBraceToken))
             End If
 
-            Dim initializers As CoreInternalSyntax.SeparatedSyntaxList(Of ExpressionSyntax) = Nothing
+AfterOpenBrace:
+
+            Dim initializers As SeparatedSyntaxList(Of ExpressionSyntax) = Nothing
 
             If CurrentToken.Kind <> SyntaxKind.CloseBraceToken Then
 
-                Dim expressions = _pool.AllocateSeparated(Of ExpressionSyntax)()
+                expressions = _pool.AllocateSeparated(Of ExpressionSyntax)()
 
                 Do
                     'This used to call ParseInitializer
-                    Dim Initializer As ExpressionSyntax = ParseExpressionCore(OperatorPrecedence.PrecedenceNone) 'Dev 10 was ParseInitializer
+                    initializer = ParseExpressionCore(OperatorPrecedence.PrecedenceNone) 'Dev 10 was ParseInitializer
 
-                    If Initializer.ContainsDiagnostics Then
-                        Initializer = ResyncAt(Initializer, SyntaxKind.CommaToken, SyntaxKind.CloseBraceToken)
+AfterFirstInitializer:
+                    If initializer.ContainsDiagnostics Then
+                        initializer = ResyncAt(initializer, SyntaxKind.CommaToken, SyntaxKind.CloseBraceToken)
                     End If
 
-                    expressions.Add(Initializer)
+                    expressions.Add(initializer)
 
                     Dim comma As PunctuationSyntax = Nothing
                     If TryGetTokenAndEatNewLine(SyntaxKind.CommaToken, comma) Then
@@ -6169,7 +6209,7 @@ checkNullable:
                 Return node
             End If
 
-            If feature = Feature.InterpolatedStrings Then
+            If feature = feature.InterpolatedStrings Then
                 ' Bug: It is too late in the release cycle to update localized strings.  As a short term measure we will output 
                 ' an unlocalized string and fix this to be localized in the next release.
                 Dim requiredVersion = New VisualBasicRequiredLanguageVersion(feature.GetLanguageVersion())

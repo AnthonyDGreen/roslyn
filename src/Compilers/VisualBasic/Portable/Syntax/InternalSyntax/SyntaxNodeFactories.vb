@@ -392,7 +392,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                     SyntaxKind.GreaterThanGreaterThanToken,
                     SyntaxKind.LessThanLessThanEqualsToken,
                     SyntaxKind.GreaterThanGreaterThanEqualsToken,
-                    SyntaxKind.QuestionToken
+                    SyntaxKind.QuestionToken,
+                    SyntaxKind.OpenBracketToken,
+                    SyntaxKind.CloseBracketToken
                     t = SyntaxFactory.MissingPunctuation(kind)
 
                 Case SyntaxKind.FloatingLiteralToken

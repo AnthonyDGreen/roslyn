@@ -84,6 +84,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Classification
                 TypeOf parent Is OperatorStatementSyntax AndAlso DirectCast(parent, OperatorStatementSyntax).OperatorToken = identifier Then
 
                 Return ClassificationTypeNames.Keyword
+            ElseIf parent.IsKind(SyntaxKind.JsonConstantExpression)
+                Return ClassificationTypeNames.Keyword
             Else
                 Return ClassificationTypeNames.Identifier
             End If

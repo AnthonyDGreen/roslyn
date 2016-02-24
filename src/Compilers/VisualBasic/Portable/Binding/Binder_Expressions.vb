@@ -247,6 +247,18 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Case SyntaxKind.TupleExpression
                     Return BindTupleExpression(DirectCast(node, TupleExpressionSyntax), diagnostics)
 
+                Case SyntaxKind.JsonObjectExpression
+                    Return BindJsonObjectExpression(DirectCast(node, JsonObjectExpressionSyntax), diagnostics)
+
+                Case SyntaxKind.JsonArrayExpression
+                    Return BindJsonArrayExpression(DirectCast(node, JsonArrayExpressionSyntax), diagnostics)
+
+                Case SyntaxKind.JsonNameValuePairExpression
+                    Return BindJsonNameValuePairExpression(DirectCast(node, JsonNameValuePairExpressionSyntax), diagnostics)
+
+                Case SyntaxKind.JsonConstantExpression
+                    Return BindJsonConstantExpression(DirectCast(node, JsonConstantExpressionSyntax), diagnostics)
+
                 Case Else
                     ' e.g. SyntaxKind.MidExpression is handled elsewhere
                     ' NOTE: There were too many "else" cases to justify listing them explicitly and throwing on

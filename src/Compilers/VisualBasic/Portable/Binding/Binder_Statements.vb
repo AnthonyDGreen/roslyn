@@ -1340,6 +1340,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                         Case BoundKind.UnboundLambda
                             inferredType = DirectCast(inferFrom, UnboundLambda).InferredAnonymousDelegate.Key
 
+                            valueExpression = BindValue(valueSyntax, diagnostics)
+
                         Case BoundKind.ArrayLiteral
                             arrayLiteral = DirectCast(inferFrom, BoundArrayLiteral)
                             inferredType = arrayLiteral.InferredType

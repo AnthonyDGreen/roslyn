@@ -255,6 +255,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Formatting
                 Return CreateAdjustSpacesOperation(0, AdjustSpacesOption.ForceSpaces)
             End If
 
+            ' No space before : in an JSON name-value pair
+            If currentToken.Kind = SyntaxKind.ColonToken AndAlso currentToken.Parent.IsKind(SyntaxKind.JsonNameValuePairExpression) Then
+                Return CreateAdjustSpacesOperation(0, AdjustSpacesOption.ForceSpaces)
+            End If
+
             ' * }
             ' * )
             ' * ,
@@ -301,7 +306,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Formatting
                     Return CreateAdjustSpacesOperation(0, AdjustSpacesOption.ForceSpacesIfOnSingleLine)
 
                 Case SyntaxKind.CloseParenToken
-                    Dim space = If(previousToken.Kind = currentToken.Kind, 0, 1)
+                    Dim space = If(previousToken.Kind = currentToken.Kind OrElse currentToken.Kind = SyntaxKind.ExclamationToken, 0, 1)
                     Return CreateAdjustSpacesOperation(space, AdjustSpacesOption.ForceSpacesIfOnSingleLine)
 
                 Case SyntaxKind.ExclamationToken
