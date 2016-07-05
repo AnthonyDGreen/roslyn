@@ -2,6 +2,7 @@
 
 Imports System.Collections.Immutable
 Imports Microsoft.CodeAnalysis.Text
+Imports Microsoft.CodeAnalysis.VisualBasic.Symbols
 Imports Microsoft.CodeAnalysis.VisualBasic.Syntax
 
 Namespace Microsoft.CodeAnalysis.VisualBasic
@@ -98,6 +99,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Dim result As BoundStatement = RewriteIfStatement(
                 node.Syntax,
                 conditionSyntax,
+                ImmutableArray(Of LocalSymbol).Empty,
                 AddConditionSequencePoint(newCondition, node),
                 newConsequence,
                 newAlternative,
@@ -110,6 +112,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         Private Function RewriteIfStatement(
             syntaxNode As VisualBasicSyntaxNode,
             conditionSyntax As VisualBasicSyntaxNode,
+            conditionAndConsequenceScopedLocals As ImmutableArray(Of LocalSymbol),
             rewrittenCondition As BoundExpression,
             rewrittenConsequence As BoundStatement,
             rewrittenAlternative As BoundStatement,
@@ -166,7 +169,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     End Select
                 End If
 
-                Return New BoundStatementList(syntaxNode, ImmutableArray.Create(condGoto, rewrittenConsequence, afterIfStatement))
+                If conditionAndConsequenceScopedLocals.IsEmpty Then
+                    Return New BoundStatementList(syntaxNode, ImmutableArray.Create(condGoto, rewrittenConsequence, afterIfStatement))
+                Else
+                    Return New BoundBlock(syntaxNode, Nothing, conditionAndConsequenceScopedLocals, ImmutableArray.Create(condGoto, rewrittenConsequence, afterIfStatement))
+                End If
             Else
                 ' if (condition)
                 '     consequence;
@@ -200,13 +207,27 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     End If
                 End If
 
-                Return New BoundStatementList(syntaxNode, ImmutableArray.Create(Of BoundStatement)(
-                                              condGoto,
-                                              rewrittenConsequence,
-                                              New BoundGotoStatement(syntaxNode, afterif, Nothing),
-                                              New BoundLabelStatement(syntaxNode, alt),
-                                              rewrittenAlternative,
-                                              afterIfStatement))
+                If conditionAndConsequenceScopedLocals.IsEmpty Then
+                    Return New BoundStatementList(syntaxNode, ImmutableArray.Create(Of BoundStatement)(
+                                                  condGoto,
+                                                  rewrittenConsequence,
+                                                  New BoundGotoStatement(syntaxNode, afterif, Nothing),
+                                                  New BoundLabelStatement(syntaxNode, alt),
+                                                  rewrittenAlternative,
+                                                  afterIfStatement))
+                Else
+                    Return New BoundStatementList(syntaxNode, ImmutableArray.Create(Of BoundStatement)(
+                                                  New BoundBlock(syntaxNode,
+                                                                 Nothing,
+                                                                 conditionAndConsequenceScopedLocals,
+                                                                 ImmutableArray.Create(Of BoundStatement)(
+                                                                    condGoto,
+                                                                    rewrittenConsequence,
+                                                                    New BoundGotoStatement(syntaxNode, afterif, Nothing))),
+                                                  New BoundLabelStatement(syntaxNode, alt),
+                                                  rewrittenAlternative,
+                                                  afterIfStatement))
+                End If
             End If
         End Function
 

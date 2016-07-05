@@ -4042,6 +4042,22 @@ Unify Enum declarations with other block type declarations.
       </child>
     </node-structure>
 
+    <!--****************
+      -  TypeCaseClause
+      ******************-->
+    <node-structure name="TypeCaseClauseSyntax" parent="CaseClauseSyntax">
+      <description>Represents Case clause evaluating the the type of a value e.g. x As T.</description>
+
+      <node-kind name="TypeCaseClause"/>
+
+      <child name="Identifier" kind="IdentifierToken">
+        <description>The identifier declaring a local variable of the specified type which holds the converted value, if successful.</description>
+      </child>
+
+      <child name="AsClause" kind="SimpleAsClause">
+        <description>The As clause that defines the type of value being checked.</description>
+      </child>
+    </node-structure>
 
     <!--****************
       -  SyncLockStatement

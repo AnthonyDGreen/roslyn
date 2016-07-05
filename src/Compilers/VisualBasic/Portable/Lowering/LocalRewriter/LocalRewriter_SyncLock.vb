@@ -253,7 +253,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                                              New BoundLiteral(syntaxNode, ConstantValue.True, boundLockTakenLocal.Type),
                                                              False,
                                                              boundLockTakenLocal.Type)
-                statementInFinally = RewriteIfStatement(syntaxNode, syntaxNode, boundCondition, boundMonitorExitCallStatement, Nothing, generateDebugInfo:=False)
+                statementInFinally = RewriteIfStatement(syntaxNode, syntaxNode, ImmutableArray(Of LocalSymbol).Empty, boundCondition, boundMonitorExitCallStatement, Nothing, generateDebugInfo:=False)
             Else
                 statementInFinally = boundMonitorExitCallStatement
             End If

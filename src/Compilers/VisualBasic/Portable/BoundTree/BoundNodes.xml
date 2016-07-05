@@ -1029,6 +1029,7 @@
     <Node Name="BoundCaseBlock" Base="BoundStatement">
         <Field Name="CaseStatement" Type="BoundCaseStatement"/>
         <Field Name="Body" Type="BoundBlock"/>
+        <Field Name="Locals" Type="ImmutableArray(Of LocalSymbol)" />
     </Node>
   
     <Node Name="BoundCaseStatement" Base="BoundStatement">
@@ -1055,6 +1056,11 @@
         <Field Name="OperatorKind" Type="BinaryOperatorKind"/>
         <Field Name="OperandOpt" Type="BoundExpression" Null="allow"/>
         <Field Name="ConditionOpt" Type="BoundExpression" Null="allow"/>
+    </Node>
+
+    <Node Name="BoundTypeCaseClause" Base="BoundCaseClause">
+      <Field Name="Local" Type="LocalSymbol" />
+      <Field Name="ConditionOpt" Type="BoundExpression" Null="allow" />
     </Node>
   
     <AbstractNode Name="BoundLoopStatement" Base="BoundStatement">

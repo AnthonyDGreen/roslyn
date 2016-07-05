@@ -83,6 +83,16 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Completion.SuggestionMode
                 Return CreateSuggestionModeItem(VBFeaturesResources.NewVariable, itemSpan, description)
             End If
 
+            ' Build after For Each
+            If targetToken.IsKindOrHasMatchingText(SyntaxKind.EachKeyword) AndAlso
+               targetToken.Parent.IsKind(SyntaxKind.ForEachStatement) Then
+
+                description = VBFeaturesResources.TypeANewVariableName & vbCrLf &
+                        VBFeaturesResources.NoteSpaceAndCompletion
+
+                Return CreateSuggestionModeItem(VBFeaturesResources.NewVariable, itemSpan, description)
+            End If
+
             ' Build after Using
             If targetToken.IsKindOrHasMatchingText(SyntaxKind.UsingKeyword) AndAlso
                targetToken.Parent.IsKind(SyntaxKind.UsingStatement) Then
@@ -91,6 +101,44 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Completion.SuggestionMode
                               VBFeaturesResources.NoteSpaceAndCompletion
 
                 Return CreateSuggestionModeItem(VBFeaturesResources.NewResource, itemSpan, description)
+            End If
+
+            ' Build after Case
+            If targetToken.IsKindOrHasMatchingText(SyntaxKind.CaseKeyword) AndAlso
+               targetToken.Parent.IsKind(SyntaxKind.CaseStatement) Then
+
+                ' To minimize the impact of this builder on common completion scenarios (e.g. Select Case on enum value)
+                ' only show the builder if the type of the Select Case test expression
+                ' could be the subject of a type check (i.e. a reference type that may have derived types).
+                Dim selectCaseBlock = TryCast(targetToken.Parent?.Parent?.Parent, SelectBlockSyntax)
+
+                If selectCaseBlock Is Nothing Then Return Nothing
+
+                Dim testExpressionType = semanticModel.GetTypeInfo(selectCaseBlock.SelectStatement.Expression, cancellationToken).Type
+
+                If testExpressionType IsNot Nothing AndAlso
+                   Not testExpressionType.IsErrorType() AndAlso
+                   Not testExpressionType.IsValueType AndAlso
+                   Not testExpressionType.IsSealed _
+                Then
+
+                    description = VBFeaturesResources.TypeANewVariableName & vbCrLf &
+                        VBFeaturesResources.NoteSpaceAndCompletion
+
+                    Return CreateSuggestionModeItem(VBFeaturesResources.NewVariable, itemSpan, description)
+                Else
+                    Return Nothing
+                End If
+            End If
+
+            ' Build after Catch
+            If targetToken.IsKindOrHasMatchingText(SyntaxKind.CatchKeyword) AndAlso
+               targetToken.Parent.IsKind(SyntaxKind.CatchStatement) Then
+
+                description = VBFeaturesResources.TypeANewVariableName & vbCrLf &
+                        VBFeaturesResources.NoteSpaceAndCompletion
+
+                Return CreateSuggestionModeItem(VBFeaturesResources.NewVariable, itemSpan, description)
             End If
 
             ' Builder at Namespace declaration name

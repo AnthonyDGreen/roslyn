@@ -288,7 +288,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Dim clearProjectError As MethodSymbol = nodeFactory.WellKnownMember(Of MethodSymbol)(WellKnownMember.Microsoft_VisualBasic_CompilerServices_ProjectData__ClearProjectError)
 
             If clearProjectError IsNot Nothing Then
-                statements.Add(RewriteIfStatement(node.Syntax, node.Syntax,
+                statements.Add(RewriteIfStatement(node.Syntax, node.Syntax, ImmutableArray(Of LocalSymbol).Empty,
                                                   nodeFactory.Binary(BinaryOperatorKind.NotEquals,
                                                                      bool,
                                                                      nodeFactory.Local(_unstructuredExceptionHandling.ResumeTargetTemporary, isLValue:=False),
@@ -393,7 +393,7 @@ Done:
             If createProjectError IsNot Nothing Then
                 Const E_RESUMEWITHOUTERROR As Integer = &H800A0014 ' 20
 
-                statements.Add(RewriteIfStatement(node.Syntax, node.Syntax,
+                statements.Add(RewriteIfStatement(node.Syntax, node.Syntax, ImmutableArray(Of LocalSymbol).Empty,
                                                   nodeFactory.Binary(BinaryOperatorKind.Equals,
                                                                      nodeFactory.SpecialType(SpecialType.System_Boolean),
                                                                      nodeFactory.Local(_unstructuredExceptionHandling.ResumeTargetTemporary, isLValue:=False),

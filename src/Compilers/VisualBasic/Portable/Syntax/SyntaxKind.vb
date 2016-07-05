@@ -3174,6 +3174,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ''' </summary>
         EndOfInterpolatedStringToken = 787                              ' PunctuationSyntax : SyntaxToken
 
+        ''' <summary>
+        ''' Represents a type-case clause 'i As T' in a 'Case' statement.
+        ''' </summary>
+        TypeCaseClause = 788                    ' TypeCaseClauseSyntax : CaseClauseSyntax
+
     End Enum
 
 End Namespace

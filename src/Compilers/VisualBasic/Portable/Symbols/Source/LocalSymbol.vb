@@ -248,6 +248,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             End Get
         End Property
 
+        Public ReadOnly Property IsCase As Boolean
+            Get
+                Return Me.DeclarationKind = LocalDeclarationKind.Case
+            End Get
+        End Property
+
         Public ReadOnly Property IsConst As Boolean
             Get
                 Return Me.DeclarationKind = LocalDeclarationKind.Constant
@@ -523,6 +529,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                             node = node.Parent
                             Debug.Assert(node.IsKind(SyntaxKind.ForEachStatement))
                         End If
+
+                    Case LocalDeclarationKind.Case
+                        node = _identifierToken.Parent
+                        Debug.Assert(TypeOf node Is TypeCaseClauseSyntax)
 
                     Case Else
                         Throw ExceptionUtilities.UnexpectedValue(Me.DeclarationKind)

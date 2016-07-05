@@ -549,7 +549,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.EditAndContinue
                      SyntaxKind.CaseLessThanClause,
                      SyntaxKind.CaseLessThanOrEqualClause,
                      SyntaxKind.CaseGreaterThanOrEqualClause,
-                     SyntaxKind.CaseGreaterThanClause
+                     SyntaxKind.CaseGreaterThanClause,
+                     SyntaxKind.TypeCaseClause
                     Return Label.CaseClause
 
                 Case SyntaxKind.EndSelectStatement

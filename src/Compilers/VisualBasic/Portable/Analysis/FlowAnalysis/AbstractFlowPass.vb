@@ -1849,6 +1849,8 @@ lUnsplitAndFinish:
                             VisitSimpleCaseClause(DirectCast(clause, BoundSimpleCaseClause))
                         Case BoundKind.RangeCaseClause
                             VisitRangeCaseClause(DirectCast(clause, BoundRangeCaseClause))
+                        Case BoundKind.TypeCaseClause
+                            VisitTypeCaseClause(DirectCast(clause, BoundTypeCaseClause))
                         Case Else
                             Throw ExceptionUtilities.UnexpectedValue(clause.Kind)
                     End Select
@@ -1903,6 +1905,10 @@ lUnsplitAndFinish:
                 VisitRvalue(node.UpperBoundConditionOpt)
             End If
 
+            Return Nothing
+        End Function
+
+        Public Overrides Function VisitTypeCaseClause(node As BoundTypeCaseClause) As BoundNode
             Return Nothing
         End Function
 

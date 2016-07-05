@@ -24,6 +24,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
         [Catch]
         [For]
         ForEach
+        [Case]
         FunctionValue
         ''' <summary> 
         ''' Only used in flow analysis for the pseudo-local representing a symbol 

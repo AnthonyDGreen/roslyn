@@ -289,6 +289,22 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                             caseClause = ResyncAt(InternalSyntaxFactory.RelationalCaseClause(SyntaxKind.CaseEqualsClause, optionalIsKeyword, relationalOperator, InternalSyntaxFactory.MissingExpression))
                         End If
 
+                    ElseIf StartCase = SyntaxKind.IdentifierToken AndAlso PeekNextToken().Kind = SyntaxKind.AsKeyword Then
+
+                        Dim identifier = DirectCast(CurrentToken, IdentifierTokenSyntax)
+                        GetNextToken()
+
+                        Dim asKeyword = DirectCast(CurrentToken, KeywordSyntax)
+                        GetNextToken()
+
+                        Dim type = ParseGeneralType()
+
+                        caseClause = SyntaxFactory.TypeCaseClause(identifier, SyntaxFactory.SimpleAsClause(asKeyword, Nothing, type))
+
+                        If caseClauses.Count > 0 OrElse Not CurrentToken.IsEndOfLine Then
+                            caseClause = ReportSyntaxError(caseClause, ERRID.ERR_TypeCaseThereCanBeOnlyOne)
+                        End If
+
                     Else
 
                         Dim value As ExpressionSyntax = ParseExpressionCore()

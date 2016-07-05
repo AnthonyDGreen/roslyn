@@ -2669,6 +2669,26 @@ _Default:
         End Function
 
         ''' <summary>
+        ''' Given a type case clause syntax get the corresponding local symbol.
+        ''' </summary>
+        ''' <param name="declarationSyntax">The type case clause syntax node.</param>
+        ''' <returns>The local symbol that was declared by the type case clause .</returns>
+        Public Overloads Function GetDeclaredSymbol(declarationSyntax As TypeCaseClauseSyntax, Optional cancellationToken As CancellationToken = Nothing) As ILocalSymbol
+            Dim enclosingBinder = StripSemanticModelBinder(Me.GetEnclosingBinder(declarationSyntax.SpanStart))
+            Dim caseBinder = TryCast(enclosingBinder, CaseBlockBinder)
+
+            If caseBinder IsNot Nothing Then
+                For Each local In caseBinder.Locals
+                    If IdentifierComparison.Equals(local.Name, declarationSyntax.Identifier.ValueText) Then
+                        Return local
+                    End If
+                Next
+            End If
+
+            Return Nothing
+        End Function
+
+        ''' <summary>
         ''' Given a catch statement syntax get the corresponding local symbol.
         ''' </summary>
         ''' <param name="declarationSyntax">The catch statement syntax node.</param>
@@ -3287,6 +3307,9 @@ _Default:
 
                 Case SyntaxKind.AggregationRangeVariable
                     Return Me.GetDeclaredSymbol(DirectCast(node, AggregationRangeVariableSyntax), cancellationToken)
+
+                Case SyntaxKind.TypeCaseClause
+                    Return Me.GetDeclaredSymbol(DirectCast(node, TypeCaseClauseSyntax), cancellationToken)
 
                 Case SyntaxKind.CatchStatement
                     Return Me.GetDeclaredSymbol(DirectCast(node, CatchStatementSyntax), cancellationToken)

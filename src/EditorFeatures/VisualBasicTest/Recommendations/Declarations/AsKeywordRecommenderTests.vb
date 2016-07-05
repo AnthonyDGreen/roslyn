@@ -421,5 +421,13 @@ Dim Foo _
         Public Async Function AfterPublicAsyncTest() As Task
             Await VerifyRecommendationsContainAsync(<ClassDeclaration>Public Async |</ClassDeclaration>, "As")
         End Function
+
+        <Fact, Trait(Traits.Feature, Traits.Features.KeywordRecommending)>
+        Public Async Function AsInCaseBlock() As Task
+            Await VerifyRecommendationsContainAsync(<MethodBody>
+Select Case New Object()
+    Case s |</MethodBody>, "As")
+        End Function
+
     End Class
 End Namespace

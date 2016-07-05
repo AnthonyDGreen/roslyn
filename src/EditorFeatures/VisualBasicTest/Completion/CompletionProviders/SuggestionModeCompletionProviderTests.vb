@@ -249,6 +249,45 @@ End Class
             Await VerifyBuilderAsync(markup)
         End Function
 
+        <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
+        Public Async Function TestCatchStatement() As Task
+            Dim markup = <a>Class C
+    Sub M()
+        Try
+        Catch $$
+        End Try
+    End Sub
+End Class</a>
+
+            Await VerifyBuilderAsync(markup)
+        End Function
+
+        <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
+        Public Async Function TestCaseStatement() As Task
+            Dim markup = <a>Class C
+    Sub M()
+        Select Case New Object()
+            Case $$
+        End Select
+    End Sub
+End Class</a>
+
+            Await VerifyBuilderAsync(markup)
+        End Function
+
+        <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
+        Public Async Function TestNotInCaseStatementForValueType() As Task
+            Dim markup = <a>Class C
+    Sub M()
+        Select Case Date.Today.DayOfWeek
+            Case $$
+        End Select
+    End Sub
+End Class</a>
+
+            Await VerifyNotBuilderAsync(markup)
+        End Function
+
         <WorkItem(734596, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/734596")>
         <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
         Public Async Function TestOptionExplicitOffStatementLevel1() As Task

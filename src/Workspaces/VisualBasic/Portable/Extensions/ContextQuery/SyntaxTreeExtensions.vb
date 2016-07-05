@@ -820,9 +820,24 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Extensions.ContextQuery
                 Return identifierName.Identifier
             End If
 
+            Dim genericName = TryCast(expression, GenericNameSyntax)
+            If genericName IsNot Nothing Then
+                Return genericName.TypeArgumentList.CloseParenToken
+            End If
+
             Dim predefinedType = TryCast(expression, PredefinedTypeSyntax)
             If predefinedType IsNot Nothing Then
                 Return predefinedType.Keyword
+            End If
+
+            Dim arrayType = TryCast(expression, ArrayTypeSyntax)
+            If arrayType IsNot Nothing Then
+                Return arrayType.RankSpecifiers.Last.CloseParenToken
+            End If
+
+            Dim nullableType = TryCast(expression, NullableTypeSyntax)
+            If nullableType IsNot Nothing Then
+                Return nullableType.QuestionMarkToken
             End If
 
             Dim collectionInitializer = TryCast(expression, CollectionInitializerSyntax)

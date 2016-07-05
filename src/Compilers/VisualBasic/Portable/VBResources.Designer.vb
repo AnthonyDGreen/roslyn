@@ -4919,6 +4919,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to &apos;GoTo {0}&apos; is not valid because &apos;{0}&apos; is inside a &apos;Case&apos; block with a type-case clause that does not contain this statement..
+        '''</summary>
+        Friend ReadOnly Property ERR_GotoIntoTypeCaseBlock() As String
+            Get
+                Return ResourceManager.GetString("ERR_GotoIntoTypeCaseBlock", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to &apos;GoTo {0}&apos; is not valid because &apos;{0}&apos; is inside a &apos;Using&apos; statement that does not contain this statement..
         '''</summary>
         Friend ReadOnly Property ERR_GotoIntoUsing() As String
@@ -10344,6 +10353,33 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to Value of type &apos;{1}&apos; can never be of type &apos;{0}&apos;..
+        '''</summary>
+        Friend ReadOnly Property ERR_TypeCaseNoConversion() As String
+            Get
+                Return ResourceManager.GetString("ERR_TypeCaseNoConversion", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Type case must be the only clause of &apos;Case&apos; statement..
+        '''</summary>
+        Friend ReadOnly Property ERR_TypeCaseThereCanBeOnlyOne() As String
+            Get
+                Return ResourceManager.GetString("ERR_TypeCaseThereCanBeOnlyOne", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Type must be a reference type, type parameter type, or non-nullable value type..
+        '''</summary>
+        Friend ReadOnly Property ERR_TypeCaseUnnecessaryNullableType() As String
+            Get
+                Return ResourceManager.GetString("ERR_TypeCaseUnnecessaryNullableType", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to Type character &apos;{0}&apos; does not match declared data type &apos;{1}&apos;..
         '''</summary>
         Friend ReadOnly Property ERR_TypecharNoMatch2() As String
@@ -14481,6 +14517,24 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         Friend ReadOnly Property WRN_SynthMemberShadowsSynthMember7_Title() As String
             Get
                 Return ResourceManager.GetString("WRN_SynthMemberShadowsSynthMember7_Title", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to &apos;Case&apos; block is unreachable; value of type &apos;{0}&apos; matched above in the same &apos;Select Case&apos; block..
+        '''</summary>
+        Friend ReadOnly Property WRN_TypeCaseDuplicateCase() As String
+            Get
+                Return ResourceManager.GetString("WRN_TypeCaseDuplicateCase", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to &apos;Case&apos; block is unreachable; value of type &apos;{0}&apos; matched above by &apos;{1}&apos;..
+        '''</summary>
+        Friend ReadOnly Property WRN_TypeCaseOverlappingCase() As String
+            Get
+                Return ResourceManager.GetString("WRN_TypeCaseOverlappingCase", resourceCulture)
             End Get
         End Property
         

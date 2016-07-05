@@ -1687,6 +1687,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
         ERR_OptionMustBeAbsolutePath = 37257
 
+        ERR_TypeCaseNoConversion = 37258
+        ERR_TypeCaseThereCanBeOnlyOne = 37259
+        ERR_TypeCaseUnnecessaryNullableType = 37260
+        ERR_GotoIntoTypeCaseBlock = 37261
+
         ERR_LastPlusOne
 
 
@@ -1907,8 +1912,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         WRN_NoAnalyzerInAssembly = 42377
         WRN_UnableToLoadAnalyzer = 42378
 
-        ' // AVAILABLE                             42379 - 49998
-        ERRWRN_Last = WRN_UnableToLoadAnalyzer + 1
+        WRN_TypeCaseDuplicateCase = 42379
+        WRN_TypeCaseOverlappingCase = 42380
+
+        ' // AVAILABLE                             42381 - 49998
+        ERRWRN_Last
 
         '// HIDDENS AND INFOS BEGIN HERE
         HDN_UnusedImportClause = 50000

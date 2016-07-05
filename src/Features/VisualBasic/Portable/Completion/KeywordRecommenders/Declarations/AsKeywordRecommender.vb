@@ -60,6 +60,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Completion.KeywordRecommenders.Decl
                 Return asKeyword
             End If
 
+            ' Case foo
+            If targetToken.IsFromIdentifierNode(Of SimpleCaseClauseSyntax)(Function(valueClause) valueClause.Value) Then
+                Return asKeyword
+            End If
+
             ' Catch foo
             If targetToken.IsFromIdentifierNode(Of CatchStatementSyntax)(Function(catchStatement) catchStatement.IdentifierName) Then
                 Return asKeyword

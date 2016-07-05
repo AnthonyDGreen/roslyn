@@ -772,7 +772,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             End If
 
             ' if statement (either the condition is "e IsNot nothing" or "TryCast(e, IDisposable) IsNot Nothing", see comment above)
-            Return RewriteIfStatement(syntaxNode, rewrittenCondition.Syntax, rewrittenCondition, boundCall, Nothing, generateDebugInfo:=False)
+            Return RewriteIfStatement(syntaxNode, rewrittenCondition.Syntax, ImmutableArray(Of LocalSymbol).Empty, rewrittenCondition, boundCall, Nothing, generateDebugInfo:=False)
         End Function
 
         ''' <summary>

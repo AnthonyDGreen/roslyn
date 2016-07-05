@@ -479,6 +479,42 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Function
     End Class
 
+    Partial Friend Class BoundTypeCaseClause
+        Implements IRelationalCaseClause
+
+        Private ReadOnly Property IRelationalCaseClause_Relation As BinaryOperationKind Implements IRelationalCaseClause.Relation
+            Get
+                Return BinaryOperationKind.Invalid
+            End Get
+        End Property
+
+        Private ReadOnly Property IRelationalCaseClause_Value As IOperation Implements IRelationalCaseClause.Value
+            Get
+                Return Nothing
+            End Get
+        End Property
+
+        Protected Overrides ReadOnly Property IOperation_Kind As OperationKind
+            Get
+                Return OperationKind.RelationalCaseClause
+            End Get
+        End Property
+
+        Protected Overrides ReadOnly Property ICaseClause_CaseKind As CaseKind
+            Get
+                Return CaseKind.Relational
+            End Get
+        End Property
+
+        Public Overrides Sub Accept(visitor As OperationVisitor)
+            visitor.VisitRelationalCaseClause(Me)
+        End Sub
+
+        Public Overrides Function Accept(Of TArgument, TResult)(visitor As OperationVisitor(Of TArgument, TResult), argument As TArgument) As TResult
+            Return visitor.VisitRelationalCaseClause(Me, argument)
+        End Function
+    End Class
+
     Friend Partial Class BoundCaseStatement
 
         ' Cases are found by going through ISwitch, so the VB Case statement is orphaned.

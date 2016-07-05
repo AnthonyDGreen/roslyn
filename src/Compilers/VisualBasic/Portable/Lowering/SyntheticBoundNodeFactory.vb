@@ -722,7 +722,7 @@ nextm:
 
             Dim boundCaseStatement = New BoundCaseStatement(_syntax, builder.ToImmutableAndFree(), Nothing)
             boundCaseStatement.SetWasCompilerGenerated()
-            Dim boundCaseBlock = New BoundCaseBlock(_syntax, boundCaseStatement, Block(ImmutableArray.Create(Of BoundStatement)(statements)))
+            Dim boundCaseBlock = New BoundCaseBlock(_syntax, boundCaseStatement, Block(ImmutableArray.Create(Of BoundStatement)(statements)), ImmutableArray(Of LocalSymbol).Empty)
             boundCaseBlock.SetWasCompilerGenerated()
             Return boundCaseBlock
         End Function

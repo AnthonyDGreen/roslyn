@@ -298,6 +298,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 rewrittenStatement = RewriteIfStatement(
                     syntaxNode:=curCaseBlock.Syntax,
                     conditionSyntax:=curCaseBlock.CaseStatement.Syntax,
+                    conditionAndConsequenceScopedLocals:=curCaseBlock.Locals,
                     rewrittenCondition:=AddConditionSequencePoint(rewrittenCaseCondition, selectStatement, lazyConditionalBranchLocal),
                     rewrittenConsequence:=rewrittenBody,
                     rewrittenAlternative:=RewriteCaseBlocksRecursive(selectStatement, generateUnstructuredExceptionHandlingResumeCode, caseBlocks, startFrom + 1, lazyConditionalBranchLocal),
@@ -385,7 +386,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 rewrittenBody = AppendToBlock(rewrittenBody, RegisterUnstructuredExceptionHandlingNonThrowingResumeTarget(node.Syntax))
             End If
 
-            Return rewritten.Update(rewritten.CaseStatement, rewrittenBody)
+            Return rewritten.Update(rewritten.CaseStatement, rewrittenBody, rewritten.Locals)
         End Function
 
     End Class

@@ -5367,4 +5367,22 @@
   <data name="ERR_OptionMustBeAbsolutePath" xml:space="preserve">
     <value>Option '{0}' must be an absolute path.</value>
   </data>
+  <data name="ERR_TypeCaseNoConversion" xml:space="preserve">
+    <value>Value of type '{1}' can never be of type '{0}'.</value>
+  </data>
+  <data name="ERR_TypeCaseThereCanBeOnlyOne" xml:space="preserve">
+    <value>Type case must be the only clause of 'Case' statement.</value>
+  </data>
+  <data name="ERR_TypeCaseUnnecessaryNullableType" xml:space="preserve">
+    <value>Type must be a reference type, type parameter type, or non-nullable value type.</value>
+  </data>
+  <data name="ERR_GotoIntoTypeCaseBlock" xml:space="preserve">
+    <value>'GoTo {0}' is not valid because '{0}' is inside a 'Case' block with a type-case clause that does not contain this statement.</value>
+  </data>
+  <data name="WRN_TypeCaseDuplicateCase" xml:space="preserve">
+    <value>'Case' block is unreachable; value of type '{0}' matched above in the same 'Select Case' block.</value>
+  </data>
+  <data name="WRN_TypeCaseOverlappingCase" xml:space="preserve">
+    <value>'Case' block is unreachable; value of type '{0}' matched above by '{1}'.</value>
+  </data>
 </root>

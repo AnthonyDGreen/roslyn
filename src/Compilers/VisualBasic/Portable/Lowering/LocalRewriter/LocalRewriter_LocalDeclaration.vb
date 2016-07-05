@@ -248,7 +248,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                   Nothing,
                                   flag.Type)
 
-            Dim conditionalFlagInit = RewriteIfStatement(syntax, syntax, flagIsNothing, interlockedCompareExchangeFlagWithNewInstance.ToStatement(), Nothing, generateDebugInfo:=False)
+            Dim conditionalFlagInit = RewriteIfStatement(syntax, syntax, ImmutableArray(Of LocalSymbol).Empty, flagIsNothing, interlockedCompareExchangeFlagWithNewInstance.ToStatement(), Nothing, generateDebugInfo:=False)
 
             statements.Add(conditionalFlagInit)
 
@@ -309,10 +309,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                                                                                           ctorIncompleteInitialization.ContainingType))
 
             Dim conditionalValueInit =
-                RewriteIfStatement(syntax, syntax,
+                RewriteIfStatement(syntax, syntax, ImmutableArray(Of LocalSymbol).Empty,
                                    flagStateIsZero,
                                    New BoundStatementList(syntax, ImmutableArray.Create(flagStateAssignTwo, rewrittenInitialization)),
-                                   RewriteIfStatement(syntax, syntax,
+                                   RewriteIfStatement(syntax, syntax, ImmutableArray(Of LocalSymbol).Empty,
                                                       flagStateIsTwo,
                                                       throwIncompleteInitialization,
                                                       Nothing,

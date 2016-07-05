@@ -1035,7 +1035,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.CodeGen
                 Dim body As BoundBlock = DirectCast(Me.Visit(node.Body), BoundBlock)
 
                 EnsureOnlyEvalStack()
-                Return node.Update(caseStatement, body)
+                Return node.Update(caseStatement, body, node.Locals)
             End Function
 
             Public Overrides Function VisitUnstructuredExceptionOnErrorSwitch(node As BoundUnstructuredExceptionOnErrorSwitch) As BoundNode

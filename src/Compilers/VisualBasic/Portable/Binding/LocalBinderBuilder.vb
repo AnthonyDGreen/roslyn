@@ -292,6 +292,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Sub
 
         Public Overrides Sub VisitCaseBlock(node As CaseBlockSyntax)
+            _containingBinder = New CaseBlockBinder(_containingBinder, node)
+
+            RememberBinder(node, _containingBinder)
+
             CreateBinderFromStatementList(node.Statements, _containingBinder)
         End Sub
 

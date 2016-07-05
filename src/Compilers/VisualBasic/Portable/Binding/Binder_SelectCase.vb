@@ -101,11 +101,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             If Not caseBlocks.IsEmpty() Then
                 Dim caseBlocksBuilder = ArrayBuilder(Of BoundCaseBlock).GetInstance()
+                Dim typeCaseTypes = ArrayBuilder(Of TypeSymbol).GetInstance()
 
                 ' Bind case blocks.
                 For Each caseBlock In caseBlocks
-                    caseBlocksBuilder.Add(BindCaseBlock(caseBlock, selectExpression, convertCaseElements, diagnostics))
+                    Dim caseBlockBinder = GetBinder(caseBlock)
+                    caseBlocksBuilder.Add(caseBlockBinder.BindCaseBlock(caseBlock, selectExpression, convertCaseElements, typeCaseTypes, diagnostics))
                 Next
+
+                typeCaseTypes.Free()
 
                 Return OptimizeSelectStatement(selectExpression, caseBlocksBuilder, recommendSwitchTable, diagnostics)
             End If
@@ -117,22 +121,26 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             node As CaseBlockSyntax,
             selectExpression As BoundExpression,
             convertCaseElements As Boolean,
+            typeCaseTypes As ArrayBuilder(Of TypeSymbol),
             diagnostics As DiagnosticBag
         ) As BoundCaseBlock
 
-            Dim caseStatement As BoundCaseStatement = BindCaseStatement(node.CaseStatement, selectExpression, convertCaseElements, diagnostics)
+            Dim locals = ArrayBuilder(Of LocalSymbol).GetInstance()
+            Dim caseStatement As BoundCaseStatement = BindCaseStatement(node.CaseStatement, selectExpression, convertCaseElements, locals, typeCaseTypes, diagnostics)
 
             Dim statementsSyntax As SyntaxList(Of StatementSyntax) = node.Statements
             Dim bodyBinder = GetBinder(statementsSyntax)
             Dim body As BoundBlock = bodyBinder.BindBlock(node, statementsSyntax, diagnostics)
 
-            Return New BoundCaseBlock(node, caseStatement, body)
+            Return New BoundCaseBlock(node, caseStatement, body, locals.ToImmutableAndFree())
         End Function
 
         Private Function BindCaseStatement(
             node As CaseStatementSyntax,
             selectExpression As BoundExpression,
             convertCaseElements As Boolean,
+            locals As ArrayBuilder(Of LocalSymbol),
+            typeCaseTypes As ArrayBuilder(Of TypeSymbol),
             diagnostics As DiagnosticBag
         ) As BoundCaseStatement
 
@@ -143,7 +151,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                 ' Bind case clauses.
                 For Each caseClause In node.Cases
-                    caseClauseBuilder.Add(BindCaseClause(caseClause, selectExpression, convertCaseElements, diagnostics))
+                    caseClauseBuilder.Add(BindCaseClause(caseClause, selectExpression, convertCaseElements, locals, typeCaseTypes, diagnostics))
                 Next
 
                 caseClauses = caseClauseBuilder.ToImmutableAndFree()
@@ -159,6 +167,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             node As CaseClauseSyntax,
             selectExpression As BoundExpression,
             convertCaseElements As Boolean,
+            locals As ArrayBuilder(Of LocalSymbol),
+            typeCaseTypes As ArrayBuilder(Of TypeSymbol),
             diagnostics As DiagnosticBag
         ) As BoundCaseClause
             Select Case node.Kind
@@ -173,6 +183,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                 Case SyntaxKind.RangeCaseClause
                     Return BindRangeCaseClause(DirectCast(node, RangeCaseClauseSyntax), selectExpression, convertCaseElements, diagnostics)
+
+                Case SyntaxKind.TypeCaseClause
+                    Return BindTypeCaseClause(DirectCast(node, TypeCaseClauseSyntax), selectExpression, convertCaseElements, locals, typeCaseTypes, diagnostics)
 
                 Case Else
                     Throw ExceptionUtilities.UnexpectedValue(node.Kind)
@@ -302,6 +315,214 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Return New BoundRangeCaseClause(node, lowerBound, upperBound, lowerBoundConditionOpt, upperBoundConditionOpt)
         End Function
 
+        Private Function BindTypeCaseClause(
+            node As TypeCaseClauseSyntax,
+            selectExpression As BoundExpression,
+            convertCaseElements As Boolean,
+            locals As ArrayBuilder(Of LocalSymbol),
+            typeCaseTypes As ArrayBuilder(Of TypeSymbol),
+            diagnostics As DiagnosticBag
+        ) As BoundCaseClause
+
+            Dim matchType = BindTypeSyntax(node.AsClause.Type, diagnostics)
+
+            Dim local = GetLocalForDeclaration(node.Identifier)
+            locals.Add(local)
+            VerifyLocalSymbolNameAndSetType(local, matchType, node, node.Identifier, diagnostics)
+            Dim boundLocal As New BoundLocal(node, local, matchType)
+
+            Dim condition As BoundExpression
+
+            Dim sourceType As TypeSymbol = selectExpression.Type
+
+            Debug.Assert((sourceType IsNot Nothing AndAlso matchType IsNot Nothing) AndAlso
+                         (sourceType.IsErrorType() OrElse sourceType.IsValueType OrElse sourceType.IsReferenceType OrElse sourceType.IsTypeParameter()) AndAlso
+                         (matchType.IsErrorType() OrElse matchType.IsValueType OrElse matchType.IsReferenceType OrElse matchType.IsTypeParameter()))
+
+            Dim objectType = GetSpecialType(SpecialType.System_Object, node, diagnostics)
+            Dim booleanType = GetSpecialType(SpecialType.System_Boolean, node, diagnostics)
+
+            Dim sourceTypeToTest As TypeSymbol
+
+            Dim hasErrors As Boolean = False
+
+            ' True binding.
+            If sourceType.IsErrorType() OrElse matchType.IsErrorType() Then
+
+                hasErrors = True
+
+            ElseIf matchType.IsNullableType() Then
+
+                ReportDiagnostic(diagnostics, node.AsClause.Type, ERRID.ERR_TypeCaseUnnecessaryNullableType)
+                hasErrors = True
+
+            Else
+
+                If sourceType.IsReferenceType Then
+                    sourceTypeToTest = sourceType
+                ElseIf sourceType.IsNullableType() Then
+                    sourceTypeToTest = sourceType.GetNullableUnderlyingType()
+                ElseIf sourceType.IsValueType Then
+                    sourceTypeToTest = sourceType
+                ElseIf sourceType.IsTypeParameter() Then
+                    sourceTypeToTest = objectType
+                Else
+                    Throw ExceptionUtilities.Unreachable
+                End If
+
+                Dim useSiteDiagnostics As HashSet(Of DiagnosticInfo) = Nothing
+
+                If Not Conversions.ConversionExists(Conversions.ClassifyDirectCastConversion(sourceTypeToTest, matchType, useSiteDiagnostics)) Then
+                    ReportDiagnostic(diagnostics, node.AsClause.Type, ERRID.ERR_TypeCaseNoConversion, matchType, sourceType)
+                    hasErrors = True
+                End If
+
+                If useSiteDiagnostics IsNot Nothing Then
+                    hasErrors = True
+                End If
+
+                diagnostics.Add(node, useSiteDiagnostics)
+
+            End If
+
+            ' Warnings.
+            If Not hasErrors Then
+                For Each previousType In typeCaseTypes
+                    Dim useSiteDiagnostics As HashSet(Of DiagnosticInfo) = Nothing
+
+                    If matchType.Equals(previousType) Then
+
+                        ReportDiagnostic(diagnostics, node.AsClause.Type, ERRID.WRN_TypeCaseDuplicateCase, matchType)
+                        Exit For
+
+                    ElseIf previousType.IsBaseTypeOrInterfaceOf(matchType, useSiteDiagnostics) OrElse
+                           (matchType.IsInterfaceType() AndAlso previousType.Equals(objectType)) Then
+
+                        ReportDiagnostic(diagnostics, node.AsClause.Type, ERRID.WRN_TypeCaseOverlappingCase, matchType, previousType)
+                        Exit For
+
+                    End If
+                Next
+
+                typeCaseTypes.Add(matchType)
+            End If
+
+            ' Compute condition.
+            If hasErrors Then
+                condition = New BoundBadExpression(node, LookupResultKind.Empty, ImmutableArray(Of Symbol).Empty, ImmutableArray(Of BoundNode).Empty, ErrorTypeSymbol.UnknownResultType, hasErrors:=True)
+            Else
+
+                If sourceType.IsReferenceType AndAlso matchType.IsReferenceType Then
+
+                    ' condition: (Var v = TryCast(e, T) : v IsNot Nothing)
+                    condition = BindIsExpression(
+                                    BindAssignment(
+                                        node,
+                                        boundLocal,
+                                        ApplyTryCastConversion(node, selectExpression, matchType, diagnostics),
+                                        diagnostics
+                                    ),
+                                    New BoundLiteral(node, ConstantValue.Nothing, Nothing),
+                                    node,
+                                    isNot:=True,
+                                    diagnostics:=diagnostics
+                                )
+
+                ElseIf sourceType.IsNullableType AndAlso matchType.Equals(sourceType.GetNullableUnderlyingType()) Then
+
+                    ' condition = (Var v = e.GetValueOrDefault() : e.HasValue)
+
+                    Dim getValueOrDefaultMethod =
+                    DirectCast(DirectCast(sourceType, SubstitutedNamedType).GetMemberForDefinition(GetSpecialTypeMember(SpecialMember.System_Nullable_T_GetValueOrDefault, node, diagnostics)),
+                               MethodSymbol)
+
+                    condition = New BoundSequence(node,
+                                              ImmutableArray(Of LocalSymbol).Empty,
+                                              ImmutableArray.Create(Of BoundExpression)(
+                                                                 BindAssignment(
+                                                                     node,
+                                                                     boundLocal,
+                                                                     New BoundCall(node,
+                                                                                   getValueOrDefaultMethod,
+                                                                                   Nothing,
+                                                                                   selectExpression,
+                                                                                   ImmutableArray(Of BoundExpression).Empty,
+                                                                                   Nothing,
+                                                                                   matchType,
+                                                                                   suppressObjectClone:=True),
+                                                                     diagnostics
+                                                                 )
+                                                             ),
+                                              BindIsExpression(
+                                                  selectExpression,
+                                                  New BoundLiteral(node, ConstantValue.Nothing, Nothing),
+                                                  node,
+                                                  isNot:=True,
+                                                  diagnostics:=diagnostics),
+                                              booleanType)
+
+                ElseIf sourceType.IsValueType AndAlso matchType.Equals(sourceType) Then
+
+                    ' condition = (Var v = e : True)
+                    condition = New BoundSequence(node,
+                                                  ImmutableArray(Of LocalSymbol).Empty,
+                                                  ImmutableArray.Create(Of BoundExpression)(BindAssignment(
+                                                                                                node,
+                                                                                                boundLocal,
+                                                                                                selectExpression,
+                                                                                                diagnostics
+                                                                                            )),
+                                                  New BoundLiteral(node, ConstantValue.True, GetSpecialType(SpecialType.System_Boolean, node, diagnostics)),
+                                                  booleanType)
+                Else
+                    ' condition: (Var $boxed = CObj(e) : Var $success = TypeOf $boxed Is T : Var v = If($success, DirectCast($boxed, T), Nothing) : $success)
+
+                    ' Dim $boxed As Object
+                    Dim boxedTemp As New SynthesizedLocal(ContainingMember, objectType, SynthesizedLocalKind.LoweringTemp)
+                    Dim boundBoxedTemp As New BoundLocal(node, boxedTemp, objectType)
+                    boundBoxedTemp.SetWasCompilerGenerated()
+
+                    Dim sideEffects = ArrayBuilder(Of BoundExpression).GetInstance()
+
+                    ' $boxed = CObj(e)
+                    sideEffects.Add(BindAssignment(node, boundBoxedTemp, ApplyDirectCastConversion(node, selectExpression, objectType, diagnostics), diagnostics))
+
+                    ' Dim $success As Boolean
+                    Dim successTemp As New SynthesizedLocal(ContainingMember, booleanType, SynthesizedLocalKind.LoweringTemp)
+                    Dim boundSuccessTemp As New BoundLocal(node, successTemp, booleanType)
+                    boundSuccessTemp.SetWasCompilerGenerated()
+
+                    ' $success = TypeOf $boxed Is T
+                    sideEffects.Add(BindAssignment(node, boundSuccessTemp, New BoundTypeOf(node, boundBoxedTemp, False, matchType, booleanType), diagnostics))
+
+                    ' local = If($success, DirectCast($boxed, T), Nothing)
+                    sideEffects.Add(BindAssignment(node,
+                                                   boundLocal,
+                                                   New BoundTernaryConditionalExpression(
+                                                           node,
+                                                           boundSuccessTemp.MakeRValue(),
+                                                           ApplyDirectCastConversion(node, boundBoxedTemp.MakeRValue(), matchType, diagnostics),
+                                                           ApplyImplicitConversion(node, matchType, New BoundLiteral(node, ConstantValue.Nothing, Nothing), diagnostics),
+                                                           Nothing,
+                                                           matchType
+                                                       ),
+                                                   diagnostics))
+
+                    ' $success
+                    condition = New BoundSequence(node,
+                                              ImmutableArray.Create(Of LocalSymbol)(boxedTemp, successTemp),
+                                              sideEffects.ToImmutableAndFree(),
+                                              boundSuccessTemp.MakeRValue(),
+                                              booleanType)
+                End If
+            End If
+
+            condition.SetWasCompilerGenerated()
+
+            Return New BoundTypeCaseClause(node, local, condition)
+
+        End Function
+
         Private Function BindCaseClauseExpression(
             expressionSyntax As ExpressionSyntax,
             caseClauseSyntax As CaseClauseSyntax,
@@ -428,7 +649,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                             caseStatementCondition = ApplyImplicitConversion(caseStatementCondition.Syntax, booleanType, caseStatementCondition, diagnostics:=diagnostics, isOperandOfConditionalBranch:=True)
 
                             caseStatement = caseStatement.Update(newCaseClauses, caseStatementCondition)
-                            caseBlockBuilder(index) = caseBlock.Update(caseStatement, caseBlock.Body)
+                            caseBlockBuilder(index) = caseBlock.Update(caseStatement, caseBlock.Body, caseBlock.Locals)
                         End If
                     Next
 
@@ -449,6 +670,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                 Case BoundKind.RangeCaseClause
                     Return ComputeRangeCaseClauseCondition(DirectCast(caseClause, BoundRangeCaseClause), conditionOpt, selectExpression, diagnostics)
+
+                Case BoundKind.TypeCaseClause
+                    conditionOpt = DirectCast(caseClause, BoundTypeCaseClause).ConditionOpt
+
+                    Return caseClause
 
                 Case Else
                     Throw ExceptionUtilities.UnexpectedValue(caseClause.Kind)
@@ -618,6 +844,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                             End If
 
                             recommendSwitch = False
+
+                        Case BoundKind.TypeCaseClause
+                            Return False
 
                         Case Else
                             Dim simpleCaseClause = DirectCast(caseClause, BoundSimpleCaseClause)

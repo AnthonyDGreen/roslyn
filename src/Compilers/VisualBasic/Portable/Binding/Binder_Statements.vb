@@ -813,6 +813,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     Case SyntaxKind.ForBlock,
                         SyntaxKind.ForEachBlock
                         errorID = ERRID.ERR_GotoIntoFor
+
+                    Case SyntaxKind.CaseBlock
+                        errorID = ERRID.ERR_GotoIntoTypeCaseBlock
+
                 End Select
 
                 If errorID <> ERRID.ERR_None Then
@@ -838,7 +842,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                          block.Kind = SyntaxKind.SyncLockBlock OrElse
                          block.Kind = SyntaxKind.WithBlock OrElse
                          block.Kind = SyntaxKind.ForBlock OrElse
-                         block.Kind = SyntaxKind.ForEachBlock)
+                         block.Kind = SyntaxKind.ForEachBlock OrElse
+                         block.Kind = SyntaxKind.CaseBlock)
 
             Dim parent = labelSyntax.Parent
             While parent IsNot Nothing
