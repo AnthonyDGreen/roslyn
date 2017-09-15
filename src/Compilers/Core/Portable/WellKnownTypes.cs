@@ -265,6 +265,10 @@ namespace Microsoft.CodeAnalysis
         Microsoft_CodeAnalysis_Runtime_Instrumentation,
         System_Runtime_CompilerServices_ReferenceAssemblyAttribute,
 
+        Newtonsoft_Json_Linq_JObject,
+        Newtonsoft_Json_Linq_JProperty,
+        Newtonsoft_Json_Linq_JArray,
+
         NextAvailable,
     }
 
@@ -522,7 +526,11 @@ namespace Microsoft.CodeAnalysis
 
             "Microsoft.CodeAnalysis.Runtime.Instrumentation",
 
-            "System.Runtime.CompilerServices.ReferenceAssemblyAttribute"
+            "System.Runtime.CompilerServices.ReferenceAssemblyAttribute",
+
+            "Newtonsoft.Json.Linq.JObject",
+            "Newtonsoft.Json.Linq.JProperty",
+            "Newtonsoft.Json.Linq.JArray"
         };
 
         private readonly static Dictionary<string, WellKnownType> s_nameToTypeIdMap = new Dictionary<string, WellKnownType>((int)Count);

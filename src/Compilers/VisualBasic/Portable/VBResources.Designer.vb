@@ -6613,6 +6613,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to JSON literals are not available. Add a references to Newtonsoft.Json or other assemblies declaring Newtonsoft.Json.Linq.JObject, Newtonsoft.Json.Linq.JProperty, and Newtonsoft.Json.Linq.JArray types..
+        '''</summary>
+        Friend ReadOnly Property ERR_JsonFeaturesNotAvailable() As String
+            Get
+                Return ResourceManager.GetString("ERR_JsonFeaturesNotAvailable", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to You cannot use &apos;{0}&apos; in top-level script code.
         '''</summary>
         Friend ReadOnly Property ERR_KeywordNotAllowedInScript() As String

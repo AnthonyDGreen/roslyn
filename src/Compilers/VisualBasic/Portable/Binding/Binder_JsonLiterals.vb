@@ -3,45 +3,25 @@
 Imports System.Collections.Generic
 Imports System.Collections.Immutable
 Imports System.Runtime.InteropServices
+Imports Microsoft.CodeAnalysis.InternalUtilities
 Imports Microsoft.CodeAnalysis.Collections
 Imports Microsoft.CodeAnalysis.VisualBasic.Symbols
 Imports Microsoft.CodeAnalysis.VisualBasic.Syntax
+Imports Microsoft.CodeAnalysis.PooledObjects
 
 Namespace Microsoft.CodeAnalysis.VisualBasic
     Partial Friend Class Binder
 
-        Private Function TryLookupTypeBySimpleName(name As String, arity As Integer, diagnostics As DiagnosticBag) As TypeSymbol
-
-            Dim result = LookupResult.GetInstance()
-
-            Dim useSiteDiagnostics As HashSet(Of DiagnosticInfo) = Nothing
-            Lookup(result, name, arity, LookupOptions.NamespacesOrTypesOnly, useSiteDiagnostics:=Nothing)
-
-            Dim type As TypeSymbol
-            If result.IsGood AndAlso result.HasSingleSymbol AndAlso result.SingleSymbol.UnwrapAlias().Kind = SymbolKind.NamedType Then
-                type = DirectCast(result.SingleSymbol.UnwrapAlias(), NamedTypeSymbol)
-            Else
-                type = DirectCast(Compilation.CreateErrorTypeSymbol(Compilation.GlobalNamespace, name, arity), TypeSymbol)
-            End If
-
-            result.Free()
-            Return type
-
-        End Function
-
         Private Function BindJsonObjectExpression(syntax As JsonObjectExpressionSyntax, diagnostics As DiagnosticBag) As BoundExpression
 
-            Dim jsonObjectType = TryLookupTypeBySimpleName("JObject", 0, diagnostics)
+            diagnostics = CheckJsonFeaturesAllowed(syntax, diagnostics)
+
+            Dim jsonObjectType = GetWellKnownType(WellKnownType.Newtonsoft_Json_Linq_JObject, syntax, diagnostics)
 
             Dim membersBuilder = ArrayBuilder(Of BoundNode).GetInstance()
 
             For Each member In syntax.Members
                 membersBuilder.Add(BindValue(member, diagnostics))
-                'If member.Kind = SyntaxKind.JsonNameValuePairExpression Then
-                '    membersBuilder.Add(BindJsonNameValuePairExpression(DirectCast(member, JsonNameValuePairExpressionSyntax), diagnostics))
-                'Else
-                '    membersBuilder.Add(BindValue(member, diagnostics))
-                'End If
             Next
 
             Return New BoundJsonObject(syntax, membersBuilder.ToImmutableAndFree(), Me, jsonObjectType)
@@ -50,7 +30,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
         Private Function BindJsonArrayExpression(syntax As JsonArrayExpressionSyntax, diagnostics As DiagnosticBag) As BoundExpression
 
-            Dim jsonArrayType = TryLookupTypeBySimpleName("JArray", 0, diagnostics)
+            diagnostics = CheckJsonFeaturesAllowed(syntax, diagnostics)
+
+            Dim jsonArrayType = GetWellKnownType(WellKnownType.Newtonsoft_Json_Linq_JArray, syntax, diagnostics)
 
             Dim elementsBuilder = ArrayBuilder(Of BoundNode).GetInstance()
 
@@ -64,7 +46,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
         Private Function BindJsonNameValuePairExpression(syntax As JsonNameValuePairExpressionSyntax, diagnostics As DiagnosticBag) As BoundExpression
 
-            Dim jsonPairType = TryLookupTypeBySimpleName("JPair", 0, diagnostics)
+            diagnostics = CheckJsonFeaturesAllowed(syntax, diagnostics)
+
+            Dim jsonPairType = GetWellKnownType(WellKnownType.Newtonsoft_Json_Linq_JProperty, syntax, diagnostics)
 
             Dim boundName = BindValue(syntax.NameExpression, diagnostics)
 
@@ -97,6 +81,24 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             'Return New BoundJsonConstant(syntax, boundValue, Me, boundValue.Type)
 
+        End Function
+
+        ''' <summary>
+        ''' Check if JSON features are allowed. If not, report an error and return a
+        ''' separate DiagnosticBag that can be used for binding sub-expressions.
+        ''' </summary>
+        Private Function CheckJsonFeaturesAllowed(syntax As VisualBasicSyntaxNode, diagnostics As DiagnosticBag) As DiagnosticBag
+            ' Check if XObject is available, which matches the native compiler.
+            Dim type = Compilation.GetWellKnownType(WellKnownType.Newtonsoft_Json_Linq_JObject)
+            If type.IsErrorType() Then
+                ' "JSON literals are not available. Add a references to Newtonsoft.Json.dll."
+                ReportDiagnostic(diagnostics, syntax, ERRID.ERR_JsonFeaturesNotAvailable)
+                ' DiagnosticBag does not need to be created from the pool
+                ' since this is an error recovery scenario only.
+                Return New DiagnosticBag()
+            Else
+                Return diagnostics
+            End If
         End Function
 
     End Class

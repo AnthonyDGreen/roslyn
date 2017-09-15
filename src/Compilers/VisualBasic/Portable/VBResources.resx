@@ -5512,5 +5512,8 @@
   <data name="FEATURE_LeadingDigitSeparator" xml:space="preserve">
     <value>leading digit separator</value>
   </data>
+  <data name="ERR_JsonFeaturesNotAvailable" xml:space="preserve">
+    <value>JSON literals are not available. Add a references to Newtonsoft.Json or other assemblies declaring Newtonsoft.Json.Linq.JObject, Newtonsoft.Json.Linq.JProperty, and Newtonsoft.Json.Linq.JArray types.</value>
+  </data>
 </root>
 

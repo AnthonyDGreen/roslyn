@@ -2449,7 +2449,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
 AfterOpenBrace:
 
-            Dim initializers As SeparatedSyntaxList(Of ExpressionSyntax) = Nothing
+            Dim initializers As CoreInternalSyntax.SeparatedSyntaxList(Of ExpressionSyntax) = Nothing
 
             If CurrentToken.Kind <> SyntaxKind.CloseBraceToken Then
 

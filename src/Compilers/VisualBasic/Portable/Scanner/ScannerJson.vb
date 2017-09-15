@@ -5,6 +5,7 @@
 '-----------------------------------------------------------------------------
 
 Imports Microsoft.CodeAnalysis.VisualBasic.SyntaxFacts
+Imports CoreInternalSyntax = Microsoft.CodeAnalysis.Syntax.InternalSyntax
 
 Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
     Partial Friend Class Scanner
@@ -51,7 +52,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
             Dim text = GetText(length)
 
-            Dim trailingTrivia As SyntaxList(Of VisualBasicSyntaxNode) = ScanSingleLineTrivia()
+            Dim trailingTrivia As CoreInternalSyntax.SyntaxList(Of VisualBasicSyntaxNode) = ScanSingleLineTrivia()
 
             Return MakePunctuationToken(kind, text, leadingTrivia, trailingTrivia.Node)
         End Function

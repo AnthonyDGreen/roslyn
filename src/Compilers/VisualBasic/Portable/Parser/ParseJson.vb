@@ -2,6 +2,7 @@
 
 Imports System.Runtime.CompilerServices
 Imports System.Runtime.InteropServices
+Imports CoreInternalSyntax = Microsoft.CodeAnalysis.Syntax.InternalSyntax
 Imports InternalSyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.SyntaxFactory
 
 '
@@ -14,7 +15,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
         Private Function ParseJsonObject(
                              Optional openBrace As PunctuationSyntax = Nothing,
-                             Optional expressions As SeparatedSyntaxListBuilder(Of ExpressionSyntax) = Nothing,
+                             Optional expressions As CoreInternalSyntax.SeparatedSyntaxListBuilder(Of ExpressionSyntax) = Nothing,
                              Optional expression As ExpressionSyntax = Nothing
                          ) As JsonObjectExpressionSyntax
 
@@ -32,7 +33,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
 AfterOpenBrace:
 
-            Dim members As SeparatedSyntaxList(Of ExpressionSyntax) = Nothing
+            Dim members As CoreInternalSyntax.SeparatedSyntaxList(Of ExpressionSyntax) = Nothing
 
             If CurrentToken.Kind <> SyntaxKind.CloseBraceToken Then
 
@@ -130,7 +131,7 @@ AfterFirstExpression:
                 Return SyntaxFactory.JsonArrayExpression(openBracket, Nothing, InternalSyntaxFactory.MissingPunctuation(SyntaxKind.CloseBracketToken))
             End If
 
-            Dim elements As SeparatedSyntaxList(Of ExpressionSyntax) = Nothing
+            Dim elements As CoreInternalSyntax.SeparatedSyntaxList(Of ExpressionSyntax) = Nothing
 
             If CurrentToken.Kind <> SyntaxKind.CloseBracketToken Then
 
