@@ -1740,6 +1740,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ERR_NamedArgumentSpecificationBeforeFixedArgumentInLateboundInvocation = 37304
 
         ERR_JsonFeaturesNotAvailable
+        ERR_InvalidEscapeSequenceInJsonString
+        ERR_HexDigitExpected
 
         '// WARNINGS BEGIN HERE
         WRN_UseOfObsoleteSymbol2 = 40000

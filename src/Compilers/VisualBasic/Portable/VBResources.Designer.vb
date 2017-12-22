@@ -5072,6 +5072,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to Hexadecimal digit (1-9, A-F) expected..
+        '''</summary>
+        Friend ReadOnly Property ERR_HexDigitExpected() As String
+            Get
+                Return ResourceManager.GetString("ERR_HexDigitExpected", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to cannot specify both /win32icon and /win32resource.
         '''</summary>
         Friend ReadOnly Property ERR_IconFileAndWin32ResFile() As String
@@ -6068,6 +6077,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         Friend ReadOnly Property ERR_InvalidEnumBase() As String
             Get
                 Return ResourceManager.GetString("ERR_InvalidEnumBase", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Invalid JSON string escape sequence; &quot; &apos;\&apos;, &apos;/&apos;, &apos;b&apos;, &apos;f&apos;, &apos;n&apos;, &apos;r&apos;, &apos;t&apos;, or &apos;u&apos; expected..
+        '''</summary>
+        Friend ReadOnly Property ERR_InvalidEscapeSequenceInJsonString() As String
+            Get
+                Return ResourceManager.GetString("ERR_InvalidEscapeSequenceInJsonString", resourceCulture)
             End Get
         End Property
         

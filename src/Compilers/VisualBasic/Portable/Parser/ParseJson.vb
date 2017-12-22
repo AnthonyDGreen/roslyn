@@ -166,6 +166,8 @@ AfterFirstExpression:
                 TryEatNewLine(ScannerState.Json)
             End If
 
+            ResetCurrentToken(ScannerState.Json)
+
             If CurrentToken.Kind = SyntaxKind.CloseBracketToken Then
                 closeBracket = DirectCast(CurrentToken, PunctuationSyntax)
                 GetNextToken(ScannerState.Json)

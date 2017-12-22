@@ -73,7 +73,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     boundValue = New BoundLiteral(syntax, ConstantValue.Null, type:=Nothing)
 
                 Case Else
-                    Throw ExceptionUtilities.Unreachable
+                    boundValue = New BoundLiteral(syntax, ConstantValue.Create(syntax.ValueToken.ValueText), Compilation.GetSpecialType(SpecialType.System_String))
 
             End Select
 
