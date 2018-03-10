@@ -8,8 +8,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
     Friend Module SynthesizedPropertyAccessorHelper
 
         Friend Function GetBoundMethodBody(accessor As MethodSymbol,
-                                                            backingField As FieldSymbol,
-                                                            Optional ByRef methodBodyBinder As Binder = Nothing) As BoundBlock
+                                           backingField As FieldSymbol,
+                                           Optional ByRef methodBodyBinder As Binder = Nothing) As BoundBlock
+
+            Dim result As BoundBlock = GetBoundMethodBodyWithPropertyHandlers(accessor, backingField, methodBodyBinder)
+            If result IsNot Nothing Then Return result
+
             methodBodyBinder = Nothing
 
             ' NOTE: Current implementation of this method does generate the code for both getter and setter,
@@ -356,6 +360,106 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             statements.Add((New BoundReturnStatement(syntax, returnLocal, Nothing, Nothing)).MakeCompilerGenerated())
 
             Return (New BoundBlock(syntax, Nothing, locals, statements.ToImmutableAndFree())).MakeCompilerGenerated()
+        End Function
+
+        Private Function GetBoundMethodBodyWithPropertyHandlers(
+                             accessor As MethodSymbol,
+                             backingField As FieldSymbol,
+                             binder As Binder
+                         ) As BoundBlock
+            Debug.Assert(binder IsNot Nothing)
+
+            Dim [property] = DirectCast(accessor.AssociatedSymbol, SourcePropertySymbol)
+
+            Dim attributes = [property].GetAttributes()
+            If attributes.Length = 0 Then Return Nothing
+
+            Dim handlerAttributes = ArrayBuilder(Of NamedTypeSymbol).GetInstance()
+            For Each attribute In [property].GetAttributes()
+                ' TODO: This should be an assignability check with a well-known type.
+                If Not CaseInsensitiveComparison.Equals(attribute.AttributeClass.BaseTypeNoUseSiteDiagnostics.Name, "PropertyHandlerAttribute") Then Continue For
+
+                handlerAttributes.Add(attribute.AttributeClass)
+            Next
+            If handlerAttributes.Count = 0 Then Return Nothing
+
+            Dim syntax = VisualBasicSyntaxTree.Dummy.GetRoot()
+
+            Dim factory = New SyntheticBoundNodeFactory(accessor, accessor, syntax, Nothing, Nothing)
+
+
+            ' Given a property of the form:
+            ' <Handler1(...), Handler2(...), ...> Property P As T
+            ' Getter should look like this:
+            ' Get
+            '     If Handler1Method(NameOf(P), _P) Then Return _P
+            '     If Handler2Method(NameOf(P), _P) Then Return _P
+            '     Return _P
+            ' End Get
+
+            ' Setter should look like this:
+            ' Set
+            '     If Handler1Method(NameOf(P), _P, value) Then Return
+            '     If Handler2Method(NameOf(P), _P, value) Then Return
+            '     _P = value
+            ' End Set
+
+
+            Dim statements = ArrayBuilder(Of BoundStatement).GetInstance(2 + handlerAttributes.Count)
+
+            Dim local = factory.SynthesizedLocal(accessor.ReturnType, SynthesizedLocalKind.LoweringTemp)
+
+
+            Dim meSymbol As ParameterSymbol = Nothing
+            Dim meReference As BoundExpression = Nothing
+
+            If Not accessor.IsShared Then
+                meSymbol = accessor.MeParameter
+                meReference = New BoundMeReference(syntax, meSymbol.Type)
+            End If
+
+            Dim fieldAccess As BoundFieldAccess = Nothing
+            fieldAccess = New BoundFieldAccess(syntax, meReference, backingField, True, backingField.Type)
+
+
+
+            Dim lookup = LookupResult.GetInstance()
+            Dim useSiteDiagnostics As HashSet(Of DiagnosticInfo) = Nothing
+
+            binder.LookupMember(lookup, accessor.ContainingType, "OnPropertySet", 0, LookupOptions.MethodsOnly Or LookupOptions.AllMethodsOfAnyArity, useSiteDiagnostics)
+
+            Dim diagnostics = DiagnosticBag.GetInstance()
+            diagnostics.Add(accessor.Syntax, useSiteDiagnostics)
+
+
+            Dim methodGroup = New BoundMethodGroup(accessor.Syntax, Nothing, lookup.Symbols.ToDowncastedImmutable(Of MethodSymbol), lookup.Kind, meReference, QualificationKind.QualifiedViaValue).MakeCompilerGenerated()
+            lookup.Free()
+
+            Dim arguments = ArrayBuilder(Of BoundExpression).GetInstance(3)
+            arguments(0) = factory.StringLiteral(ConstantValue.Create(accessor.AssociatedSymbol.Name)).MakeCompilerGenerated()
+            arguments(1) = factory.Field(meReference, backingField, isLValue:=True)
+            arguments(2) = factory.Parameter(accessor.Parameters.Last)
+
+            Dim onPropertySetCall As BoundExpression = binder.MakeRValue(binder.BindInvocationExpression(syntax,
+                                                                         syntax,
+                                                                         Nothing,
+                                                                         methodGroup,
+                                                                         arguments.ToImmutableAndFree(),
+                                                                         Nothing,
+                                                                         Diagnostics,
+                                                                         callerInfoOpt:=Nothing), Diagnostics).MakeCompilerGenerated()
+
+            statements.Add(factory.ExpressionStatement(onPropertySetCall).MakeCompilerGenerated())
+
+            Return factory.Block(statements.ToImmutableAndFree()).MakeCompilerGenerated()
+
+            ' Sub OnPropertyGet(propertyName, ByRef currentValue)
+            ' Sub OnPropertySet(propertyName, ByRef currentValue, ByRef newValue)
+
+            ' Sub OnEventAdd(eventName, ByRef handlerList, handler)
+            ' Sub OnEventRemove(eventName, ByRef handlerList, handler)
+            ' Sub OnEventRaise(eventName, ByRef handlerList, [arguments])
+
         End Function
 
     End Module
