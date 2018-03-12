@@ -1189,7 +1189,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             ' In order to avoid generating code for methods with errors, we create a diagnostic bag just for this method.
             Dim diagsForCurrentMethod As DiagnosticBag = DiagnosticBag.GetInstance()
 
-            Dim methodBinderOpt As Binder = Nothing
+            Dim methodBinderOpt As Binder = containingTypeBinder
             Dim injectConstructorCall As Boolean
             Dim block = BindAndAnalyzeMethodBody(method, compilationState, diagsForCurrentMethod, containingTypeBinder, referencedConstructor, injectConstructorCall, methodBinderOpt)
 
@@ -1687,7 +1687,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             referencedConstructor = Nothing
             injectDefaultConstructorCall = False
-            methodBodyBinder = Nothing
+            'methodBodyBinder = Nothing
 
             Dim body = method.GetBoundMethodBody(compilationState, diagnostics, methodBodyBinder)
             Debug.Assert(body IsNot Nothing)

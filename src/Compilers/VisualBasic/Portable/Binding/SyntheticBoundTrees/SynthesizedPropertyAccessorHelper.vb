@@ -9,9 +9,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
 
         Friend Function GetBoundMethodBody(accessor As MethodSymbol,
                                            backingField As FieldSymbol,
-                                           Optional ByRef methodBodyBinder As Binder = Nothing) As BoundBlock
+                                           ByRef methodBodyBinder As Binder,
+                                           compilationState As TypeCompilationState,
+                                           diagnostics As DiagnosticBag) As BoundBlock
 
-            Dim result As BoundBlock = GetBoundMethodBodyWithPropertyHandlers(accessor, backingField, methodBodyBinder)
+            Dim result As BoundBlock = GetBoundMethodBodyWithPropertyHandlers(accessor, backingField, methodBodyBinder, compilationState, diagnostics)
             If result IsNot Nothing Then Return result
 
             methodBodyBinder = Nothing
@@ -365,29 +367,36 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
         Private Function GetBoundMethodBodyWithPropertyHandlers(
                              accessor As MethodSymbol,
                              backingField As FieldSymbol,
-                             binder As Binder
+                             binder As Binder,
+                             compilationState As TypeCompilationState,
+                             diagnostics As DiagnosticBag
                          ) As BoundBlock
+            ' TODO: Handler Getters.
+            If accessor.MethodKind <> MethodKind.PropertySet Then Return Nothing
+
             Debug.Assert(binder IsNot Nothing)
 
-            Dim [property] = DirectCast(accessor.AssociatedSymbol, SourcePropertySymbol)
+            Dim propertySymbol = DirectCast(accessor.AssociatedSymbol, SourcePropertySymbol)
 
-            Dim attributes = [property].GetAttributes()
+            Dim attributes = propertySymbol.GetAttributes()
             If attributes.Length = 0 Then Return Nothing
 
-            Dim handlerAttributes = ArrayBuilder(Of NamedTypeSymbol).GetInstance()
-            For Each attribute In [property].GetAttributes()
+            Dim handlerAttributes = ArrayBuilder(Of VisualBasicAttributeData).GetInstance()
+            For Each attribute In propertySymbol.GetAttributes()
+                If attribute.AttributeClass.IsErrorType() Then Continue For
+
                 ' TODO: This should be an assignability check with a well-known type.
                 If Not CaseInsensitiveComparison.Equals(attribute.AttributeClass.BaseTypeNoUseSiteDiagnostics.Name, "PropertyHandlerAttribute") Then Continue For
 
-                handlerAttributes.Add(attribute.AttributeClass)
+                handlerAttributes.Add(attribute)
             Next
             If handlerAttributes.Count = 0 Then Return Nothing
 
             Dim syntax = VisualBasicSyntaxTree.Dummy.GetRoot()
 
-            Dim factory = New SyntheticBoundNodeFactory(accessor, accessor, syntax, Nothing, Nothing)
+            Dim factory = New SyntheticBoundNodeFactory(accessor, accessor, syntax, compilationState, diagnostics)
 
-
+            ' TODO: Getters
             ' Given a property of the form:
             ' <Handler1(...), Handler2(...), ...> Property P As T
             ' Getter should look like this:
@@ -404,61 +413,128 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             '     _P = value
             ' End Set
 
+            Dim local As LocalSymbol = factory.SynthesizedLocal(accessor.ReturnType, SynthesizedLocalKind.LoweringTemp)
+
+            Dim fieldAccessReceiver As BoundExpression
+            If accessor.IsShared Then
+                fieldAccessReceiver = factory.Type(accessor.ContainingType)
+            Else
+                fieldAccessReceiver = factory.Me()
+            End If
+
+            Dim propertyName As BoundLiteral = factory.StringLiteral(ConstantValue.Create(propertySymbol.Name))
+            Dim fieldAccess As BoundFieldAccess = factory.Field(fieldAccessReceiver, backingField, isLValue:=True)
+            Dim valueParameter As BoundParameter = factory.Parameter(accessor.Parameters.Last)
 
             Dim statements = ArrayBuilder(Of BoundStatement).GetInstance(2 + handlerAttributes.Count)
 
-            Dim local = factory.SynthesizedLocal(accessor.ReturnType, SynthesizedLocalKind.LoweringTemp)
+            For Each attribute In handlerAttributes
+                Dim handlerName = attribute.AttributeClass.Name
+                If handlerName.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase) Then
+                    handlerName = handlerName.Substring(0, handlerName.Length - 9)
+                End If
 
+                Dim lookup = LookupResult.GetInstance()
+                Dim useSiteDiagnostics As HashSet(Of DiagnosticInfo) = Nothing
+                Dim options = LookupOptions.MethodsOnly Or
+                              LookupOptions.AllMethodsOfAnyArity
+                Dim qualificationKind As QualificationKind
 
-            Dim meSymbol As ParameterSymbol = Nothing
-            Dim meReference As BoundExpression = Nothing
+                If accessor.IsShared Then
+                    options = options Or LookupOptions.MustNotBeInstance
+                    qualificationKind = QualificationKind.QualifiedViaTypeName
+                Else
+                    options = options Or LookupOptions.MustBeInstance Or LookupOptions.IgnoreExtensionMethods
+                    qualificationKind = QualificationKind.QualifiedViaValue
+                End If
 
-            If Not accessor.IsShared Then
-                meSymbol = accessor.MeParameter
-                meReference = New BoundMeReference(syntax, meSymbol.Type)
-            End If
+                ' First look for a method in the containing class named "On{handlerName}PropertySet".
+                binder.LookupMember(lookup, accessor.ContainingType, "On" & handlerName & "PropertySet", 0, options, useSiteDiagnostics)
+                diagnostics.Add(syntax, useSiteDiagnostics)
 
-            Dim fieldAccess As BoundFieldAccess = Nothing
-            fieldAccess = New BoundFieldAccess(syntax, meReference, backingField, True, backingField.Type)
+                Dim handlerIsInAttribute = False
 
+                Dim methodGroup As BoundMethodGroup
+                If lookup.HasSymbol Then
+                    methodGroup = New BoundMethodGroup(syntax, Nothing, lookup.Symbols.ToDowncastedImmutable(Of MethodSymbol), lookup.Kind, fieldAccessReceiver, qualificationKind).MakeCompilerGenerated()
+                Else
+                    options = LookupOptions.MethodsOnly Or
+                              LookupOptions.AllMethodsOfAnyArity Or
+                              LookupOptions.MustNotBeInstance
+                    binder.LookupMember(lookup, attribute.AttributeClass, "On" & handlerName & "PropertySet", 0, options, useSiteDiagnostics)
+                    diagnostics.Add(syntax, useSiteDiagnostics)
 
+                    If lookup.HasSymbol Then
+                        methodGroup = New BoundMethodGroup(syntax, Nothing, lookup.Symbols.ToDowncastedImmutable(Of MethodSymbol), lookup.Kind, factory.Type(attribute.AttributeClass), QualificationKind.QualifiedViaTypeName).MakeCompilerGenerated()
+                        handlerIsInAttribute = True
+                    Else
+                        ' TODO: Report diagnostic: No handler method with expected name found.
+                        Continue For
+                    End If
+                End If
 
-            Dim lookup = LookupResult.GetInstance()
-            Dim useSiteDiagnostics As HashSet(Of DiagnosticInfo) = Nothing
+                Dim arguments = ArrayBuilder(Of BoundExpression).GetInstance(5)
+                arguments.Add(propertyName)
+                arguments.Add(fieldAccess)
+                arguments.Add(valueParameter)
 
-            binder.LookupMember(lookup, accessor.ContainingType, "OnPropertySet", 0, LookupOptions.MethodsOnly Or LookupOptions.AllMethodsOfAnyArity, useSiteDiagnostics)
+                If handlerIsInAttribute Then
+                    Dim sender As BoundExpression
+                    If accessor.IsShared Then
+                        sender = factory.Null()
+                    Else
+                        sender = fieldAccessReceiver
+                    End If
+                    arguments.Insert(0, sender)
+                End If
 
-            Dim diagnostics = DiagnosticBag.GetInstance()
-            diagnostics.Add(accessor.Syntax, useSiteDiagnostics)
+                For Each argument As TypedConstant In attribute.ConstructorArguments
+                    If argument.Kind = TypedConstantKind.Primitive Then
+                        If TypeOf argument.Value Is String Then
+                            arguments.Add(factory.Literal(DirectCast(argument.Value, String)))
 
+                        ElseIf TypeOf argument.Value Is Integer Then
+                            arguments.Add(factory.Literal(DirectCast(argument.Value, Integer)))
 
-            Dim methodGroup = New BoundMethodGroup(accessor.Syntax, Nothing, lookup.Symbols.ToDowncastedImmutable(Of MethodSymbol), lookup.Kind, meReference, QualificationKind.QualifiedViaValue).MakeCompilerGenerated()
-            lookup.Free()
+                        ElseIf TypeOf argument.Value Is Boolean Then
+                            arguments.Add(factory.Literal(DirectCast(argument.Value, Boolean)))
 
-            Dim arguments = ArrayBuilder(Of BoundExpression).GetInstance(3)
-            arguments(0) = factory.StringLiteral(ConstantValue.Create(accessor.AssociatedSymbol.Name)).MakeCompilerGenerated()
-            arguments(1) = factory.Field(meReference, backingField, isLValue:=True)
-            arguments(2) = factory.Parameter(accessor.Parameters.Last)
+                        Else
+                            ' TODO: Handle other types.
+                            Continue For
+                        End If
+                    End If
+                Next
 
-            Dim onPropertySetCall As BoundExpression = binder.MakeRValue(binder.BindInvocationExpression(syntax,
-                                                                         syntax,
-                                                                         Nothing,
-                                                                         methodGroup,
-                                                                         arguments.ToImmutableAndFree(),
-                                                                         Nothing,
-                                                                         Diagnostics,
-                                                                         callerInfoOpt:=Nothing), Diagnostics).MakeCompilerGenerated()
+                Dim handlerCall As BoundExpression =
+                        binder.BindInvocationExpression(syntax,
+                                                        syntax,
+                                                        VisualBasic.Syntax.TypeCharacter.None,
+                                                        methodGroup,
+                                                        arguments.ToImmutableAndFree(),
+                                                        argumentNames:=Nothing,
+                                                        diagnostics:=diagnostics,
+                                                        callerInfoOpt:=Nothing) _
+                              .MakeRValue()
 
-            statements.Add(factory.ExpressionStatement(onPropertySetCall).MakeCompilerGenerated())
+                If handlerCall.Type.IsVoidType Then
+                    statements.Add(factory.ExpressionStatement(handlerCall))
+                Else
+                    statements.Add(factory.If(handlerCall, factory.Return()))
+                End If
 
-            Return factory.Block(statements.ToImmutableAndFree()).MakeCompilerGenerated()
+                ' Sub OnPropertyGet(propertyName, ByRef currentValue)
+                ' Sub OnPropertySet(propertyName, ByRef currentValue, ByRef newValue)
 
-            ' Sub OnPropertyGet(propertyName, ByRef currentValue)
-            ' Sub OnPropertySet(propertyName, ByRef currentValue, ByRef newValue)
+                ' Sub OnEventAdd(eventName, ByRef handlerList, handler)
+                ' Sub OnEventRemove(eventName, ByRef handlerList, handler)
+                ' Sub OnEventRaise(eventName, ByRef handlerList, [arguments])
+            Next
 
-            ' Sub OnEventAdd(eventName, ByRef handlerList, handler)
-            ' Sub OnEventRemove(eventName, ByRef handlerList, handler)
-            ' Sub OnEventRaise(eventName, ByRef handlerList, [arguments])
+            statements.Add(factory.Assignment(fieldAccess, valueParameter.MakeRValue()))
+            statements.Add(factory.Return())
+
+            Return factory.Block(statements.ToImmutableAndFree())
 
         End Function
 
