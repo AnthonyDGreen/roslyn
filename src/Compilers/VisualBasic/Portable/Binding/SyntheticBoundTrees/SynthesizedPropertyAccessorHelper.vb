@@ -449,7 +449,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 End If
 
                 ' First look for a method in the containing class named "On{handlerName}PropertySet".
-                binder.LookupMember(lookup, accessor.ContainingType, "On" & handlerName & "PropertySet", 0, options, useSiteDiagnostics)
+                binder.LookupMember(lookup, accessor.ContainingType, handlerName & "OnPropertySet", 0, options, useSiteDiagnostics)
                 diagnostics.Add(syntax, useSiteDiagnostics)
 
                 Dim handlerIsInAttribute = False
@@ -461,7 +461,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                     options = LookupOptions.MethodsOnly Or
                               LookupOptions.AllMethodsOfAnyArity Or
                               LookupOptions.MustNotBeInstance
-                    binder.LookupMember(lookup, attribute.AttributeClass, "On" & handlerName & "PropertySet", 0, options, useSiteDiagnostics)
+                    binder.LookupMember(lookup, attribute.AttributeClass, "OnPropertySet", 0, options, useSiteDiagnostics)
                     diagnostics.Add(syntax, useSiteDiagnostics)
 
                     If lookup.HasSymbol Then
@@ -535,9 +535,6 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             statements.Add(factory.Return())
 
             Return factory.Block(statements.ToImmutableAndFree())
-
         End Function
-
     End Module
-
 End Namespace
