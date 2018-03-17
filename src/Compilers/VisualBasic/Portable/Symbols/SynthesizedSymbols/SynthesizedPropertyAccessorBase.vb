@@ -12,7 +12,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
         Friend MustOverride ReadOnly Property BackingFieldSymbol As FieldSymbol
 
         Friend Overloads Overrides Function GetBoundMethodBody(compilationState As TypeCompilationState, diagnostics As DiagnosticBag, Optional ByRef methodBodyBinder As Binder = Nothing) As BoundBlock
-            Return SynthesizedPropertyAccessorHelper.GetBoundMethodBody(Me, Me.BackingFieldSymbol, methodBodyBinder)
+            Return SynthesizedPropertyAccessorHelper.GetBoundMethodBody(Me, Me.BackingFieldSymbol, methodBodyBinder, compilationState, diagnostics)
         End Function
 
     End Class
