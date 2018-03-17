@@ -39,7 +39,7 @@ Class ListingInfo
     Property Silent As Boolean
 
     #Disable Warning BC42353 ' Intentionally letting the function return 'False' by default.
-    Protected Function OnNotifyPropertySet(propertyName As String, ByRef backingField As String, value As String) As Boolean
+    Protected Function NotifyOnPropertySet(propertyName As String, ByRef backingField As String, value As String) As Boolean
         If value = backingField Then Return True
 
         RaiseEvent PropertyChanged(propertyName)
@@ -67,7 +67,65 @@ End Module
 
         End Sub
 
+        <Fact>
+        Public Sub WrapperHandler()
 
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <file name="a.vb">
+Imports System
+Imports System.Collections.Generic
+Imports System.Diagnostics
+Imports System.Console
 
+MustInherit Class PropertyHandlerAttribute
+    Inherits Attribute
+End Class
+
+Class WrapperAttribute
+    Inherits PropertyHandlerAttribute
+End Class
+
+Class ListingInfo
+    Public ReadOnly ViewState As IDictionary(Of String, Object) = New Dynamic.ExpandoObject()
+
+    Protected Sub WrapperOnPropertyGet(Of T)(propertyName As String, ByRef backingField As T, ByRef value As T)
+        value = ViewState(propertyName)
+    End Sub
+
+    Protected Function WrapperOnPropertySet(Of T)(propertyName As String, ByRef backingField As T, ByRef value As T) As Boolean
+        ViewState(propertyName) = value
+
+        ' Never store values in the backing field.
+        Return True
+    End Function
+
+    &lt;Wrapper&gt;
+    Property Rating As Integer = 3
+
+    &lt;Wrapper&gt;
+    Property Category As String = "General"
+
+    &lt;Wrapper&gt;
+    Property Subcategory As String = "&lt;None&gt;"
+
+    Function BackingFieldsToString() As String
+        Return _Rating &amp; _Category &amp; _Subcategory
+    End Function
+
+End Class
+
+Module Program
+    Sub Main()
+        Dim listing = New ListingInfo
+        Write(listing.BackingFieldsToString())
+        Write(listing.Rating &amp; listing.Category &amp; listing.Subcategory)
+        Write(listing.ViewState!Rating &amp; listing.ViewState!Category &amp; listing.ViewState!Subcategory)
+    End Sub
+End Module
+    </file>
+</compilation>, expectedOutput:="03General<None>3General<None>")
+
+        End Sub
     End Class
 End Namespace

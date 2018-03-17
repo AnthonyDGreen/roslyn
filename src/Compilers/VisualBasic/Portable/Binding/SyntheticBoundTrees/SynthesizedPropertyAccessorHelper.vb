@@ -372,7 +372,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                              diagnostics As DiagnosticBag
                          ) As BoundBlock
             ' TODO: Handler Getters.
-            If accessor.MethodKind <> MethodKind.PropertySet Then Return Nothing
+            If accessor.MethodKind <> MethodKind.PropertyGet AndAlso accessor.MethodKind <> MethodKind.PropertySet Then Return Nothing
+
+            Dim isGet = (accessor.MethodKind = MethodKind.PropertyGet)
 
             Debug.Assert(binder IsNot Nothing)
 
@@ -401,9 +403,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             ' <Handler1(...), Handler2(...), ...> Property P As T
             ' Getter should look like this:
             ' Get
-            '     If Handler1Method(NameOf(P), _P) Then Return _P
-            '     If Handler2Method(NameOf(P), _P) Then Return _P
-            '     Return _P
+            '     Dim value = _P
+            '     If Handler1Method(NameOf(P), _P, value) Then Return value
+            '     If Handler2Method(NameOf(P), _P, value) Then Return value
+            '     Return value
             ' End Get
 
             ' Setter should look like this:
@@ -412,8 +415,6 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             '     If Handler2Method(NameOf(P), _P, value) Then Return
             '     _P = value
             ' End Set
-
-            Dim local As LocalSymbol = factory.SynthesizedLocal(accessor.ReturnType, SynthesizedLocalKind.LoweringTemp)
 
             Dim fieldAccessReceiver As BoundExpression
             If accessor.IsShared Then
@@ -424,9 +425,25 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
 
             Dim propertyName As BoundLiteral = factory.StringLiteral(ConstantValue.Create(propertySymbol.Name))
             Dim fieldAccess As BoundFieldAccess = factory.Field(fieldAccessReceiver, backingField, isLValue:=True)
-            Dim valueParameter As BoundParameter = factory.Parameter(accessor.Parameters.Last)
+            Dim valueExpression As BoundExpression
 
             Dim statements = ArrayBuilder(Of BoundStatement).GetInstance(2 + handlerAttributes.Count)
+
+            Dim handlerSuffix As String
+            Dim returnLocal As LocalSymbol
+            Dim valueLocal As LocalSymbol
+            If isGet Then
+                returnLocal = factory.SynthesizedLocal(accessor.ReturnType)
+                valueLocal = factory.SynthesizedLocal(accessor.ReturnType)
+                valueExpression = factory.Local(valueLocal, isLValue:=True)
+                statements.Add(factory.Assignment(valueExpression, fieldAccess.MakeRValue()))
+                handlerSuffix = "OnPropertyGet"
+            Else
+                returnLocal = Nothing
+                valueLocal = Nothing
+                valueExpression = factory.Parameter(accessor.Parameters.Last)
+                handlerSuffix = "OnPropertySet"
+            End If
 
             For Each attribute In handlerAttributes
                 Dim handlerName = attribute.AttributeClass.Name
@@ -449,7 +466,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 End If
 
                 ' First look for a method in the containing class named "On{handlerName}PropertySet".
-                binder.LookupMember(lookup, accessor.ContainingType, handlerName & "OnPropertySet", 0, options, useSiteDiagnostics)
+                binder.LookupMember(lookup, accessor.ContainingType, handlerName & handlerSuffix, 0, options, useSiteDiagnostics)
                 diagnostics.Add(syntax, useSiteDiagnostics)
 
                 Dim handlerIsInAttribute = False
@@ -461,7 +478,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                     options = LookupOptions.MethodsOnly Or
                               LookupOptions.AllMethodsOfAnyArity Or
                               LookupOptions.MustNotBeInstance
-                    binder.LookupMember(lookup, attribute.AttributeClass, "OnPropertySet", 0, options, useSiteDiagnostics)
+                    binder.LookupMember(lookup, attribute.AttributeClass, handlerSuffix, 0, options, useSiteDiagnostics)
                     diagnostics.Add(syntax, useSiteDiagnostics)
 
                     If lookup.HasSymbol Then
@@ -469,6 +486,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                         handlerIsInAttribute = True
                     Else
                         ' TODO: Report diagnostic: No handler method with expected name found.
+                        ' NOTE: A set handler OR a get handler is required but not both.
                         Continue For
                     End If
                 End If
@@ -476,7 +494,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 Dim arguments = ArrayBuilder(Of BoundExpression).GetInstance(5)
                 arguments.Add(propertyName)
                 arguments.Add(fieldAccess)
-                arguments.Add(valueParameter)
+                arguments.Add(valueExpression)
 
                 If handlerIsInAttribute Then
                     Dim sender As BoundExpression
@@ -519,6 +537,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
 
                 If handlerCall.Type.IsVoidType Then
                     statements.Add(factory.ExpressionStatement(handlerCall))
+                ElseIf isGet Then
+                    statements.Add(factory.If(handlerCall, factory.Return(valueExpression.MakeRValue())))
                 Else
                     statements.Add(factory.If(handlerCall, factory.Return()))
                 End If
@@ -531,10 +551,21 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 ' Sub OnEventRaise(eventName, ByRef handlerList, [arguments])
             Next
 
-            statements.Add(factory.Assignment(fieldAccess, valueParameter.MakeRValue()))
-            statements.Add(factory.Return())
+            Dim locals As ImmutableArray(Of LocalSymbol)
+            If isGet Then
+                locals = ImmutableArray.Create(returnLocal, valueLocal)
+                Dim exitLabel As LabelSymbol = factory.GenerateLabel("exit")
+                statements.Add(New BoundReturnStatement(syntax, valueExpression.MakeRValue(), returnLocal, exitLabel).MakeCompilerGenerated())
+                statements.Add(factory.Label(exitLabel))
+                statements.Add(factory.Return(factory.Local(returnLocal, isLValue:=False)))
+            Else
+                locals = ImmutableArray(Of LocalSymbol).Empty
+                statements.Add(factory.Assignment(fieldAccess, valueExpression.MakeRValue()))
+                statements.Add(factory.Return())
+            End If
 
-            Return factory.Block(statements.ToImmutableAndFree())
+
+            Return factory.Block(locals, statements.ToImmutableAndFree())
         End Function
     End Module
 End Namespace
