@@ -1092,5 +1092,124 @@ class $$Test<T, U>
                 Assert.False(state.IsAvailable);
             }
         }
+
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ExtractInterface)]
+        public async Task TestInWithMethod_Parameters()
+        {
+            var markup = @"
+using System;
+class $$TestClass
+{
+    public void Method(in int p1)
+    {
+    }
+}";
+
+            await TestExtractInterfaceCommandCSharpAsync(markup, expectedSuccess: true, expectedInterfaceCode:
+@"interface ITestClass
+{
+    void Method(in int p1);
+}");
+        }
+
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ExtractInterface)]
+        public async Task TestRefReadOnlyWithMethod_ReturnType()
+        {
+            var markup = @"
+using System;
+class $$TestClass
+{
+    public ref readonly int Method() => throw null;
+}";
+
+            await TestExtractInterfaceCommandCSharpAsync(markup, expectedSuccess: true, expectedInterfaceCode:
+@"interface ITestClass
+{
+    ref readonly int Method();
+}");
+        }
+
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ExtractInterface)]
+        public async Task TestRefReadOnlyWithProperty()
+        {
+            var markup = @"
+using System;
+class $$TestClass
+{
+    public ref readonly int Property => throw null;
+}";
+
+            await TestExtractInterfaceCommandCSharpAsync(markup, expectedSuccess: true, expectedInterfaceCode:
+@"interface ITestClass
+{
+    ref readonly int Property { get; }
+}");
+        }
+
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ExtractInterface)]
+        public async Task TestInWithIndexer_Parameters()
+        {
+            var markup = @"
+using System;
+class $$TestClass
+{
+    public int this[in int p1] { set { } }
+}";
+
+            await TestExtractInterfaceCommandCSharpAsync(markup, expectedSuccess: true, expectedInterfaceCode:
+@"interface ITestClass
+{
+    int this[in int p1] { set; }
+}");
+        }
+
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ExtractInterface)]
+        public async Task TestRefReadOnlyWithIndexer_ReturnType()
+        {
+            var markup = @"
+using System;
+class $$TestClass
+{
+    public ref readonly int this[int p1] => throw null;
+}";
+
+            await TestExtractInterfaceCommandCSharpAsync(markup, expectedSuccess: true, expectedInterfaceCode:
+@"interface ITestClass
+{
+    ref readonly int this[int p1] { get; }
+}");
+        }
+
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ExtractInterface)]
+        public async Task TestUnmanagedConstraint_Type()
+        {
+            var markup = @"
+class $$TestClass<T> where T : unmanaged
+{
+    public void M(T arg) => throw null;
+}";
+
+            await TestExtractInterfaceCommandCSharpAsync(markup, expectedSuccess: true, expectedInterfaceCode:
+@"interface ITestClass<T> where T : unmanaged
+{
+    void M(T arg);
+}");
+        }
+
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ExtractInterface)]
+        public async Task TestUnmanagedConstraint_Method()
+        {
+            var markup = @"
+class $$TestClass
+{
+    public void M<T>() where T : unmanaged => throw null;
+}";
+
+            await TestExtractInterfaceCommandCSharpAsync(markup, expectedSuccess: true, expectedInterfaceCode:
+@"interface ITestClass
+{
+    void M<T>() where T : unmanaged;
+}");
+        }
     }
 }

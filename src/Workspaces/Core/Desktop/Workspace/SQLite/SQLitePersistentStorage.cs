@@ -142,14 +142,12 @@ namespace Microsoft.CodeAnalysis.SQLite
         private readonly Stack<SqlConnection> _connectionsPool = new Stack<SqlConnection>();
 
         public SQLitePersistentStorage(
-            IOptionService optionService,
             string workingFolderPath,
             string solutionFilePath,
             string databaseFile,
-            Action<AbstractPersistentStorage> disposer,
             IDisposable dbOwnershipLock,
             IPersistentStorageFaultInjector faultInjectorOpt)
-            : base(optionService, workingFolderPath, solutionFilePath, databaseFile, disposer)
+            : base(workingFolderPath, solutionFilePath, databaseFile)
         {
             _dbOwnershipLock = dbOwnershipLock;
             _faultInjectorOpt = faultInjectorOpt;
@@ -190,7 +188,7 @@ namespace Microsoft.CodeAnalysis.SQLite
             }
         }
 
-        public override void Close()
+        public override void Dispose()
         {
             // Flush all pending writes so that all data our features wanted written
             // are definitely persisted to the DB.
@@ -233,15 +231,36 @@ namespace Microsoft.CodeAnalysis.SQLite
             }
         }
 
+        /// <summary>
+        /// Gets an <see cref="SqlConnection"/> from the connection pool, or creates one if none are available.
+        /// </summary>
+        /// <remarks>
+        /// Database connections have a large amount of overhead, and should be returned to the pool when they are no
+        /// longer in use. In particular, make sure to avoid letting a connection lease cross an <see langword="await"/>
+        /// boundary, as it will prevent code in the asynchronous operation from using the existing connection.
+        /// </remarks>
         private PooledConnection GetPooledConnection()
             => new PooledConnection(this, GetConnection());
 
-        public override void Initialize(Solution solution)
+        public void Initialize(Solution solution)
         {
             // Create a connection to the DB and ensure it has tables for the types we care about. 
             using (var pooledConnection = GetPooledConnection())
             {
                 var connection = pooledConnection.Connection;
+
+                // Enable write-ahead logging to increase write performance by reducing amount of disk writes,
+                // by combining writes at checkpoint, salong with using sequential-only writes to populate the log.
+                // Also, WAL allows for relaxed ("normal") "synchronous" mode, see below.
+                connection.ExecuteCommand("pragma journal_mode=wal", throwOnError: false);
+
+                // Set "synchronous" mode to "normal" instead of default "full" to reduce the amount of buffer flushing syscalls,
+                // significantly reducing both the blocked time and the amount of context switches.
+                // When coupled with WAL, this (according to https://sqlite.org/pragma.html#pragma_synchronous and 
+                // https://www.sqlite.org/wal.html#performance_considerations) is unlikely to significantly affect durability,
+                // while significantly increasing performance, because buffer flushing is done for each checkpoint, instead of each
+                // transaction. While some writes can be lost, they are never reordered, and higher layers will recover from that.
+                connection.ExecuteCommand("pragma synchronous=normal", throwOnError: false);
 
                 // First, create all our tables
                 connection.ExecuteCommand(

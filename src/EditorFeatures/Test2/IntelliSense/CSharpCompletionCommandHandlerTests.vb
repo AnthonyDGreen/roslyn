@@ -1,9 +1,11 @@
 ﻿' Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
 Imports System.Collections.Immutable
+Imports System.Globalization
 Imports System.Threading
 Imports System.Threading.Tasks
 Imports Microsoft.CodeAnalysis.Completion
+Imports Microsoft.CodeAnalysis.CSharp
 Imports Microsoft.CodeAnalysis.Editor.Commands
 Imports Microsoft.CodeAnalysis.Editor.CSharp.Formatting
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.Extensions
@@ -743,6 +745,208 @@ class C
         End Function
 
         <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        <WorkItem(24432, "https://github.com/dotnet/roslyn/issues/24432")>
+        Public Async Function TestArrayInitialization() As Task
+            Using state = TestState.CreateCSharpTestState(
+                  <Document><![CDATA[
+class Class
+{
+    public void M()
+    {
+        Class[] x = $$
+    }
+}]]></Document>)
+
+                state.SendTypeChars("new ")
+                Await state.AssertSelectedCompletionItem(displayText:="Class", isSoftSelected:=True)
+                state.SendTypeChars("C")
+                Await state.AssertSelectedCompletionItem(displayText:="Class", isHardSelected:=True)
+                state.SendTypeChars("[")
+                Assert.Contains("Class[] x = new Class[", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+                state.SendTypeChars("] {")
+                Assert.Contains("Class[] x = new Class[] {", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+            End Using
+        End Function
+
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        <WorkItem(24432, "https://github.com/dotnet/roslyn/issues/24432")>
+        Public Async Function TestImplicitArrayInitialization() As Task
+            Using state = TestState.CreateCSharpTestState(
+                  <Document><![CDATA[
+class Class
+{
+    public void M()
+    {
+        Class[] x = $$
+    }
+}]]></Document>)
+
+                state.SendTypeChars("n")
+                Await state.AssertSelectedCompletionItem(displayText:="nameof", isHardSelected:=True)
+                state.SendTypeChars("e")
+                Await state.AssertSelectedCompletionItem(displayText:="new", isHardSelected:=True)
+                state.SendTypeChars(" ")
+                Await state.AssertSelectedCompletionItem(displayText:="Class", isSoftSelected:=True)
+                state.SendTypeChars("[")
+                Assert.Contains("Class[] x = new [", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+                state.SendTypeChars("] {")
+                Assert.Contains("Class[] x = new [] {", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+            End Using
+        End Function
+
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        <WorkItem(24432, "https://github.com/dotnet/roslyn/issues/24432")>
+        Public Async Function TestImplicitArrayInitialization2() As Task
+            Using state = TestState.CreateCSharpTestState(
+                  <Document><![CDATA[
+class Class
+{
+    public void M()
+    {
+        Class[] x = $$
+    }
+}]]></Document>)
+
+                state.SendTypeChars("ne")
+                Await state.AssertSelectedCompletionItem(displayText:="new", isHardSelected:=True)
+                state.SendTypeChars("[")
+                Assert.Contains("Class[] x = new[", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+            End Using
+        End Function
+
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        <WorkItem(24432, "https://github.com/dotnet/roslyn/issues/24432")>
+        Public Async Function TestImplicitArrayInitialization3() As Task
+            Using state = TestState.CreateCSharpTestState(
+                  <Document><![CDATA[
+class Class
+{
+    public void M()
+    {
+        Class[] x = $$
+    }
+}]]></Document>)
+
+                state.SendTypeChars("ne")
+                Await state.AssertSelectedCompletionItem(displayText:="new", isHardSelected:=True)
+                state.SendTypeChars(" ")
+                Await state.AssertSelectedCompletionItem(displayText:="Class", isSoftSelected:=True)
+                Assert.Contains("Class[] x = new ", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+                state.SendTypeChars("[")
+                Assert.Contains("Class[] x = new [", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+            End Using
+        End Function
+
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        <WorkItem(24432, "https://github.com/dotnet/roslyn/issues/24432")>
+        Public Async Function TestImplicitArrayInitialization4() As Task
+            Using state = TestState.CreateCSharpTestState(
+                  <Document><![CDATA[
+class Class
+{
+    public void M()
+    {
+        Class[] x =$$
+    }
+}]]></Document>)
+
+                state.SendTypeChars(" ")
+                Await state.AssertNoCompletionSession()
+                state.SendTypeChars("{")
+                Assert.Contains("Class[] x = {", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+            End Using
+        End Function
+
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        <WorkItem(24432, "https://github.com/dotnet/roslyn/issues/24432")>
+        Public Async Function TestImplicitArrayInitialization_WithTab() As Task
+            Using state = TestState.CreateCSharpTestState(
+                  <Document><![CDATA[
+class Class
+{
+    public void M()
+    {
+        Class[] x = $$
+    }
+}]]></Document>)
+
+                state.SendTypeChars("ne")
+                Await state.AssertSelectedCompletionItem(displayText:="new", isHardSelected:=True)
+                state.SendTypeChars(" ")
+                Await state.AssertSelectedCompletionItem(displayText:="Class", isSoftSelected:=True)
+                Assert.Contains("Class[] x = new ", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+                state.SendTab()
+                Assert.Contains("Class[] x = new Class", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+            End Using
+        End Function
+
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        <WorkItem(24432, "https://github.com/dotnet/roslyn/issues/24432")>
+        Public Async Function TestTypelessImplicitArrayInitialization() As Task
+            Using state = TestState.CreateCSharpTestState(
+                  <Document><![CDATA[
+class Class
+{
+    public void M()
+    {
+        var x = $$
+    }
+}]]></Document>)
+
+                state.SendTypeChars("ne")
+                Await state.AssertSelectedCompletionItem(displayText:="new", isHardSelected:=True)
+                state.SendTypeChars(" ")
+                Await state.AssertNoCompletionSession()
+                state.SendTypeChars("[")
+                Assert.Contains("var x = new [", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+                state.SendTypeChars("] {")
+                Assert.Contains("var x = new [] {", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+            End Using
+        End Function
+
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        <WorkItem(24432, "https://github.com/dotnet/roslyn/issues/24432")>
+        Public Async Function TestTypelessImplicitArrayInitialization2() As Task
+            Using state = TestState.CreateCSharpTestState(
+                  <Document><![CDATA[
+class Class
+{
+    public void M()
+    {
+        var x = $$
+    }
+}]]></Document>)
+
+                state.SendTypeChars("ne")
+                Await state.AssertSelectedCompletionItem(displayText:="new", isHardSelected:=True)
+                state.SendTypeChars("[")
+                Assert.Contains("var x = new[", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+            End Using
+        End Function
+
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        <WorkItem(24432, "https://github.com/dotnet/roslyn/issues/24432")>
+        Public Async Function TestTypelessImplicitArrayInitialization3() As Task
+            Using state = TestState.CreateCSharpTestState(
+                  <Document><![CDATA[
+class Class
+{
+    public void M()
+    {
+        var x = $$
+    }
+}]]></Document>)
+
+                state.SendTypeChars("ne")
+                Await state.AssertSelectedCompletionItem(displayText:="new", isHardSelected:=True)
+                state.SendTypeChars(" ")
+                Assert.Contains("var x = new ", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+                state.SendTypeChars("[")
+                Assert.Contains("var x = new [", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+            End Using
+        End Function
+
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
         <WorkItem(13527, "https://github.com/dotnet/roslyn/issues/13527")>
         Public Async Function TestSymbolInTupleLiteral() As Task
             Using state = TestState.CreateCSharpTestState(
@@ -927,10 +1131,10 @@ class C
     }
 }]]></Document>)
 
-                state.SendTypeChars("i")
-                Await state.AssertSelectedCompletionItem(displayText:="int", isHardSelected:=True)
+                state.SendTypeChars("d")
+                Await state.AssertSelectedCompletionItem(displayText:="decimal", isHardSelected:=True)
                 state.SendTypeChars(":")
-                Assert.Contains("(i:", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+                Assert.Contains("(d:", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
             End Using
         End Function
 
@@ -947,10 +1151,10 @@ class C
     }
 }]]></Document>)
 
-                state.SendTypeChars("i")
-                Await state.AssertSelectedCompletionItem(displayText:="int", isHardSelected:=True)
+                state.SendTypeChars("d")
+                Await state.AssertSelectedCompletionItem(displayText:="decimal", isHardSelected:=True)
                 state.SendTypeChars(" ")
-                Assert.Contains("(int ", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
+                Assert.Contains("(decimal ", state.GetLineTextFromCaretPosition(), StringComparison.Ordinal)
             End Using
         End Function
 
@@ -2479,7 +2683,7 @@ class C
         <WorkItem(588, "https://github.com/dotnet/roslyn/issues/588")>
         <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
         Public Async Function TestMatchWithTurkishIWorkaround1() As Task
-            Using New CultureContext("tr-TR")
+            Using New CultureContext(New CultureInfo("tr-TR", useUserOverride:=False))
                 Using state = TestState.CreateCSharpTestState(
                                <Document><![CDATA[
         class C
@@ -2498,7 +2702,7 @@ class C
         <WorkItem(588, "https://github.com/dotnet/roslyn/issues/588")>
         <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
         Public Async Function TestMatchWithTurkishIWorkaround2() As Task
-            Using New CultureContext("tr-TR")
+            Using New CultureContext(New CultureInfo("tr-TR", useUserOverride:=False))
                 Using state = TestState.CreateCSharpTestState(
                                <Document><![CDATA[
         class C
@@ -2760,10 +2964,10 @@ class Program
                 state.SendInvokeCompletionList()
                 Await state.WaitForAsynchronousOperationsAsync()
                 Await state.AssertSelectedCompletionItem(description:=
-"(extension) 'a[] System.Collections.Generic.IEnumerable<'a>.ToArray<'a>()
+$"({ CSharpFeaturesResources.extension }) 'a[] System.Collections.Generic.IEnumerable<'a>.ToArray<'a>()
 
-Anonymous Types:
-    'a is new { int x }")
+{ FeaturesResources.Anonymous_Types_colon }
+    'a { FeaturesResources.is_ } new {{ int x }}")
             End Using
         End Function
 

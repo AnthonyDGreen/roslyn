@@ -18,13 +18,49 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
             string source,
             string expectedOutput = null,
             CSharpCompilationOptions options = null,
-            bool verify = true)
+            Verification verify = Verification.Passes)
         {
             return CompileAndVerify(
                 source,
                 expectedOutput: expectedOutput,
                 options: options,
                 verify: verify);
+        }
+
+        [Fact]
+        public void RefReturnRefAssignment()
+        {
+            CompileAndVerify(@"
+using System;
+class C
+{
+    static readonly int _ro = 42;
+    static int _rw = 42;
+
+    static void Main()
+    {
+        Console.WriteLine(M1(ref _rw));
+        Console.WriteLine(M2(in _ro));
+        Console.WriteLine(M3(in _ro));;
+
+        M1(ref _rw)++;
+
+        Console.WriteLine(M1(ref _rw));
+        Console.WriteLine(M2(in _ro));
+        Console.WriteLine(M3(in _ro));;
+    }
+
+    static ref int M1(ref int rrw) => ref (rrw = ref _rw);
+
+    static ref readonly int M2(in int rro) => ref (rro = ref _ro);
+
+    static ref readonly int M3(in int rro) => ref (rro = ref _rw);
+}", verify: Verification.Fails, expectedOutput: @"42
+42
+42
+43
+42
+43");
         }
 
         [Fact]
@@ -65,7 +101,7 @@ class Program
 }
 ";
 
-            CompileAndVerifyRef(text, verify: false).VerifyIL("Program.M(ref int)", @"
+            CompileAndVerifyRef(text, verify: Verification.Skipped).VerifyIL("Program.M(ref int)", @"
 {
   // Code size        2 (0x2)
   .maxstack  1
@@ -88,7 +124,7 @@ class Program
 }
 ";
 
-            CompileAndVerifyRef(text, verify: false).VerifyIL("Program.M(out int)", @"
+            CompileAndVerifyRef(text, verify: Verification.Fails).VerifyIL("Program.M(out int)", @"
 {
   // Code size        5 (0x5)
   .maxstack  2
@@ -115,7 +151,7 @@ class Program
 }
 ";
 
-            CompileAndVerifyRef(text, verify: false).VerifyIL("Program.M(ref int)", @"
+            CompileAndVerifyRef(text, verify: Verification.Fails).VerifyIL("Program.M(ref int)", @"
 {
   // Code size        5 (0x5)
   .maxstack  3
@@ -268,7 +304,7 @@ class Program3
 }
 ";
 
-            var compilation = CompileAndVerifyRef(text, verify: false);
+            var compilation = CompileAndVerifyRef(text, verify: Verification.Passes);
             compilation.VerifyIL("Program.M()", @"
 {
   // Code size        7 (0x7)
@@ -460,7 +496,7 @@ class Program3
 }
 ";
 
-            var compilation = CompileAndVerifyRef(text, verify: false);
+            var compilation = CompileAndVerifyRef(text, verify: Verification.Passes);
             compilation.VerifyIL("Program.M()", @"
 {
   // Code size        8 (0x8)
@@ -723,7 +759,7 @@ class Program2
 }
 ";
 
-            var compilation = CompileAndVerifyRef(text, verify: false);
+            var compilation = CompileAndVerifyRef(text, verify: Verification.Fails);
             compilation.VerifyIL("Program2.M(ref Program)", @"
 {
   // Code size        7 (0x7)
@@ -1261,7 +1297,7 @@ class Program
 }
 ";
 
-            CompileAndVerifyRef(text, options: TestOptions.UnsafeReleaseDll).VerifyIL("Program.Main()", @"
+            CompileAndVerifyRef(text, options: TestOptions.UnsafeReleaseDll, verify: Verification.Fails).VerifyIL("Program.Main()", @"
 {
   // Code size      291 (0x123)
   .maxstack  4
@@ -1450,7 +1486,7 @@ class Program
 }
 ";
 
-            CompileAndVerifyRef(text, options: TestOptions.UnsafeReleaseDll).VerifyIL("Program.Main()", @"
+            CompileAndVerifyRef(text, options: TestOptions.UnsafeReleaseDll, verify: Verification.Fails).VerifyIL("Program.Main()", @"
 {
   // Code size      168 (0xa8)
   .maxstack  4
@@ -1601,7 +1637,7 @@ class Program
 }
 ";
 
-            CompileAndVerify(text, parseOptions: TestOptions.Regular, expectedOutput: "42", verify: false).VerifyIL("Program.M()", @"
+            CompileAndVerify(text, parseOptions: TestOptions.Regular, expectedOutput: "42", verify: Verification.Fails).VerifyIL("Program.M()", @"
 {
   // Code size       26 (0x1a)
   .maxstack  5
@@ -1674,7 +1710,7 @@ class Program
 }
 ";
 
-            CompileAndVerify(text, parseOptions: TestOptions.Regular, expectedOutput: "42", verify: false).VerifyIL("Program.M()", @"
+            CompileAndVerify(text, parseOptions: TestOptions.Regular, expectedOutput: "42", verify: Verification.Fails).VerifyIL("Program.M()", @"
 {
   // Code size       36 (0x24)
   .maxstack  5
@@ -1860,7 +1896,7 @@ struct Mutable : IDisposable
 }
 ";
 
-            CompileAndVerifyRef(text, expectedOutput: "12", verify: false)
+            CompileAndVerifyRef(text, expectedOutput: "12", verify: Verification.Fails)
                 .VerifyIL("Program.C1<T>.Test()", @"
 {
   // Code size      115 (0x73)
@@ -1958,7 +1994,7 @@ struct Mutable : IDisposable
 }
 ";
 
-            CompileAndVerifyRef(text, expectedOutput: "1234", verify: false)
+            CompileAndVerifyRef(text, expectedOutput: "1234", verify: Verification.Fails)
                 .VerifyIL("Program.C1<T>.Test()", @"
 {
   // Code size      129 (0x81)
@@ -2063,7 +2099,7 @@ class Goo : IGoo<Goo>
 }
 ";
 
-            CompileAndVerifyRef(text, expectedOutput: "1True", verify: false)
+            CompileAndVerifyRef(text, expectedOutput: "1True", verify: Verification.Fails)
                 .VerifyIL("Program.C1<T>.Test()", @"
 {
   // Code size       84 (0x54)
@@ -2161,7 +2197,7 @@ class Goo : IGoo<Goo>
 }
 ";
 
-            CompileAndVerifyRef(text, expectedOutput: "1TrueTrue1TrueTrueTrueTrue1TrueTrue", verify: false)
+            CompileAndVerifyRef(text, expectedOutput: "1TrueTrue1TrueTrueTrueTrue1TrueTrue", verify: Verification.Fails)
                 .VerifyIL("Program.C1<T>.Test()", @"
 {
   // Code size      215 (0xd7)
@@ -2262,11 +2298,11 @@ class Program
 }
 ";
 
-            var comp = CreateStandardCompilation(text, parseOptions: TestOptions.Regular.WithLanguageVersion(LanguageVersion.CSharp6));
+            var comp = CreateCompilation(text, parseOptions: TestOptions.Regular.WithLanguageVersion(LanguageVersion.CSharp6));
             comp.VerifyDiagnostics(
                 // (4,12): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
                 //     static ref int M()
-                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref int").WithArguments("byref locals and returns", "7.0").WithLocation(4, 12),
+                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(4, 12),
                 // (6,16): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
                 //         return ref (new int[1])[0];
                 Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(6, 16)
@@ -2297,20 +2333,20 @@ class Program
     }
 }
 ";
-            var comp = CreateStandardCompilation(text, parseOptions: TestOptions.Regular.WithLanguageVersion(LanguageVersion.CSharp6));
+            var comp = CreateCompilation(text, parseOptions: TestOptions.Regular.WithLanguageVersion(LanguageVersion.CSharp6));
             comp.VerifyDiagnostics(
                 // (4,12): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
                 //     static ref int M()
-                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref int").WithArguments("byref locals and returns", "7.0").WithLocation(4, 12),
+                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(4, 12),
                 // (8,9): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
                 //         ref int N()
-                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref int").WithArguments("byref locals and returns", "7.0").WithLocation(8, 9),
+                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(8, 9),
                 // (8,17): error CS8059: Feature 'local functions' is not available in C# 6. Please use language version 7.0 or greater.
                 //         ref int N()
                 Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "N").WithArguments("local functions", "7.0").WithLocation(8, 17),
                 // (10,13): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
                 //             ref int NN(ref int arg) => ref arg;
-                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref int").WithArguments("byref locals and returns", "7.0").WithLocation(10, 13),
+                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(10, 13),
                 // (10,21): error CS8059: Feature 'local functions' is not available in C# 6. Please use language version 7.0 or greater.
                 //             ref int NN(ref int arg) => ref arg;
                 Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "NN").WithArguments("local functions", "7.0").WithLocation(10, 21),
@@ -2319,7 +2355,7 @@ class Program
                 Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(10, 40),
                 // (12,13): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
                 //             ref var r = ref NN(ref arr[0]);
-                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref var").WithArguments("byref locals and returns", "7.0").WithLocation(12, 13),
+                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(12, 13),
                 // (12,25): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
                 //             ref var r = ref NN(ref arr[0]);
                 Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(12, 25),
@@ -2339,11 +2375,11 @@ class Program
 delegate ref int D();
 ";
 
-            var comp = CreateStandardCompilation(text, parseOptions: TestOptions.Regular.WithLanguageVersion(LanguageVersion.CSharp6));
+            var comp = CreateCompilation(text, parseOptions: TestOptions.Regular.WithLanguageVersion(LanguageVersion.CSharp6));
             comp.VerifyDiagnostics(
                 // (2,10): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
                 // delegate ref int D();
-                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref int").WithArguments("byref locals and returns", "7.0").WithLocation(2, 10)
+                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(2, 10)
                 );
         }
 
@@ -2360,11 +2396,14 @@ class Program
 }
 ";
 
-            var comp = CreateStandardCompilation(text, parseOptions: TestOptions.Regular.WithLanguageVersion(LanguageVersion.CSharp6));
+            var comp = CreateCompilation(text, parseOptions: TestOptions.Regular.WithLanguageVersion(LanguageVersion.CSharp6));
             comp.VerifyDiagnostics(
+                // (6,14): error CS8059: Feature 'ref for-loop variables' is not available in C# 6. Please use language version 7.3 or greater.
+                //         for (ref int a = ref d; ;) { }
+                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref int").WithArguments("ref for-loop variables", "7.3").WithLocation(6, 14),
                 // (6,14): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
                 //         for (ref int a = ref d; ;) { }
-                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref int").WithArguments("byref locals and returns", "7.0").WithLocation(6, 14),
+                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(6, 14),
                 // (6,26): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
                 //         for (ref int a = ref d; ;) { }
                 Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(6, 26)
@@ -2390,12 +2429,12 @@ class C
 }
 ";
 
-            var comp = CreateStandardCompilation(text, parseOptions: TestOptions.Regular.WithLanguageVersion(LanguageVersion.CSharp6));
+            var comp = CreateCompilation(text, parseOptions: TestOptions.Regular.WithLanguageVersion(LanguageVersion.CSharp6));
             comp.VerifyDiagnostics(
                 // (2,10): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
                 // delegate ref int D(int x);
-                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref int").WithArguments("byref locals and returns", "7.0").WithLocation(2, 10),
-                // (11,19): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7 or greater.
+                Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(2, 10),
+                // (11,19): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
                 //         MD((x) => ref i);
                 Diagnostic(ErrorCode.ERR_FeatureNotAvailableInVersion6, "ref").WithArguments("byref locals and returns", "7.0").WithLocation(11, 19),
                 // (12,17): error CS8059: Feature 'byref locals and returns' is not available in C# 6. Please use language version 7.0 or greater.
@@ -2439,7 +2478,7 @@ class C
   }
 }";
             var ref1 = CompileIL(ilSource);
-            var compilation = CreateStandardCompilation("", options: TestOptions.DebugDll, references: new[] { ref1 });
+            var compilation = CreateCompilation("", options: TestOptions.DebugDll, references: new[] { ref1 });
 
             var method = compilation.GetMember<MethodSymbol>("B1.F");
             Assert.Equal("System.Object B1.F()", method.ToTestDisplayString());
@@ -2479,7 +2518,7 @@ public class A<T>
 }
 ";
 
-            var comp = CreateStandardCompilation(text, options: TestOptions.ReleaseDll);
+            var comp = CreateCompilation(text, options: TestOptions.ReleaseDll);
 
             comp.VerifyDiagnostics(
                  // no diagnostics expected
@@ -2512,7 +2551,7 @@ public class A<T>
 }
 ";
 
-            var comp = CreateStandardCompilation(text, options: TestOptions.ReleaseDll);
+            var comp = CreateCompilation(text, options: TestOptions.ReleaseDll);
 
             comp.VerifyDiagnostics(
                 // no diagnostics expected
@@ -2576,7 +2615,7 @@ class E : Exception
     public E(int value) { this.Value = value; }
 }
 ";
-            CreateStandardCompilation(text).VerifyDiagnostics(
+            CreateCompilation(text).VerifyDiagnostics(
                 // (4,36): error CS8115: A throw expression is not allowed in this context.
                 //     static ref int P1 { get => ref throw new E(1); }
                 Diagnostic(ErrorCode.ERR_ThrowMisplaced, "throw").WithLocation(4, 36),
@@ -2628,7 +2667,7 @@ class Program
     }
 }";
 
-            CreateStandardCompilation(source).VerifyDiagnostics(
+            CreateCompilation(source).VerifyDiagnostics(
                 // (24,19): error CS8150: By-value returns may only be used in methods that return by value
                 //         B.F(() => o.F(), 2);
                 Diagnostic(ErrorCode.ERR_MustHaveRefReturn, "o.F()").WithLocation(24, 19)
@@ -2704,7 +2743,7 @@ class Program
     }
 }";
 
-            CreateStandardCompilation(source).VerifyDiagnostics(
+            CreateCompilation(source).VerifyDiagnostics(
                 // (24,23): error CS8149: By-reference returns may only be used in methods that return by reference
                 //         B.F(() => ref o.F(), 2);
                 Diagnostic(ErrorCode.ERR_MustNotHaveRefReturn, "o.F()").WithLocation(24, 23)
@@ -2784,7 +2823,15 @@ class Program
     }
 }";
 
-            CreateStandardCompilation(source).VerifyDiagnostics(
+            CreateCompilation(source, parseOptions: TestOptions.WithoutImprovedOverloadCandidates).VerifyDiagnostics(
+                // (24,13): error CS8189: Ref mismatch between 'A<int>.F()' and delegate 'D<int>'
+                //         B.F(o.F, 2);
+                Diagnostic(ErrorCode.ERR_DelegateRefMismatch, "o.F").WithArguments("A<int>.F()", "D<int>").WithLocation(24, 13),
+                // (26,24): error CS8189: Ref mismatch between 'A<int>.F()' and delegate 'D<int>'
+                //         B.F(new D<int>(o.F), 3);
+                Diagnostic(ErrorCode.ERR_DelegateRefMismatch, "o.F").WithArguments("A<int>.F()", "D<int>").WithLocation(26, 24)
+                );
+            CreateCompilation(source).VerifyDiagnostics(
                 // (24,13): error CS8189: Ref mismatch between 'A<int>.F()' and delegate 'D<int>'
                 //         B.F(o.F, 2);
                 Diagnostic(ErrorCode.ERR_DelegateRefMismatch, "o.F").WithArguments("A<int>.F()", "D<int>").WithLocation(24, 13),
@@ -2828,7 +2875,15 @@ class Program
     }
 }";
 
-            CreateStandardCompilation(source).VerifyDiagnostics(
+            CreateCompilation(source, parseOptions: TestOptions.WithoutImprovedOverloadCandidates).VerifyDiagnostics(
+                // (23,13): error CS8189: Ref mismatch between 'A<int>.F()' and delegate 'D<int>'
+                //         B.F(o.F, 2);
+                Diagnostic(ErrorCode.ERR_DelegateRefMismatch, "o.F").WithArguments("A<int>.F()", "D<int>").WithLocation(23, 13),
+                // (25,24): error CS8189: Ref mismatch between 'A<int>.F()' and delegate 'D<int>'
+                //         B.F(new D<int>(o.F), 3);
+                Diagnostic(ErrorCode.ERR_DelegateRefMismatch, "o.F").WithArguments("A<int>.F()", "D<int>").WithLocation(25, 24)
+                );
+            CreateCompilation(source).VerifyDiagnostics(
                 // (23,13): error CS8189: Ref mismatch between 'A<int>.F()' and delegate 'D<int>'
                 //         B.F(o.F, 2);
                 Diagnostic(ErrorCode.ERR_DelegateRefMismatch, "o.F").WithArguments("A<int>.F()", "D<int>").WithLocation(23, 13),
@@ -2856,17 +2911,176 @@ public class C
 
     public static ref dynamic F(ref dynamic d)
     {
+        // this is ok
+        F1(ref d.Length);
+
+        // this is an error
         return ref d.Length;
+    }
+
+    public static void F1(ref dynamic d)
+    {
     }
 }
 
 ";
 
-            CreateCompilationWithMscorlib45AndCSruntime(source).VerifyEmitDiagnostics(
-                // (14,20): error CS8156: An expression cannot be used in this context because it may not be returned by reference
+            CreateCompilationWithMscorlib45AndCSharp(source).VerifyEmitDiagnostics(
+                // (18,20): error CS8156: An expression cannot be used in this context because it may not be returned by reference
                 //         return ref d.Length;
-                Diagnostic(ErrorCode.ERR_RefReturnLvalueExpected, "d.Length").WithLocation(14, 20)
+                Diagnostic(ErrorCode.ERR_RefReturnLvalueExpected, "d.Length").WithLocation(18, 20)
             );
+        }
+
+        [Fact]
+        [WorkItem(16947, "https://github.com/dotnet/roslyn/issues/16947")]
+        public void Dynamic001a()
+        {
+            var source =
+@"
+
+public class C
+{
+    public static void Main()
+    {
+        dynamic d = ""qq"";
+
+        System.Console.WriteLine(F(ref d));
+    }
+
+    public static dynamic F(ref dynamic d)
+    {
+        ref var temp1 = ref F1(ref d.Length);
+        d = ""qwerty"";
+        ref var temp2 = ref F1(ref d.Length);
+
+        return temp1;
+    }
+
+    public static ref dynamic F1(ref dynamic d)
+    {
+        return ref d;
+    }
+}
+
+";
+
+            var comp = CreateCompilationWithMscorlib45AndCSharp(source, options: TestOptions.ReleaseExe);
+
+            var v = CompileAndVerify(comp, verify: Verification.Fails, expectedOutput: "2");
+
+            v.VerifyIL("C.F(ref dynamic)", @"
+{
+  // Code size      180 (0xb4)
+  .maxstack  8
+  .locals init (object& V_0, //temp1
+                object V_1,
+                object V_2)
+  IL_0000:  ldsfld     ""System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>> C.<>o__1.<>p__0""
+  IL_0005:  brtrue.s   IL_0036
+  IL_0007:  ldc.i4.0
+  IL_0008:  ldstr      ""Length""
+  IL_000d:  ldtoken    ""C""
+  IL_0012:  call       ""System.Type System.Type.GetTypeFromHandle(System.RuntimeTypeHandle)""
+  IL_0017:  ldc.i4.1
+  IL_0018:  newarr     ""Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo""
+  IL_001d:  dup
+  IL_001e:  ldc.i4.0
+  IL_001f:  ldc.i4.0
+  IL_0020:  ldnull
+  IL_0021:  call       ""Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo.Create(Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfoFlags, string)""
+  IL_0026:  stelem.ref
+  IL_0027:  call       ""System.Runtime.CompilerServices.CallSiteBinder Microsoft.CSharp.RuntimeBinder.Binder.GetMember(Microsoft.CSharp.RuntimeBinder.CSharpBinderFlags, string, System.Type, System.Collections.Generic.IEnumerable<Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo>)""
+  IL_002c:  call       ""System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>> System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>>.Create(System.Runtime.CompilerServices.CallSiteBinder)""
+  IL_0031:  stsfld     ""System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>> C.<>o__1.<>p__0""
+  IL_0036:  ldsfld     ""System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>> C.<>o__1.<>p__0""
+  IL_003b:  ldfld      ""System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic> System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>>.Target""
+  IL_0040:  ldsfld     ""System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>> C.<>o__1.<>p__0""
+  IL_0045:  ldarg.0
+  IL_0046:  ldind.ref
+  IL_0047:  callvirt   ""dynamic System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>.Invoke(System.Runtime.CompilerServices.CallSite, dynamic)""
+  IL_004c:  stloc.1
+  IL_004d:  ldloca.s   V_1
+  IL_004f:  call       ""ref dynamic C.F1(ref dynamic)""
+  IL_0054:  stloc.0
+  IL_0055:  ldarg.0
+  IL_0056:  ldstr      ""qwerty""
+  IL_005b:  stind.ref
+  IL_005c:  ldsfld     ""System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>> C.<>o__1.<>p__1""
+  IL_0061:  brtrue.s   IL_0092
+  IL_0063:  ldc.i4.0
+  IL_0064:  ldstr      ""Length""
+  IL_0069:  ldtoken    ""C""
+  IL_006e:  call       ""System.Type System.Type.GetTypeFromHandle(System.RuntimeTypeHandle)""
+  IL_0073:  ldc.i4.1
+  IL_0074:  newarr     ""Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo""
+  IL_0079:  dup
+  IL_007a:  ldc.i4.0
+  IL_007b:  ldc.i4.0
+  IL_007c:  ldnull
+  IL_007d:  call       ""Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo.Create(Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfoFlags, string)""
+  IL_0082:  stelem.ref
+  IL_0083:  call       ""System.Runtime.CompilerServices.CallSiteBinder Microsoft.CSharp.RuntimeBinder.Binder.GetMember(Microsoft.CSharp.RuntimeBinder.CSharpBinderFlags, string, System.Type, System.Collections.Generic.IEnumerable<Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo>)""
+  IL_0088:  call       ""System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>> System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>>.Create(System.Runtime.CompilerServices.CallSiteBinder)""
+  IL_008d:  stsfld     ""System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>> C.<>o__1.<>p__1""
+  IL_0092:  ldsfld     ""System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>> C.<>o__1.<>p__1""
+  IL_0097:  ldfld      ""System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic> System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>>.Target""
+  IL_009c:  ldsfld     ""System.Runtime.CompilerServices.CallSite<System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>> C.<>o__1.<>p__1""
+  IL_00a1:  ldarg.0
+  IL_00a2:  ldind.ref
+  IL_00a3:  callvirt   ""dynamic System.Func<System.Runtime.CompilerServices.CallSite, dynamic, dynamic>.Invoke(System.Runtime.CompilerServices.CallSite, dynamic)""
+  IL_00a8:  stloc.2
+  IL_00a9:  ldloca.s   V_2
+  IL_00ab:  call       ""ref dynamic C.F1(ref dynamic)""
+  IL_00b0:  pop
+  IL_00b1:  ldloc.0
+  IL_00b2:  ldind.ref
+  IL_00b3:  ret
+}");
+        }
+
+        [Fact]
+        [WorkItem(16947, "https://github.com/dotnet/roslyn/issues/16947")]
+        public void Dynamic001b()
+        {
+            var source =
+@"
+
+public class C
+{
+    public static void Main()
+    {
+        dynamic d = ""qq"";
+
+        System.Console.WriteLine(F(ref d));
+        }
+
+        public static dynamic F(ref dynamic d)
+        {
+            ref var temp1 = ref Test(arg2: ref F1(42, ref d.Length, 123), arg1: ref F1(42, ref d.Length, 123));
+            d = ""qwerty"";
+            ref var temp2 = ref Test(arg2: ref F1(42, ref d.Length, 123), arg1: ref F1(42, ref d.Length, 123));
+
+            return temp1;
+        }
+
+        public static ref dynamic F1(in int arg1, ref dynamic d, in int arg2)
+        {
+            if (arg1 == arg2) throw null;
+
+            return ref d;
+        }
+
+        public static ref dynamic Test(ref dynamic arg1, ref dynamic arg2)
+        {
+            return ref arg2;
+        }
+    }
+";
+
+            var comp = CreateCompilationWithMscorlib45AndCSharp(source, options: TestOptions.ReleaseExe);
+
+            var v = CompileAndVerify(comp, verify: Verification.Fails, expectedOutput: "2");
         }
 
         [Fact]
@@ -2887,16 +3101,23 @@ public class C
 
     public static ref dynamic F(ref dynamic d)
     {
+        // this is ok
+        F1(ref d[0]);
+
         return ref d[0];
+    }
+
+    public static void F1(ref dynamic d)
+    {
     }
 }
 
 ";
 
-            CreateCompilationWithMscorlib45AndCSruntime(source).VerifyEmitDiagnostics(
-                // (14,20): error CS8156: An expression cannot be used in this context because it may not be returned by reference
+            CreateCompilationWithMscorlib45AndCSharp(source).VerifyEmitDiagnostics(
+                // (17,20): error CS8156: An expression cannot be used in this context because it may not be returned by reference
                 //         return ref d[0];
-                Diagnostic(ErrorCode.ERR_RefReturnLvalueExpected, "d[0]").WithLocation(14, 20)
+                Diagnostic(ErrorCode.ERR_RefReturnLvalueExpected, "d[0]").WithLocation(17, 20)
             );
         }
 
@@ -2929,13 +3150,13 @@ public class C
 
 ";
 
-            CreateCompilationWithMscorlib45AndCSruntime(source).VerifyEmitDiagnostics(
+            CreateCompilationWithMscorlib45AndCSharp(source).VerifyEmitDiagnostics(
                 // (14,26): error CS8156: An expression cannot be used in this context because it may not be returned by reference
                 //         return ref G(ref d.Length);
                 Diagnostic(ErrorCode.ERR_RefReturnLvalueExpected, "d.Length").WithLocation(14, 26),
-                // (14,20): error CS8164: Cannot return by reference a result of 'C.G(ref dynamic)' because the argument passed to parameter 'd' cannot be returned by reference
+                // (14,20): error CS8347: Cannot use a result of 'C.G(ref dynamic)' in this context because it may expose variables referenced by parameter 'd' outside of their declaration scope
                 //         return ref G(ref d.Length);
-                Diagnostic(ErrorCode.ERR_RefReturnCall, "G(ref d.Length)").WithArguments("C.G(ref dynamic)", "d").WithLocation(14, 20)
+                Diagnostic(ErrorCode.ERR_EscapeCall, "G(ref d.Length)").WithArguments("C.G(ref dynamic)", "d").WithLocation(14, 20)
             );
         }
 
@@ -2959,7 +3180,7 @@ delegate ref Func<T> RefFunc3f<out T>();
 
 ";
 
-            CreateCompilationWithMscorlib45AndCSruntime(source).VerifyEmitDiagnostics(
+            CreateCompilationWithMscorlib45AndCSharp(source).VerifyEmitDiagnostics(
                 // (6,10): error CS1961: Invalid variance: The type parameter 'T' must be invariantly valid on 'RefFunc3<T>.Invoke()'. 'T' is covariant.
                 // delegate ref T RefFunc3<out T>();
                 Diagnostic(ErrorCode.ERR_UnexpectedVariance, "ref T").WithArguments("RefFunc3<T>.Invoke()", "T", "covariant", "invariantly").WithLocation(6, 10),
@@ -3002,7 +3223,7 @@ interface IM3f<out T> { ref Func<T> RefMethod(); }
 
 ";
 
-            CreateCompilationWithMscorlib45AndCSruntime(source).VerifyEmitDiagnostics(
+            CreateCompilationWithMscorlib45AndCSharp(source).VerifyEmitDiagnostics(
                 // (6,24): error CS1961: Invalid variance: The type parameter 'T' must be invariantly valid on 'IM3<T>.RefMethod()'. 'T' is covariant.
                 // interface IM3<out T> { ref T RefMethod(); }
                 Diagnostic(ErrorCode.ERR_UnexpectedVariance, "ref T").WithArguments("IM3<T>.RefMethod()", "T", "covariant", "invariantly").WithLocation(6, 24),
@@ -3045,7 +3266,7 @@ interface IP3f<out T> { ref Func<T> RefProp{get;} }
 
 ";
 
-            CreateCompilationWithMscorlib45AndCSruntime(source).VerifyEmitDiagnostics(
+            CreateCompilationWithMscorlib45AndCSharp(source).VerifyEmitDiagnostics(
                 // (5,23): error CS1961: Invalid variance: The type parameter 'T' must be invariantly valid on 'IP2<T>.RefProp'. 'T' is contravariant.
                 // interface IP2<in T> { ref T RefProp{get;} }
                 Diagnostic(ErrorCode.ERR_UnexpectedVariance, "ref T").WithArguments("IP2<T>.RefProp", "T", "contravariant", "invariantly").WithLocation(5, 23),
@@ -3088,7 +3309,7 @@ interface IP3f<out T> { ref Func<T> this[int i]{get;} }
 
 ";
 
-            CreateCompilationWithMscorlib45AndCSruntime(source).VerifyEmitDiagnostics(
+            CreateCompilationWithMscorlib45AndCSharp(source).VerifyEmitDiagnostics(
                 // (6,24): error CS1961: Invalid variance: The type parameter 'T' must be invariantly valid on 'IP3<T>.this[int]'. 'T' is covariant.
                 // interface IP3<out T> { ref T this[int i]{get;} }
                 Diagnostic(ErrorCode.ERR_UnexpectedVariance, "ref T").WithArguments("IP3<T>.this[int]", "T", "covariant", "invariantly").WithLocation(6, 24),
@@ -3135,10 +3356,18 @@ class Program
 
 ";
 
-            CreateCompilationWithMscorlib45AndCSruntime(source).VerifyEmitDiagnostics(
+            CreateCompilationWithMscorlib45AndCSharp(source, parseOptions: TestOptions.WithoutImprovedOverloadCandidates).VerifyEmitDiagnostics(
                 // (10,30): error CS0407: 'string Program.M1()' has the wrong return type
                 //         RefFunc1<object> f = M1;
                 Diagnostic(ErrorCode.ERR_BadRetType, "M1").WithArguments("Program.M1()", "string"),
+                // (13,34): error CS0407: 'string Program.M1()' has the wrong return type
+                //         f = new RefFunc1<object>(M1);
+                Diagnostic(ErrorCode.ERR_BadRetType, "M1").WithArguments("Program.M1()", "string").WithLocation(13, 34)
+            );
+            CreateCompilationWithMscorlib45AndCSharp(source).VerifyEmitDiagnostics(
+                // (10,30): error CS0407: 'string Program.M1()' has the wrong return type
+                //         RefFunc1<object> f = M1;
+                Diagnostic(ErrorCode.ERR_BadRetType, "M1").WithArguments("Program.M1()", "string").WithLocation(10, 30),
                 // (13,34): error CS0407: 'string Program.M1()' has the wrong return type
                 //         f = new RefFunc1<object>(M1);
                 Diagnostic(ErrorCode.ERR_BadRetType, "M1").WithArguments("Program.M1()", "string").WithLocation(13, 34)
@@ -3149,8 +3378,6 @@ class Program
         public void RefMethodGroupConversionError_WithResolution()
         {
             var source = @"
-using System;
-
 class Base
 {
     public static Base Instance = new Base();
@@ -3181,10 +3408,12 @@ class Program
 
 ";
 
-            CreateCompilationWithMscorlib45AndCSruntime(source).VerifyEmitDiagnostics(
-                // (24,38): error CS0407: 'Derived1 Program.M1(Derived1)' has the wrong return type
+            CreateCompilationWithMscorlib45AndCSharp(source, parseOptions: TestOptions.WithoutImprovedOverloadCandidates).VerifyEmitDiagnostics(
+                // (22,38): error CS0407: 'Derived1 Program.M1(Derived1)' has the wrong return type
                 //         RefFunc1<Derived2, Base> f = M1;
-                Diagnostic(ErrorCode.ERR_BadRetType, "M1").WithArguments("Program.M1(Derived1)", "Derived1").WithLocation(24, 38)
+                Diagnostic(ErrorCode.ERR_BadRetType, "M1").WithArguments("Program.M1(Derived1)", "Derived1").WithLocation(22, 38)
+            );
+            CreateCompilationWithMscorlib45AndCSharp(source).VerifyEmitDiagnostics(
             );
         }
 
@@ -3224,7 +3453,7 @@ class Program
 }
 ";
 
-            CompileAndVerify(source, parseOptions: TestOptions.Regular, expectedOutput: "Base", verify: true);
+            CompileAndVerify(source, parseOptions: TestOptions.Regular, expectedOutput: "Base", verify: Verification.Passes);
         }
 
         [Fact]
@@ -3267,13 +3496,15 @@ class Program
 
 ";
 
-            CreateCompilationWithMscorlib45AndCSruntime(source).VerifyEmitDiagnostics(
+            CreateCompilationWithMscorlib45AndCSharp(source, parseOptions: TestOptions.WithoutImprovedOverloadCandidates).VerifyEmitDiagnostics(
                 // (25,9): error CS0121: The call is ambiguous between the following methods or properties: 'Program.Test(Program.RefFunc1<Derived2, Base>)' and 'Program.Test(Program.RefFunc1<Derived2, Derived1>)'
                 //         Test(M1);
                 Diagnostic(ErrorCode.ERR_AmbigCall, "Test").WithArguments("Program.Test(Program.RefFunc1<Derived2, Base>)", "Program.Test(Program.RefFunc1<Derived2, Derived1>)").WithLocation(25, 9),
                 // (26,9): error CS0121: The call is ambiguous between the following methods or properties: 'Program.Test(Program.RefFunc1<Derived2, Base>)' and 'Program.Test(Program.RefFunc1<Derived2, Derived1>)'
                 //         Test(M3);
                 Diagnostic(ErrorCode.ERR_AmbigCall, "Test").WithArguments("Program.Test(Program.RefFunc1<Derived2, Base>)", "Program.Test(Program.RefFunc1<Derived2, Derived1>)").WithLocation(26, 9)
+            );
+            CreateCompilationWithMscorlib45AndCSharp(source).VerifyEmitDiagnostics(
             );
         }
 
@@ -3315,7 +3546,7 @@ class Program
 
 ";
 
-            CompileAndVerify(source, parseOptions: TestOptions.Regular, expectedOutput: "Program+RefFunc1`2[Derived2,Derived1]", verify: true);
+            CompileAndVerify(source, parseOptions: TestOptions.Regular, expectedOutput: "Program+RefFunc1`2[Derived2,Derived1]", verify: Verification.Passes);
         }
 
         [Fact]
@@ -3356,7 +3587,7 @@ class Program
 ";
 
             CompileAndVerify(source, parseOptions: TestOptions.Regular, expectedOutput: @"System.Func`2[Derived1,Base]
-Program+RefFunc1`2[Derived1,Base]", verify: true);
+Program+RefFunc1`2[Derived1,Base]", verify: Verification.Passes);
         }
 
     }
