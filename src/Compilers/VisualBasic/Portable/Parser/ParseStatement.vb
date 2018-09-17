@@ -621,7 +621,37 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                 expression = InternalSyntaxFactory.MissingExpression.AddTrailingSyntax(ResyncAt({SyntaxKind.ToKeyword}), ERRID.ERR_Syntax)
             End If
 
-            Dim statement = SyntaxFactory.ForEachStatement(forKeyword, eachKeyword, controlVariable, inKeyword, expression)
+            ' TODO: If additional variables or query clauses are present, statement must take the form of:
+            '   For Each identifier [As Type] In expression
+            ' Arbitrary expressions can be rejected in parser. However, as it must also be validated that
+            ' "identifier" declares a new variable (rather than refering to an existing one) this can instead
+            ' be enforced solely at binding time.
+            Dim commaToken As PunctuationSyntax
+            Dim additionalVariables As CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(Of CollectionRangeVariableSyntax)
+
+            If CurrentToken.Kind = SyntaxKind.CommaToken Then
+                commaToken = DirectCast(CurrentToken, PunctuationSyntax)
+                GetNextToken()
+
+                TryEatNewLine()
+
+                additionalVariables = ParseFromControlVars()
+            Else
+                commaToken = Nothing
+                additionalVariables = Nothing
+            End If
+
+            TryEatNewLine()
+
+            Dim queryClauseBuilder = Me._pool.Allocate(Of QueryClauseSyntax)()
+
+            ParseMoreQueryOperators(queryClauseBuilder)
+
+            Dim queryClauses = queryClauseBuilder.ToList()
+            Me._pool.Free(queryClauseBuilder)
+
+
+            Dim statement = SyntaxFactory.ForEachStatement(forKeyword, eachKeyword, controlVariable, inKeyword, expression, commaToken, additionalVariables, queryClauses)
 
             Return statement
         End Function

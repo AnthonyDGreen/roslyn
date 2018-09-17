@@ -4459,6 +4459,16 @@ Unify Enum declarations with other block type declarations.
         <lm-equiv name="Collection"></lm-equiv>
         <native-equiv name="Collection"></native-equiv>
       </child>
+
+      <child name="CommaToken" kind="CommaToken" optional="true" order="60" />
+
+      <child name="AdditionalVariables" list="true" separator-kind="CommaToken" separator-name="CommaTokens" kind="CollectionRangeVariable" order="70">
+        <description>The list of collection variables declared by this For Each statement.</description>
+      </child>
+
+      <child name="QueryClauses" optional="true" list="true" kind="@QueryClauseSyntax" order="80">
+        <description>A list of query clauses. It may be empty. </description>
+      </child>
     </node-structure>
 
     <!--****************

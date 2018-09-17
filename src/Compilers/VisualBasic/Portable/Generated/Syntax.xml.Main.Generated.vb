@@ -3526,9 +3526,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             If node.InKeyword.Node IsNot newInKeyword Then anyChanges = True
             Dim newExpression = DirectCast(Visit(node.Expression), ExpressionSyntax)
             If node.Expression IsNot newExpression Then anyChanges = True
+            Dim newCommaToken = DirectCast(VisitToken(node.CommaToken).Node, InternalSyntax.PunctuationSyntax)
+            If node.CommaToken.Node IsNot newCommaToken Then anyChanges = True
+            Dim newAdditionalVariables = VisitList(node.AdditionalVariables)
+            If node._additionalVariables IsNot newAdditionalVariables.Node Then anyChanges = True
+            Dim newQueryClauses = VisitList(node.QueryClauses)
+            If node._queryClauses IsNot newQueryClauses.Node Then anyChanges = True
 
             If anyChanges Then
-                Return New ForEachStatementSyntax(node.Kind, node.Green.GetDiagnostics, node.Green.GetAnnotations, newForKeyword, newEachKeyword, newControlVariable, newInKeyword, newExpression)
+                Return New ForEachStatementSyntax(node.Kind, node.Green.GetDiagnostics, node.Green.GetAnnotations, newForKeyword, newEachKeyword, newControlVariable, newInKeyword, newExpression, newCommaToken, newAdditionalVariables.Node, newQueryClauses.Node)
             Else
                 Return node
             End If
@@ -19728,7 +19734,13 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ''' <param name="expression">
         ''' The expression denoting the collection to iterate over.
         ''' </param>
-        Public Shared Function ForEachStatement(forKeyword As SyntaxToken, eachKeyword As SyntaxToken, controlVariable As VisualBasicSyntaxNode, inKeyword As SyntaxToken, expression As ExpressionSyntax) As ForEachStatementSyntax
+        ''' <param name="additionalVariables">
+        ''' The list of collection variables declared by this For Each statement.
+        ''' </param>
+        ''' <param name="queryClauses">
+        ''' A list of query clauses. It may be empty.
+        ''' </param>
+        Public Shared Function ForEachStatement(forKeyword As SyntaxToken, eachKeyword As SyntaxToken, controlVariable As VisualBasicSyntaxNode, inKeyword As SyntaxToken, expression As ExpressionSyntax, commaToken As SyntaxToken, additionalVariables As SeparatedSyntaxList(Of CollectionRangeVariableSyntax), queryClauses As SyntaxList(of QueryClauseSyntax)) As ForEachStatementSyntax
             Select Case forKeyword.Kind()
                 Case SyntaxKind.ForKeyword
                 Case Else
@@ -19969,7 +19981,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
-            Return New ForEachStatementSyntax(SyntaxKind.ForEachStatement, Nothing, Nothing, DirectCast(forKeyword.Node, InternalSyntax.KeywordSyntax), DirectCast(eachKeyword.Node, InternalSyntax.KeywordSyntax), controlVariable, DirectCast(inKeyword.Node, InternalSyntax.KeywordSyntax), expression)
+            Return New ForEachStatementSyntax(SyntaxKind.ForEachStatement, Nothing, Nothing, DirectCast(forKeyword.Node, InternalSyntax.KeywordSyntax), DirectCast(eachKeyword.Node, InternalSyntax.KeywordSyntax), controlVariable, DirectCast(inKeyword.Node, InternalSyntax.KeywordSyntax), expression, DirectCast(commaToken.Node, InternalSyntax.PunctuationSyntax), additionalVariables.Node, queryClauses.Node)
         End Function
 
 
@@ -19991,8 +20003,40 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ''' <param name="expression">
         ''' The expression denoting the collection to iterate over.
         ''' </param>
-        Public Shared Function ForEachStatement(controlVariable As VisualBasicSyntaxNode, expression As ExpressionSyntax) As ForEachStatementSyntax
-            Return SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), controlVariable, SyntaxFactory.Token(SyntaxKind.InKeyword), expression)
+        ''' <param name="additionalVariables">
+        ''' The list of collection variables declared by this For Each statement.
+        ''' </param>
+        ''' <param name="queryClauses">
+        ''' A list of query clauses. It may be empty.
+        ''' </param>
+        Public Shared Function ForEachStatement(controlVariable As VisualBasicSyntaxNode, expression As ExpressionSyntax, additionalVariables As SeparatedSyntaxList(Of CollectionRangeVariableSyntax), queryClauses As SyntaxList(of QueryClauseSyntax)) As ForEachStatementSyntax
+            Return SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), controlVariable, SyntaxFactory.Token(SyntaxKind.InKeyword), expression, Nothing, additionalVariables, queryClauses)
+        End Function
+
+
+        ''' <summary>
+        ''' The For Each statement that begins a For Each-Next block. This statement always
+        ''' occurs as the Begin of a ForBlock, and the body of the For Each-Next is the
+        ''' Body of that ForBlock. Most of the time, the End of that ForBlock is the
+        ''' corresponding Next statement. However, multiple nested For statements are ended
+        ''' by a single Next statement with multiple variables, then the inner For
+        ''' statements will have End set to Nothing, and the Next statement is the End of
+        ''' the outermost For statement that is being ended.
+        ''' </summary>
+        ''' <param name="controlVariable">
+        ''' If the For or For Each statement is of a form that does not declare a new loop
+        ''' control variable, this is the expression that denotes the loop control
+        ''' variable. If this loop is of a form that does declare a new control variable,
+        ''' this is a VariableDeclarator that has the variable being declared.
+        ''' </param>
+        ''' <param name="expression">
+        ''' The expression denoting the collection to iterate over.
+        ''' </param>
+        ''' <param name="additionalVariables">
+        ''' The list of collection variables declared by this For Each statement.
+        ''' </param>
+        Public Shared Function ForEachStatement(controlVariable As VisualBasicSyntaxNode, expression As ExpressionSyntax, additionalVariables As SeparatedSyntaxList(Of CollectionRangeVariableSyntax)) As ForEachStatementSyntax
+            Return SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), controlVariable, SyntaxFactory.Token(SyntaxKind.InKeyword), expression, Nothing, additionalVariables, Nothing)
         End Function
 
 
