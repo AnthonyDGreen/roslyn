@@ -1241,7 +1241,7 @@ Unify Enum declarations with other block type declarations.
         <lm-equiv name="Method" />
         <native-equiv name="Statement.Opcodes.ProcedureBody" />
       </node-kind>
-      
+
       <child name="SubOrFunctionStatement" order="10">
         <description>The "Sub" or "Function" statement that begins the block.</description>
         <kind name="SubStatement" node-kind="SubBlock"/>
@@ -1534,7 +1534,7 @@ Unify Enum declarations with other block type declarations.
         <kind name ="SubKeyword" node-kind="SubStatement" />
         <kind name ="FunctionKeyword" node-kind="FunctionStatement" />
       </child>
-      
+
       <child name="Identifier" kind="IdentifierToken" order="20">
         <description>The name of the method being declared.</description>
         <lm-equiv name="Name"></lm-equiv>
@@ -1587,7 +1587,7 @@ Unify Enum declarations with other block type declarations.
           The "Sub" keyword.
         </description>
       </child>
-      
+
       <child name="NewKeyword" kind="NewKeyword" order="20">
         <description>The "New" keyword in the constructor declaration.</description>
         <lm-equiv name="NewKeyword"></lm-equiv>
@@ -1624,7 +1624,7 @@ Unify Enum declarations with other block type declarations.
         <lm-equiv name="StringMode"></lm-equiv>
         <native-equiv name="StringMode"></native-equiv>
       </child>
-      
+
       <child name="SubOrFunctionKeyword" order="10">
         <description>
           The "Sub" or "Function" keyword.
@@ -1632,7 +1632,7 @@ Unify Enum declarations with other block type declarations.
         <kind name ="SubKeyword" node-kind="DeclareSubStatement" />
         <kind name ="FunctionKeyword" node-kind="DeclareFunctionStatement" />
       </child>
-      
+
       <child name="Identifier" kind="IdentifierToken" order="20">
         <description>The name of the method being declared.</description>
         <lm-equiv name="Name"></lm-equiv>
@@ -1699,7 +1699,7 @@ Unify Enum declarations with other block type declarations.
         <kind name ="SubKeyword" node-kind="DelegateSubStatement" />
         <kind name ="FunctionKeyword" node-kind="DelegateFunctionStatement" />
       </child>
-      
+
       <child name="Identifier" kind="IdentifierToken" order="20">
         <description>The name of the delegate being declared.</description>
         <lm-equiv name="Name"></lm-equiv>
@@ -1744,7 +1744,7 @@ Unify Enum declarations with other block type declarations.
           The "Event" keyword that introduces this event declaration.
         </description>
       </child>
-      
+
       <child name="Identifier" kind="IdentifierToken" order="20">
         <description>The name of the event being declared.</description>
         <lm-equiv name="Name"></lm-equiv>
@@ -1781,13 +1781,13 @@ Unify Enum declarations with other block type declarations.
         <lm-equiv name="Operator" />
         <native-equiv name="Statements.Opcodes.OperatorDeclaration" />
       </node-kind>
-      
+
       <child name="OperatorKeyword" kind="OperatorKeyword" order="10">
         <description>
           The "Operator" keyword that introduces this operator declaration.
         </description>
       </child>
-      
+
       <child name="OperatorToken"  kind="CTypeKeyword|IsTrueKeyword|IsFalseKeyword|NotKeyword|PlusToken|MinusToken|AsteriskToken|SlashToken|CaretToken|BackslashToken|AmpersandToken|LessThanLessThanToken|GreaterThanGreaterThanToken|ModKeyword|OrKeyword|XorKeyword|AndKeyword|LikeKeyword|EqualsToken|LessThanGreaterThanToken|LessThanToken|LessThanEqualsToken|GreaterThanEqualsToken|GreaterThanToken" order="20">
         <description>The operator being defined.</description>
         <lm-equiv name="Operator"></lm-equiv>
@@ -1829,7 +1829,7 @@ Unify Enum declarations with other block type declarations.
           The "Property" keyword that introduces this property declaration.
         </description>
       </child>
-      
+
       <child name="Identifier" kind="IdentifierToken" order="20">
         <description>The name of the property being declared.</description>
         <lm-equiv name="Name"></lm-equiv>
@@ -1881,7 +1881,7 @@ Unify Enum declarations with other block type declarations.
       <node-kind name="RaiseEventAccessorStatement">
         <lm-equiv name="Statement.Opcodes.RaiseEventDeclaration" />
       </node-kind>
-    
+
       <child name="AccessorKeyword" order="10">
         <description>
           The "Get", "Set", "AddHandler", "RemoveHandler", or "RaiseEvent" keyword that introduces this accessor declaration.
@@ -4459,6 +4459,16 @@ Unify Enum declarations with other block type declarations.
         <lm-equiv name="Collection"></lm-equiv>
         <native-equiv name="Collection"></native-equiv>
       </child>
+
+      <child name="CommaToken" kind="CommaToken" optional="true" order="60" />
+
+      <child name="AdditionalVariables" list="true" separator-kind="CommaToken" separator-name="CommaTokens" kind="CollectionRangeVariable" order="70">
+        <description>The list of collection variables declared by this For Each statement.</description>
+      </child>
+
+      <child name="QueryClauses" optional="true" list="true" kind="@QueryClauseSyntax" order="80">
+        <description>A list of query clauses. It may be empty. </description>
+      </child>
     </node-structure>
 
     <!--****************
@@ -5052,13 +5062,13 @@ Unify Enum declarations with other block type declarations.
       <child name="Arguments" optional="false" list="true" optional-elements="false" separator-kind="CommaToken" separator-name="CommaTokens" kind="@SimpleArgumentSyntax">
         <description>The list of tuple arguments.</description>
       </child>
-      
+
       <child name="CloseParenToken" kind="CloseParenToken">
         <description>The ")" token</description>
       </child>
     </node-structure>
 
-      <!--****************
+    <!--****************
       -  TupleType
       ******************-->
     <node-structure name="TupleTypeSyntax" parent="TypeSyntax">
@@ -5075,7 +5085,7 @@ Unify Enum declarations with other block type declarations.
       <child name="Elements" optional="false" list="true" optional-elements="false" separator-kind="CommaToken" separator-name="CommaTokens" kind="@TupleElementSyntax">
         <description>The list of tuple elements.</description>
       </child>
-      
+
       <child name="CloseParenToken" kind="CloseParenToken">
         <description>The ")" token</description>
       </child>
@@ -5120,7 +5130,7 @@ Unify Enum declarations with other block type declarations.
         <description>A simple "As" clause specifying the type of the tuple element.</description>
       </child>
     </node-structure>
-    
+
     <!--****************
       -  SpecialInstance
       ******************-->

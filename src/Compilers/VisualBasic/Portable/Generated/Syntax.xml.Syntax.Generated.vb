@@ -17992,6 +17992,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
         Inherits ForOrForEachStatementSyntax
 
         Friend _expression as ExpressionSyntax
+        Friend _additionalVariables as SyntaxNode
+        Friend _queryClauses as SyntaxNode
 
         Friend Sub New(ByVal green As GreenNode, ByVal parent as SyntaxNode, ByVal startLocation As Integer)
             MyBase.New(green, parent, startLocation)
@@ -17999,8 +18001,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
             Debug.Assert(startLocation >= 0)
         End Sub
 
-        Friend Sub New(ByVal kind As SyntaxKind, ByVal errors as DiagnosticInfo(), ByVal annotations as SyntaxAnnotation(), forKeyword As InternalSyntax.KeywordSyntax, eachKeyword As InternalSyntax.KeywordSyntax, controlVariable As VisualBasicSyntaxNode, inKeyword As InternalSyntax.KeywordSyntax, expression As ExpressionSyntax)
-            Me.New(New Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.ForEachStatementSyntax(kind, errors, annotations, forKeyword, eachKeyword, DirectCast(controlVariable.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.VisualBasicSyntaxNode), inKeyword, DirectCast(expression.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.ExpressionSyntax)), Nothing, 0)
+        Friend Sub New(ByVal kind As SyntaxKind, ByVal errors as DiagnosticInfo(), ByVal annotations as SyntaxAnnotation(), forKeyword As InternalSyntax.KeywordSyntax, eachKeyword As InternalSyntax.KeywordSyntax, controlVariable As VisualBasicSyntaxNode, inKeyword As InternalSyntax.KeywordSyntax, expression As ExpressionSyntax, commaToken As InternalSyntax.PunctuationSyntax, additionalVariables As SyntaxNode, queryClauses As SyntaxNode)
+            Me.New(New Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.ForEachStatementSyntax(kind, errors, annotations, forKeyword, eachKeyword, DirectCast(controlVariable.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.VisualBasicSyntaxNode), inKeyword, DirectCast(expression.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.ExpressionSyntax), commaToken, if(additionalVariables IsNot Nothing, additionalVariables.Green, Nothing), if(queryClauses IsNot Nothing, queryClauses.Green, Nothing)), Nothing, 0)
         End Sub
 
         ''' <summary>
@@ -18022,7 +18024,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
         ''' value.
         ''' </summary>
         Public Shadows Function WithForKeyword(forKeyword as SyntaxToken) As ForEachStatementSyntax
-            return Update(forKeyword, Me.EachKeyword, Me.ControlVariable, Me.InKeyword, Me.Expression)
+            return Update(forKeyword, Me.EachKeyword, Me.ControlVariable, Me.InKeyword, Me.Expression, Me.CommaToken, Me.AdditionalVariables, Me.QueryClauses)
         End Function
 
         ''' <summary>
@@ -18040,7 +18042,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
         ''' value.
         ''' </summary>
         Public Shadows Function WithEachKeyword(eachKeyword as SyntaxToken) As ForEachStatementSyntax
-            return Update(Me.ForKeyword, eachKeyword, Me.ControlVariable, Me.InKeyword, Me.Expression)
+            return Update(Me.ForKeyword, eachKeyword, Me.ControlVariable, Me.InKeyword, Me.Expression, Me.CommaToken, Me.AdditionalVariables, Me.QueryClauses)
         End Function
 
         ''' <summary>
@@ -18065,7 +18067,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
         ''' the current value.
         ''' </summary>
         Public Shadows Function WithControlVariable(controlVariable as VisualBasicSyntaxNode) As ForEachStatementSyntax
-            return Update(Me.ForKeyword, Me.EachKeyword, controlVariable, Me.InKeyword, Me.Expression)
+            return Update(Me.ForKeyword, Me.EachKeyword, controlVariable, Me.InKeyword, Me.Expression, Me.CommaToken, Me.AdditionalVariables, Me.QueryClauses)
         End Function
 
         ''' <summary>
@@ -18083,7 +18085,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
         ''' value.
         ''' </summary>
         Public Shadows Function WithInKeyword(inKeyword as SyntaxToken) As ForEachStatementSyntax
-            return Update(Me.ForKeyword, Me.EachKeyword, Me.ControlVariable, inKeyword, Me.Expression)
+            return Update(Me.ForKeyword, Me.EachKeyword, Me.ControlVariable, inKeyword, Me.Expression, Me.CommaToken, Me.AdditionalVariables, Me.QueryClauses)
         End Function
 
         ''' <summary>
@@ -18101,7 +18103,81 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
         ''' value.
         ''' </summary>
         Public Shadows Function WithExpression(expression as ExpressionSyntax) As ForEachStatementSyntax
-            return Update(Me.ForKeyword, Me.EachKeyword, Me.ControlVariable, Me.InKeyword, expression)
+            return Update(Me.ForKeyword, Me.EachKeyword, Me.ControlVariable, Me.InKeyword, expression, Me.CommaToken, Me.AdditionalVariables, Me.QueryClauses)
+        End Function
+
+        ''' <remarks>
+        ''' This child is optional. If it is not present, then Nothing is returned.
+        ''' </remarks>
+        Public  ReadOnly Property CommaToken As SyntaxToken
+            Get
+                Dim slot = DirectCast(Me.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.ForEachStatementSyntax)._commaToken
+                If slot IsNot Nothing
+                    return new SyntaxToken(Me, slot, Me.GetChildPosition(5), Me.GetChildIndex(5))
+                End If
+                Return Nothing
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the CommaToken property changed to the specified
+        ''' value. Returns this instance if the specified value is the same as the current
+        ''' value.
+        ''' </summary>
+        Public Shadows Function WithCommaToken(commaToken as SyntaxToken) As ForEachStatementSyntax
+            return Update(Me.ForKeyword, Me.EachKeyword, Me.ControlVariable, Me.InKeyword, Me.Expression, commaToken, Me.AdditionalVariables, Me.QueryClauses)
+        End Function
+
+        ''' <summary>
+        ''' The list of collection variables declared by this For Each statement.
+        ''' </summary>
+        Public  ReadOnly Property AdditionalVariables As SeparatedSyntaxList(Of CollectionRangeVariableSyntax)
+            Get
+                Dim listNode = GetRed(_additionalVariables, 6)
+                If listNode IsNot Nothing
+                    Return new SeparatedSyntaxList(Of CollectionRangeVariableSyntax)(listNode, Me.GetChildIndex(6))
+                End If
+                Return Nothing
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the AdditionalVariables property changed to the
+        ''' specified value. Returns this instance if the specified value is the same as
+        ''' the current value.
+        ''' </summary>
+        Public Shadows Function WithAdditionalVariables(additionalVariables as SeparatedSyntaxList(Of CollectionRangeVariableSyntax)) As ForEachStatementSyntax
+            return Update(Me.ForKeyword, Me.EachKeyword, Me.ControlVariable, Me.InKeyword, Me.Expression, Me.CommaToken, additionalVariables, Me.QueryClauses)
+        End Function
+
+        Public Shadows Function AddAdditionalVariables(ParamArray items As CollectionRangeVariableSyntax()) As ForEachStatementSyntax
+            Return Me.WithAdditionalVariables(Me.AdditionalVariables.AddRange(items))
+        End Function
+
+        ''' <summary>
+        ''' A list of query clauses. It may be empty.
+        ''' </summary>
+        ''' <remarks>
+        ''' If nothing is present, an empty list is returned.
+        ''' </remarks>
+        Public  ReadOnly Property QueryClauses As SyntaxList(Of QueryClauseSyntax)
+            Get
+                Dim listNode = GetRed(_queryClauses, 7)
+                Return new SyntaxList(Of QueryClauseSyntax)(listNode)
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the QueryClauses property changed to the specified
+        ''' value. Returns this instance if the specified value is the same as the current
+        ''' value.
+        ''' </summary>
+        Public Shadows Function WithQueryClauses(queryClauses as SyntaxList(Of QueryClauseSyntax)) As ForEachStatementSyntax
+            return Update(Me.ForKeyword, Me.EachKeyword, Me.ControlVariable, Me.InKeyword, Me.Expression, Me.CommaToken, Me.AdditionalVariables, queryClauses)
+        End Function
+
+        Public Shadows Function AddQueryClauses(ParamArray items As QueryClauseSyntax()) As ForEachStatementSyntax
+            Return Me.WithQueryClauses(Me.QueryClauses.AddRange(items))
         End Function
 
         Friend Overrides Function GetCachedSlot(i as Integer) as SyntaxNode
@@ -18110,6 +18186,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
                     Return Me._controlVariable
                 Case 4
                     Return Me._expression
+                Case 6
+                    Return Me._additionalVariables
+                Case 7
+                    Return Me._queryClauses
                 Case Else
                      Return Nothing
             End Select
@@ -18121,6 +18201,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
                     Return Me.ControlVariable
                 Case 4
                     Return Me.Expression
+                Case 6
+                    Return GetRed(_additionalVariables, 6)
+                Case 7
+                    Return GetRed(_queryClauses, 7)
                 Case Else
                      Return Nothing
             End Select
@@ -18154,9 +18238,18 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
         ''' <param name="expression">
         ''' The value for the Expression property.
         ''' </param>
-        Public Function Update(forKeyword As SyntaxToken, eachKeyword As SyntaxToken, controlVariable As VisualBasicSyntaxNode, inKeyword As SyntaxToken, expression As ExpressionSyntax) As ForEachStatementSyntax
-            If forKeyword <> Me.ForKeyword OrElse eachKeyword <> Me.EachKeyword OrElse controlVariable IsNot Me.ControlVariable OrElse inKeyword <> Me.InKeyword OrElse expression IsNot Me.Expression Then
-                Dim newNode = SyntaxFactory.ForEachStatement(forKeyword, eachKeyword, controlVariable, inKeyword, expression)
+        ''' <param name="commaToken">
+        ''' The value for the CommaToken property.
+        ''' </param>
+        ''' <param name="additionalVariables">
+        ''' The value for the AdditionalVariables property.
+        ''' </param>
+        ''' <param name="queryClauses">
+        ''' The value for the QueryClauses property.
+        ''' </param>
+        Public Function Update(forKeyword As SyntaxToken, eachKeyword As SyntaxToken, controlVariable As VisualBasicSyntaxNode, inKeyword As SyntaxToken, expression As ExpressionSyntax, commaToken As SyntaxToken, additionalVariables As SeparatedSyntaxList(Of CollectionRangeVariableSyntax), queryClauses As SyntaxList(of QueryClauseSyntax)) As ForEachStatementSyntax
+            If forKeyword <> Me.ForKeyword OrElse eachKeyword <> Me.EachKeyword OrElse controlVariable IsNot Me.ControlVariable OrElse inKeyword <> Me.InKeyword OrElse expression IsNot Me.Expression OrElse commaToken <> Me.CommaToken OrElse additionalVariables <> Me.AdditionalVariables OrElse queryClauses <> Me.QueryClauses Then
+                Dim newNode = SyntaxFactory.ForEachStatement(forKeyword, eachKeyword, controlVariable, inKeyword, expression, commaToken, additionalVariables, queryClauses)
                 Dim annotations = Me.GetAnnotations()
                 If annotations IsNot Nothing AndAlso annotations.Length > 0
                     return newNode.WithAnnotations(annotations)

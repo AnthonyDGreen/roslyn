@@ -95,10 +95,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     Return BindWhileBlock(DirectCast(node, WhileBlockSyntax), diagnostics)
 
                 Case SyntaxKind.ForBlock
-                    Return BindForToBlock(DirectCast(node, ForOrForEachBlockSyntax), diagnostics)
+                    Return BindForToBlock(DirectCast(node, ForBlockSyntax), diagnostics)
 
                 Case SyntaxKind.ForEachBlock
-                    Return BindForEachBlock(DirectCast(node, ForOrForEachBlockSyntax), diagnostics)
+                    Return BindForEachBlock(DirectCast(node, ForEachBlockSyntax), diagnostics)
 
                 Case SyntaxKind.WithBlock
                     Return BindWithBlock(DirectCast(node, WithBlockSyntax), diagnostics)
@@ -2844,7 +2844,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                                   diagnostics)
         End Function
 
-        Public Function BindForEachBlock(node As ForOrForEachBlockSyntax, diagnostics As DiagnosticBag) As BoundStatement
+        Public Function BindForEachBlock(node As ForEachBlockSyntax, diagnostics As DiagnosticBag) As BoundStatement
+            If node.ForEachStatement.AdditionalVariables.Count > 0 OrElse node.ForEachStatement.QueryClauses.Count > 0 Then
+                Return BindForEachBlockWithQuery(node, diagnostics)
+            End If
+
             ' For statement has its own binding scope since it may introduce iteration variable
             ' that is visible through the entire For block. It also needs to support Continue/Exit
             ' Interestingly, control variable is in scope when Limit and Step or the collection are bound,
@@ -2861,7 +2865,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             ' bind common parts of a for block
             hasErrors = loopBinder.BindForBlockParts(node,
-                                                     DirectCast(node.ForOrForEachStatement, ForEachStatementSyntax).ControlVariable,
+                                                     node.ForEachStatement.ControlVariable,
                                                      declaredOrInferredLocalOpt,
                                                      controlVariable,
                                                      isInferredLocal,
@@ -2873,6 +2877,34 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                                     controlVariable,
                                                     isInferredLocal,
                                                     diagnostics)
+        End Function
+
+        Public Function BindForEachBlockWithQuery(node As ForEachBlockSyntax, diagnostics As DiagnosticBag) As BoundStatement
+            ' For statement has its own binding scope since it may introduce iteration variable
+            ' that is visible through the entire For block. It also needs to support Continue/Exit
+            ' Interestingly, control variable is in scope when Limit and Step or the collection are bound,
+            ' but initialized after Limit and Step or collection are evaluated...
+            Dim loopBinder = Me.GetBinder(node)
+            Debug.Assert(loopBinder IsNot Nothing)
+
+
+            ' For Each a In x, 
+            '          b In y,
+            '          c In z
+            '    Where P(|b|) ' Expect find-all references for b to highlight both range variable and "plain" variable.
+            '
+            '     ? b
+            '
+            ' Next c, b, a ' Should this work
+
+            ' Bind collection
+            ' synthesize initial source
+            ' bind additional query operators
+            ' enumerate result
+            ' copy anonymous type fields to locals
+
+
+            Throw New NotImplementedException()
         End Function
 
         ''' <summary>

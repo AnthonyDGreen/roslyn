@@ -765,7 +765,7 @@ Partial Public Class GeneratedTests
         End Function
 
         Private Shared Function GenerateGreenForEachStatement() As InternalSyntax.ForEachStatementSyntax
-            return InternalSyntax.SyntaxFactory.ForEachStatement(new InternalSyntax.KeywordSyntax(SyntaxKind.ForKeyword, String.Empty, Nothing, Nothing), new InternalSyntax.KeywordSyntax(SyntaxKind.EachKeyword, String.Empty, Nothing, Nothing), GenerateGreenKeywordEventContainer(), new InternalSyntax.KeywordSyntax(SyntaxKind.InKeyword, String.Empty, Nothing, Nothing), GenerateGreenKeywordEventContainer())
+            return InternalSyntax.SyntaxFactory.ForEachStatement(new InternalSyntax.KeywordSyntax(SyntaxKind.ForKeyword, String.Empty, Nothing, Nothing), new InternalSyntax.KeywordSyntax(SyntaxKind.EachKeyword, String.Empty, Nothing, Nothing), GenerateGreenKeywordEventContainer(), new InternalSyntax.KeywordSyntax(SyntaxKind.InKeyword, String.Empty, Nothing, Nothing), GenerateGreenKeywordEventContainer(), Nothing, New Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(of GreenNode)(), Nothing)
         End Function
 
         Private Shared Function GenerateGreenNextStatement() As InternalSyntax.NextStatementSyntax
@@ -13451,7 +13451,7 @@ Partial Public Class GeneratedTests
         Private Shared Function GenerateRedForEachStatement() As ForEachStatementSyntax
             Dim exceptionTest as boolean = false
             Try
-            SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), Nothing, SyntaxFactory.Token(SyntaxKind.InKeyword), GenerateRedKeywordEventContainer())
+            SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), Nothing, SyntaxFactory.Token(SyntaxKind.InKeyword), GenerateRedKeywordEventContainer(), Nothing, New SeparatedSyntaxList(Of CollectionRangeVariableSyntax)(), Nothing)
             catch e as ArgumentNullException
             exceptionTest = true
             End Try
@@ -13459,7 +13459,7 @@ Partial Public Class GeneratedTests
             exceptionTest = false
 
             Try
-            SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.InKeyword), Nothing)
+            SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.InKeyword), Nothing, Nothing, New SeparatedSyntaxList(Of CollectionRangeVariableSyntax)(), Nothing)
             catch e as ArgumentNullException
             exceptionTest = true
             End Try
@@ -13467,7 +13467,7 @@ Partial Public Class GeneratedTests
             exceptionTest = false
 
             Try
-            SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ExternalSourceKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.InKeyword), GenerateRedKeywordEventContainer())
+            SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ExternalSourceKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.InKeyword), GenerateRedKeywordEventContainer(), Nothing, New SeparatedSyntaxList(Of CollectionRangeVariableSyntax)(), Nothing)
             catch e as ArgumentException
             exceptionTest = true
             End Try
@@ -13475,7 +13475,7 @@ Partial Public Class GeneratedTests
             exceptionTest = false
 
             Try
-            SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.ExternalSourceKeyword), GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.InKeyword), GenerateRedKeywordEventContainer())
+            SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.ExternalSourceKeyword), GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.InKeyword), GenerateRedKeywordEventContainer(), Nothing, New SeparatedSyntaxList(Of CollectionRangeVariableSyntax)(), Nothing)
             catch e as ArgumentException
             exceptionTest = true
             End Try
@@ -13483,14 +13483,14 @@ Partial Public Class GeneratedTests
             exceptionTest = false
 
             Try
-            SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.ExternalSourceKeyword), GenerateRedKeywordEventContainer())
+            SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.ExternalSourceKeyword), GenerateRedKeywordEventContainer(), Nothing, New SeparatedSyntaxList(Of CollectionRangeVariableSyntax)(), Nothing)
             catch e as ArgumentException
             exceptionTest = true
             End Try
             Debug.Assert(exceptionTest)
             exceptionTest = false
 
-            return SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.InKeyword), GenerateRedKeywordEventContainer())
+            return SyntaxFactory.ForEachStatement(SyntaxFactory.Token(SyntaxKind.ForKeyword), SyntaxFactory.Token(SyntaxKind.EachKeyword), GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.InKeyword), GenerateRedKeywordEventContainer(), Nothing, New SeparatedSyntaxList(Of CollectionRangeVariableSyntax)(), Nothing)
         End Function
 
         Private Shared Function GenerateRedNextStatement() As NextStatementSyntax
@@ -20123,7 +20123,8 @@ Partial Public Class GeneratedTests
             Assert.NotNull(objectUnderTest.controlVariable)
             Assert.NotNull(objectUnderTest.inKeyword)
             Assert.NotNull(objectUnderTest.expression)
-            Dim withObj = objectUnderTest.WithForKeyword(objectUnderTest.ForKeyword).WithEachKeyword(objectUnderTest.EachKeyword).WithControlVariable(objectUnderTest.ControlVariable).WithInKeyword(objectUnderTest.InKeyword).WithExpression(objectUnderTest.Expression)
+            Assert.NotNull(objectUnderTest.additionalVariables)
+            Dim withObj = objectUnderTest.WithForKeyword(objectUnderTest.ForKeyword).WithEachKeyword(objectUnderTest.EachKeyword).WithControlVariable(objectUnderTest.ControlVariable).WithInKeyword(objectUnderTest.InKeyword).WithExpression(objectUnderTest.Expression).WithCommaToken(objectUnderTest.CommaToken).WithAdditionalVariables(objectUnderTest.AdditionalVariables).WithQueryClauses(objectUnderTest.QueryClauses)
             Assert.Equal(withobj, objectUnderTest)
         End Sub
 

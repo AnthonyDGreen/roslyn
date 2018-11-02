@@ -17842,10 +17842,13 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
         Friend ReadOnly _eachKeyword as KeywordSyntax
         Friend ReadOnly _inKeyword as KeywordSyntax
         Friend ReadOnly _expression as ExpressionSyntax
+        Friend ReadOnly _commaToken as PunctuationSyntax
+        Friend ReadOnly _additionalVariables as GreenNode
+        Friend ReadOnly _queryClauses as GreenNode
 
-        Friend Sub New(ByVal kind As SyntaxKind, forKeyword As InternalSyntax.KeywordSyntax, eachKeyword As InternalSyntax.KeywordSyntax, controlVariable As VisualBasicSyntaxNode, inKeyword As InternalSyntax.KeywordSyntax, expression As ExpressionSyntax)
+        Friend Sub New(ByVal kind As SyntaxKind, forKeyword As InternalSyntax.KeywordSyntax, eachKeyword As InternalSyntax.KeywordSyntax, controlVariable As VisualBasicSyntaxNode, inKeyword As InternalSyntax.KeywordSyntax, expression As ExpressionSyntax, commaToken As InternalSyntax.PunctuationSyntax, additionalVariables As GreenNode, queryClauses As GreenNode)
             MyBase.New(kind, forKeyword, controlVariable)
-            MyBase._slotCount = 5
+            MyBase._slotCount = 8
 
             AdjustFlagsAndWidth(eachKeyword)
             Me._eachKeyword = eachKeyword
@@ -17853,12 +17856,24 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             Me._inKeyword = inKeyword
             AdjustFlagsAndWidth(expression)
             Me._expression = expression
+            If commaToken IsNot Nothing Then
+                AdjustFlagsAndWidth(commaToken)
+                Me._commaToken = commaToken
+            End If
+            If additionalVariables IsNot Nothing Then
+                AdjustFlagsAndWidth(additionalVariables)
+                Me._additionalVariables = additionalVariables
+            End If
+            If queryClauses IsNot Nothing Then
+                AdjustFlagsAndWidth(queryClauses)
+                Me._queryClauses = queryClauses
+            End If
 
         End Sub
 
-        Friend Sub New(ByVal kind As SyntaxKind, forKeyword As InternalSyntax.KeywordSyntax, eachKeyword As InternalSyntax.KeywordSyntax, controlVariable As VisualBasicSyntaxNode, inKeyword As InternalSyntax.KeywordSyntax, expression As ExpressionSyntax, context As ISyntaxFactoryContext)
+        Friend Sub New(ByVal kind As SyntaxKind, forKeyword As InternalSyntax.KeywordSyntax, eachKeyword As InternalSyntax.KeywordSyntax, controlVariable As VisualBasicSyntaxNode, inKeyword As InternalSyntax.KeywordSyntax, expression As ExpressionSyntax, commaToken As InternalSyntax.PunctuationSyntax, additionalVariables As GreenNode, queryClauses As GreenNode, context As ISyntaxFactoryContext)
             MyBase.New(kind, forKeyword, controlVariable)
-            MyBase._slotCount = 5
+            MyBase._slotCount = 8
             Me.SetFactoryContext(context)
 
             AdjustFlagsAndWidth(eachKeyword)
@@ -17867,12 +17882,24 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             Me._inKeyword = inKeyword
             AdjustFlagsAndWidth(expression)
             Me._expression = expression
+            If commaToken IsNot Nothing Then
+                AdjustFlagsAndWidth(commaToken)
+                Me._commaToken = commaToken
+            End If
+            If additionalVariables IsNot Nothing Then
+                AdjustFlagsAndWidth(additionalVariables)
+                Me._additionalVariables = additionalVariables
+            End If
+            If queryClauses IsNot Nothing Then
+                AdjustFlagsAndWidth(queryClauses)
+                Me._queryClauses = queryClauses
+            End If
 
         End Sub
 
-        Friend Sub New(ByVal kind As SyntaxKind, ByVal errors as DiagnosticInfo(), ByVal annotations as SyntaxAnnotation(), forKeyword As InternalSyntax.KeywordSyntax, eachKeyword As InternalSyntax.KeywordSyntax, controlVariable As VisualBasicSyntaxNode, inKeyword As InternalSyntax.KeywordSyntax, expression As ExpressionSyntax)
+        Friend Sub New(ByVal kind As SyntaxKind, ByVal errors as DiagnosticInfo(), ByVal annotations as SyntaxAnnotation(), forKeyword As InternalSyntax.KeywordSyntax, eachKeyword As InternalSyntax.KeywordSyntax, controlVariable As VisualBasicSyntaxNode, inKeyword As InternalSyntax.KeywordSyntax, expression As ExpressionSyntax, commaToken As InternalSyntax.PunctuationSyntax, additionalVariables As GreenNode, queryClauses As GreenNode)
             MyBase.New(kind, errors, annotations, forKeyword, controlVariable)
-            MyBase._slotCount = 5
+            MyBase._slotCount = 8
 
             AdjustFlagsAndWidth(eachKeyword)
             Me._eachKeyword = eachKeyword
@@ -17880,12 +17907,24 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             Me._inKeyword = inKeyword
             AdjustFlagsAndWidth(expression)
             Me._expression = expression
+            If commaToken IsNot Nothing Then
+                AdjustFlagsAndWidth(commaToken)
+                Me._commaToken = commaToken
+            End If
+            If additionalVariables IsNot Nothing Then
+                AdjustFlagsAndWidth(additionalVariables)
+                Me._additionalVariables = additionalVariables
+            End If
+            If queryClauses IsNot Nothing Then
+                AdjustFlagsAndWidth(queryClauses)
+                Me._queryClauses = queryClauses
+            End If
 
         End Sub
 
         Friend Sub New(reader as ObjectReader)
           MyBase.New(reader)
-            MyBase._slotCount = 5
+            MyBase._slotCount = 8
           Dim _eachKeyword = DirectCast(reader.ReadValue(), KeywordSyntax)
           If _eachKeyword isnot Nothing 
              AdjustFlagsAndWidth(_eachKeyword)
@@ -17901,6 +17940,21 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
              AdjustFlagsAndWidth(_expression)
              Me._expression = _expression
           End If
+          Dim _commaToken = DirectCast(reader.ReadValue(), PunctuationSyntax)
+          If _commaToken isnot Nothing 
+             AdjustFlagsAndWidth(_commaToken)
+             Me._commaToken = _commaToken
+          End If
+          Dim _additionalVariables = DirectCast(reader.ReadValue(), GreenNode)
+          If _additionalVariables isnot Nothing 
+             AdjustFlagsAndWidth(_additionalVariables)
+             Me._additionalVariables = _additionalVariables
+          End If
+          Dim _queryClauses = DirectCast(reader.ReadValue(), GreenNode)
+          If _queryClauses isnot Nothing 
+             AdjustFlagsAndWidth(_queryClauses)
+             Me._queryClauses = _queryClauses
+          End If
         End Sub
         Friend Shared CreateInstance As Func(Of ObjectReader, Object) = Function(o) New ForEachStatementSyntax(o)
 
@@ -17910,6 +17964,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
           writer.WriteValue(Me._eachKeyword)
           writer.WriteValue(Me._inKeyword)
           writer.WriteValue(Me._expression)
+          writer.WriteValue(Me._commaToken)
+          writer.WriteValue(Me._additionalVariables)
+          writer.WriteValue(Me._queryClauses)
         End Sub
 
         Shared Sub New()
@@ -17947,6 +18004,36 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             End Get
         End Property
 
+        ''' <remarks>
+        ''' This child is optional. If it is not present, then Nothing is returned.
+        ''' </remarks>
+        Friend  ReadOnly Property CommaToken As InternalSyntax.PunctuationSyntax
+            Get
+                Return Me._commaToken
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' The list of collection variables declared by this For Each statement.
+        ''' </summary>
+        Friend  ReadOnly Property AdditionalVariables As Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(Of CollectionRangeVariableSyntax)
+            Get
+                Return new Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(Of CollectionRangeVariableSyntax)(New Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxList(of CollectionRangeVariableSyntax)(Me._additionalVariables))
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' A list of query clauses. It may be empty.
+        ''' </summary>
+        ''' <remarks>
+        ''' If nothing is present, an empty list is returned.
+        ''' </remarks>
+        Friend  ReadOnly Property QueryClauses As Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxList(Of QueryClauseSyntax)
+            Get
+                Return new Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxList(Of QueryClauseSyntax)(Me._queryClauses)
+            End Get
+        End Property
+
         Friend Overrides Function GetSlot(i as Integer) as GreenNode
             Select case i
                 Case 0
@@ -17959,6 +18046,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                     Return Me._inKeyword
                 Case 4
                     Return Me._expression
+                Case 5
+                    Return Me._commaToken
+                Case 6
+                    Return Me._additionalVariables
+                Case 7
+                    Return Me._queryClauses
                 Case Else
                      Debug.Assert(false, "child index out of range")
                      Return Nothing
@@ -17967,11 +18060,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
 
         Friend Overrides Function SetDiagnostics(ByVal newErrors As DiagnosticInfo()) As GreenNode
-            Return new ForEachStatementSyntax(Me.Kind, newErrors, GetAnnotations, _forKeyword, _eachKeyword, _controlVariable, _inKeyword, _expression)
+            Return new ForEachStatementSyntax(Me.Kind, newErrors, GetAnnotations, _forKeyword, _eachKeyword, _controlVariable, _inKeyword, _expression, _commaToken, _additionalVariables, _queryClauses)
         End Function
 
         Friend Overrides Function SetAnnotations(ByVal annotations As SyntaxAnnotation()) As GreenNode
-            Return new ForEachStatementSyntax(Me.Kind, GetDiagnostics, annotations, _forKeyword, _eachKeyword, _controlVariable, _inKeyword, _expression)
+            Return new ForEachStatementSyntax(Me.Kind, GetDiagnostics, annotations, _forKeyword, _eachKeyword, _controlVariable, _inKeyword, _expression, _commaToken, _additionalVariables, _queryClauses)
         End Function
 
         Public Overrides Function Accept(ByVal visitor As VisualBasicSyntaxVisitor) As VisualBasicSyntaxNode
@@ -39781,9 +39874,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             If node._inKeyword IsNot newInKeyword Then anyChanges = True
             Dim newExpression = DirectCast(Visit(node._expression), ExpressionSyntax)
             If node._expression IsNot newExpression Then anyChanges = True
+            Dim newCommaToken = DirectCast(Visit(node.CommaToken), PunctuationSyntax)
+            If node._commaToken IsNot newCommaToken Then anyChanges = True
+            Dim newAdditionalVariables = VisitList(node.AdditionalVariables)
+            If node._additionalVariables IsNot newAdditionalVariables.Node Then anyChanges = True
+            Dim newQueryClauses = VisitList(node.QueryClauses)
+            If node._queryClauses IsNot newQueryClauses.Node Then anyChanges = True
 
             If anyChanges Then
-                Return New ForEachStatementSyntax(node.Kind, node.GetDiagnostics, node.GetAnnotations, newForKeyword, newEachKeyword, newControlVariable, newInKeyword, newExpression)
+                Return New ForEachStatementSyntax(node.Kind, node.GetDiagnostics, node.GetAnnotations, newForKeyword, newEachKeyword, newControlVariable, newInKeyword, newExpression, newCommaToken, newAdditionalVariables.Node, newQueryClauses.Node)
             Else
                 Return node
             End If
@@ -48627,13 +48726,19 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
         ''' <param name="expression">
         ''' The expression denoting the collection to iterate over.
         ''' </param>
-        Friend Shared Function ForEachStatement(forKeyword As KeywordSyntax, eachKeyword As KeywordSyntax, controlVariable As VisualBasicSyntaxNode, inKeyword As KeywordSyntax, expression As ExpressionSyntax) As ForEachStatementSyntax
+        ''' <param name="additionalVariables">
+        ''' The list of collection variables declared by this For Each statement.
+        ''' </param>
+        ''' <param name="queryClauses">
+        ''' A list of query clauses. It may be empty.
+        ''' </param>
+        Friend Shared Function ForEachStatement(forKeyword As KeywordSyntax, eachKeyword As KeywordSyntax, controlVariable As VisualBasicSyntaxNode, inKeyword As KeywordSyntax, expression As ExpressionSyntax, commaToken As PunctuationSyntax, additionalVariables As Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(of GreenNode), queryClauses As Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxList(of GreenNode)) As ForEachStatementSyntax
             Debug.Assert(forKeyword IsNot Nothing AndAlso forKeyword.Kind = SyntaxKind.ForKeyword)
             Debug.Assert(eachKeyword IsNot Nothing AndAlso eachKeyword.Kind = SyntaxKind.EachKeyword)
             Debug.Assert(controlVariable IsNot Nothing)
             Debug.Assert(inKeyword IsNot Nothing AndAlso inKeyword.Kind = SyntaxKind.InKeyword)
             Debug.Assert(expression IsNot Nothing)
-            Return New ForEachStatementSyntax(SyntaxKind.ForEachStatement, forKeyword, eachKeyword, controlVariable, inKeyword, expression)
+            Return New ForEachStatementSyntax(SyntaxKind.ForEachStatement, forKeyword, eachKeyword, controlVariable, inKeyword, expression, commaToken, additionalVariables.Node, queryClauses.Node)
         End Function
 
 
@@ -60703,13 +60808,19 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
         ''' <param name="expression">
         ''' The expression denoting the collection to iterate over.
         ''' </param>
-        Friend Function ForEachStatement(forKeyword As KeywordSyntax, eachKeyword As KeywordSyntax, controlVariable As VisualBasicSyntaxNode, inKeyword As KeywordSyntax, expression As ExpressionSyntax) As ForEachStatementSyntax
+        ''' <param name="additionalVariables">
+        ''' The list of collection variables declared by this For Each statement.
+        ''' </param>
+        ''' <param name="queryClauses">
+        ''' A list of query clauses. It may be empty.
+        ''' </param>
+        Friend Function ForEachStatement(forKeyword As KeywordSyntax, eachKeyword As KeywordSyntax, controlVariable As VisualBasicSyntaxNode, inKeyword As KeywordSyntax, expression As ExpressionSyntax, commaToken As PunctuationSyntax, additionalVariables As Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(of GreenNode), queryClauses As Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxList(of GreenNode)) As ForEachStatementSyntax
             Debug.Assert(forKeyword IsNot Nothing AndAlso forKeyword.Kind = SyntaxKind.ForKeyword)
             Debug.Assert(eachKeyword IsNot Nothing AndAlso eachKeyword.Kind = SyntaxKind.EachKeyword)
             Debug.Assert(controlVariable IsNot Nothing)
             Debug.Assert(inKeyword IsNot Nothing AndAlso inKeyword.Kind = SyntaxKind.InKeyword)
             Debug.Assert(expression IsNot Nothing)
-            Return New ForEachStatementSyntax(SyntaxKind.ForEachStatement, forKeyword, eachKeyword, controlVariable, inKeyword, expression, _factoryContext)
+            Return New ForEachStatementSyntax(SyntaxKind.ForEachStatement, forKeyword, eachKeyword, controlVariable, inKeyword, expression, commaToken, additionalVariables.Node, queryClauses.Node, _factoryContext)
         End Function
 
 
