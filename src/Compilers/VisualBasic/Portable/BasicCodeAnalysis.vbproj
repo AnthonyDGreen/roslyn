@@ -57,6 +57,7 @@
     </BoundTreeDefinition>
     <PublicAPI Include="PublicAPI.Shipped.txt" />
     <PublicAPI Include="PublicAPI.Unshipped.txt" />
+    <Content Include="BoundTree\BoundNodes.xml" />
     <Content Include="Symbols\SymbolsAndNoPia.docx" />
     <Content Include="Syntax\Syntax.xml" />
     <None Include="Errors\Errors.vb" />

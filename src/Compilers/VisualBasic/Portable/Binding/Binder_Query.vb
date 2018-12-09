@@ -1038,14 +1038,32 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             If source Is Nothing Then
                 ' We are at the beginning of the query.
                 ' Let's go ahead and process the first collection range variable then.
-                source = BindCollectionRangeVariable(variables(0), True, Nothing, diagnostics)
+                source = BindCollectionRangeVariable(variables(0), beginsTheQuery:=True, declaredNames:=Nothing, diagnostics)
                 Debug.Assert(source.RangeVariables.Length = 1)
             End If
+
+            source = BindAdditionalCollectionRangeVariables(clauseSyntax, source, variables, If(source Is sourceOpt, 0, 1), operatorsEnumerator, diagnostics)
+
+            Return source
+
+        End Function
+
+        ''' <summary>
+        ''' See comments for BindFromClause method, this method actually does all the work.
+        ''' </summary>
+        Private Function BindAdditionalCollectionRangeVariables(
+            syntax As VisualBasicSyntaxNode,
+            source As BoundQueryClauseBase,
+            variables As SeparatedSyntaxList(Of CollectionRangeVariableSyntax),
+            startIndex As Integer,
+            ByRef operatorsEnumerator As SyntaxList(Of QueryClauseSyntax).Enumerator,
+            diagnostics As DiagnosticBag
+        ) As BoundQueryClauseBase
 
             Dim suppressDiagnostics As DiagnosticBag = Nothing
             Dim callDiagnostics As DiagnosticBag = diagnostics
 
-            For i = If(source Is sourceOpt, 0, 1) To variables.Count - 1
+            For i = startIndex To variables.Count - 1
 
                 Dim variable As CollectionRangeVariableSyntax = variables(i)
 
@@ -1103,7 +1121,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                 Dim joinSelectorLambdaKind As SynthesizedLambdaKind = Nothing
                 Dim joinSelectorSyntax As VisualBasicSyntaxNode = Nothing
-                GetAbsorbingJoinSelectorLambdaKindAndSyntax(clauseSyntax, absorbNextOperator, joinSelectorLambdaKind, joinSelectorSyntax)
+                GetAbsorbingJoinSelectorLambdaKindAndSyntax(syntax, absorbNextOperator, joinSelectorLambdaKind, joinSelectorSyntax)
 
                 Dim joinSelectorLambdaSymbol = Me.CreateQueryLambdaSymbol(joinSelectorSyntax,
                                                                           joinSelectorLambdaKind,
@@ -1183,7 +1201,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                     If i = 0 Then
                         ' This is the first variable.
-                        operatorNameLocation = clauseSyntax.GetFirstToken().Span
+                        operatorNameLocation = syntax.GetFirstToken().Span
                     Else
                         operatorNameLocation = variables.GetSeparator(i - 1).Span
                     End If
@@ -1225,7 +1243,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Function
 
         Private Shared Sub GetAbsorbingJoinSelectorLambdaKindAndSyntax(
-            clauseSyntax As QueryClauseSyntax,
+            syntax As VisualBasicSyntaxNode,
             absorbNextOperator As QueryClauseSyntax,
             <Out> ByRef lambdaKind As SynthesizedLambdaKind,
             <Out> ByRef lambdaSyntax As VisualBasicSyntaxNode)
@@ -1234,21 +1252,21 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             ' or it doesn't contain user code (just pairs outer with inner into an anonymous type or is an identity).
 
             If absorbNextOperator Is Nothing Then
-                Select Case clauseSyntax.Kind
+                Select Case syntax.Kind
                     Case SyntaxKind.SimpleJoinClause
                         lambdaKind = SynthesizedLambdaKind.JoinNonUserCodeQueryLambda
 
-                    Case SyntaxKind.FromClause
+                    Case SyntaxKind.FromClause, SyntaxKind.ForEachStatement
                         lambdaKind = SynthesizedLambdaKind.FromNonUserCodeQueryLambda
 
                     Case SyntaxKind.AggregateClause
                         lambdaKind = SynthesizedLambdaKind.FromNonUserCodeQueryLambda
 
                     Case Else
-                        Throw ExceptionUtilities.UnexpectedValue(clauseSyntax.Kind)
+                        Throw ExceptionUtilities.UnexpectedValue(syntax.Kind)
                 End Select
 
-                lambdaSyntax = clauseSyntax
+                lambdaSyntax = syntax
                 Debug.Assert(LambdaUtilities.IsNonUserCodeQueryLambda(lambdaSyntax))
             Else
                 Select Case absorbNextOperator.Kind
@@ -4223,9 +4241,28 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             declaredNames As HashSet(Of String),
             diagnostics As DiagnosticBag
         ) As BoundQueryableSource
-            Debug.Assert(declaredNames Is Nothing OrElse syntax.Parent.Kind = SyntaxKind.SimpleJoinClause OrElse syntax.Parent.Kind = SyntaxKind.GroupJoinClause)
+            Return BindCollectionRangeVariable(syntax, syntax.Identifier, syntax.AsClause, syntax.Expression, beginsTheQuery, declaredNames, diagnostics)
+        End Function
 
-            Dim source As BoundQueryPart = New BoundQuerySource(BindRValue(syntax.Expression, diagnostics))
+        ''' <summary>
+        ''' Bind CollectionRangeVariableSyntax, applying AsQueryable/AsEnumerable/Cast(Of Object) calls and 
+        ''' Select with implicit type conversion as appropriate.
+        ''' </summary>
+        Private Function BindCollectionRangeVariable(
+            syntax As VisualBasicSyntaxNode,
+            identifier As ModifiedIdentifierSyntax,
+            asClause As AsClauseSyntax,
+            expression As ExpressionSyntax,
+            beginsTheQuery As Boolean,
+            declaredNames As HashSet(Of String),
+            diagnostics As DiagnosticBag
+        ) As BoundQueryableSource
+            Debug.Assert(declaredNames Is Nothing OrElse
+                         syntax.Parent.Kind = SyntaxKind.SimpleJoinClause OrElse
+                         syntax.Parent.Kind = SyntaxKind.GroupJoinClause OrElse
+                         syntax.Kind = SyntaxKind.ForEachStatement)
+
+            Dim source As BoundQueryPart = New BoundQuerySource(BindRValue(expression, diagnostics))
 
             Dim variableType As TypeSymbol = Nothing
             Dim queryable As BoundExpression = ConvertToQueryableType(source, diagnostics, variableType)
@@ -4234,7 +4271,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             If variableType Is Nothing Then
                 If Not source.HasErrors Then
-                    ReportDiagnostic(diagnostics, syntax.Expression, ERRID.ERR_ExpectedQueryableSource, source.Type)
+                    ReportDiagnostic(diagnostics, expression, ERRID.ERR_ExpectedQueryableSource, source.Type)
                 End If
 
                 sourceIsNotQueryable = True
@@ -4246,16 +4283,16 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             ' Deal with AsClauseOpt and various modifiers.
             Dim targetVariableType As TypeSymbol = Nothing
 
-            If syntax.AsClause IsNot Nothing Then
-                targetVariableType = DecodeModifiedIdentifierType(syntax.Identifier,
-                                                                  syntax.AsClause,
+            If asClause IsNot Nothing Then
+                targetVariableType = DecodeModifiedIdentifierType(identifier,
+                                                                  asClause,
                                                                   Nothing,
                                                                   Nothing,
                                                                   diagnostics,
                                                                   ModifiedIdentifierTypeDecoderContext.LocalType Or
                                                                   ModifiedIdentifierTypeDecoderContext.QueryRangeVariableType)
-            ElseIf syntax.Identifier.Nullable.Node IsNot Nothing Then
-                ReportDiagnostic(diagnostics, syntax.Identifier.Nullable, ERRID.ERR_NullableTypeInferenceNotSupported)
+            ElseIf identifier.Nullable.Node IsNot Nothing Then
+                ReportDiagnostic(diagnostics, identifier.Nullable, ERRID.ERR_NullableTypeInferenceNotSupported)
             End If
 
             If variableType Is Nothing Then
@@ -4269,14 +4306,14 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             ElseIf targetVariableType IsNot Nothing AndAlso
                    Not targetVariableType.IsSameTypeIgnoringAll(variableType) Then
-                Debug.Assert(Not sourceIsNotQueryable AndAlso syntax.AsClause IsNot Nothing)
+                Debug.Assert(Not sourceIsNotQueryable AndAlso asClause IsNot Nothing)
                 ' Need to apply implicit Select that converts variableType to targetVariableType.
-                source = ApplyImplicitCollectionConversion(syntax, source, variableType, targetVariableType, diagnostics)
+                source = ApplyImplicitCollectionConversion(syntax, identifier, asClause, expression, source, variableType, targetVariableType, diagnostics)
                 variableType = targetVariableType
             End If
 
             Dim variable As RangeVariableSymbol = Nothing
-            Dim rangeVarName As String = syntax.Identifier.Identifier.ValueText
+            Dim rangeVarName As String = identifier.Identifier.ValueText
             Dim rangeVariableOpt As RangeVariableSymbol = Nothing
 
             If rangeVarName IsNot Nothing AndAlso rangeVarName.Length = 0 Then
@@ -4285,7 +4322,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             End If
 
             If rangeVarName IsNot Nothing Then
-                variable = RangeVariableSymbol.Create(Me, syntax.Identifier.Identifier, variableType)
+                variable = RangeVariableSymbol.Create(Me, identifier.Identifier, variableType)
 
                 ' Note what we are doing here:
                 ' We are capturing rangeVariableOpt before doing any shadowing checks
@@ -4303,12 +4340,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Dim doErrorRecovery As Boolean = False
 
                 If declaredNames IsNot Nothing AndAlso Not declaredNames.Add(rangeVarName) Then
-                    ReportDiagnostic(diagnostics, syntax.Identifier.Identifier, ERRID.ERR_QueryDuplicateAnonTypeMemberName1, rangeVarName)
+                    ReportDiagnostic(diagnostics, identifier.Identifier, ERRID.ERR_QueryDuplicateAnonTypeMemberName1, rangeVarName)
                     doErrorRecovery = True  ' Shouldn't add to the scope.
                 Else
 
                     ' Check shadowing etc. 
-                    VerifyRangeVariableName(variable, syntax.Identifier.Identifier, diagnostics)
+                    VerifyRangeVariableName(variable, identifier.Identifier, diagnostics)
 
                     If Not beginsTheQuery AndAlso declaredNames Is Nothing Then
                         Debug.Assert(syntax.Parent.Kind = SyntaxKind.FromClause OrElse syntax.Parent.Kind = SyntaxKind.AggregateClause)
@@ -4349,19 +4386,36 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             targetVariableType As TypeSymbol,
             diagnostics As DiagnosticBag
         ) As BoundQueryPart
+            Return ApplyImplicitCollectionConversion(syntax, syntax.Identifier, syntax.AsClause, syntax.Expression, source, variableType, targetVariableType, diagnostics)
+        End Function
+
+        ''' <summary>
+        ''' Apply "conversion" to the source based on the target AsClause Type.
+        ''' Returns implicit BoundQueryClause or the source, in case of an early failure.
+        ''' </summary>
+        Private Function ApplyImplicitCollectionConversion(
+            syntax As VisualBasicSyntaxNode,
+            identifier As ModifiedIdentifierSyntax,
+            asClause As AsClauseSyntax,
+            expression As ExpressionSyntax,
+            source As BoundQueryPart,
+            variableType As TypeSymbol,
+            targetVariableType As TypeSymbol,
+            diagnostics As DiagnosticBag
+        ) As BoundQueryPart
             If source.Type.IsErrorType() Then
                 ' If the source is already a "bad" type, we know that we will not be able to bind to the Select.
                 ' Let's just report errors for the conversion between types, if any.
-                Dim sourceValue As New BoundRValuePlaceholder(syntax.AsClause, variableType)
-                ApplyImplicitConversion(syntax.AsClause, targetVariableType, sourceValue, diagnostics)
+                Dim sourceValue As New BoundRValuePlaceholder(asClause, variableType)
+                ApplyImplicitConversion(asClause, targetVariableType, sourceValue, diagnostics)
             Else
                 ' Create LambdaSymbol for the shape of the selector.
-                Dim param As BoundLambdaParameterSymbol = CreateQueryLambdaParameterSymbol(syntax.Identifier.Identifier.ValueText, 0,
+                Dim param As BoundLambdaParameterSymbol = CreateQueryLambdaParameterSymbol(identifier.Identifier.ValueText, 0,
                                                                                            variableType,
-                                                                                           syntax.AsClause)
+                                                                                           asClause)
 
-                Debug.Assert(LambdaUtilities.IsNonUserCodeQueryLambda(syntax.AsClause))
-                Dim lambdaSymbol = Me.CreateQueryLambdaSymbol(syntax.AsClause,
+                Debug.Assert(LambdaUtilities.IsNonUserCodeQueryLambda(asClause))
+                Dim lambdaSymbol = Me.CreateQueryLambdaSymbol(asClause,
                                                               SynthesizedLambdaKind.ConversionNonUserCodeQueryLambda,
                                                               ImmutableArray.Create(param))
 
@@ -4369,7 +4423,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                 Dim selectorBinder As New QueryLambdaBinder(lambdaSymbol, ImmutableArray(Of RangeVariableSymbol).Empty)
 
-                Dim selector As BoundExpression = selectorBinder.ApplyImplicitConversion(syntax.AsClause, targetVariableType,
+                Dim selector As BoundExpression = selectorBinder.ApplyImplicitConversion(asClause, targetVariableType,
                                                                                          New BoundParameter(param.Syntax,
                                                                                                             param,
                                                                                                             isLValue:=False,
@@ -4392,10 +4446,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 End If
 
                 Dim boundCallOrBadExpression As BoundExpression
-                boundCallOrBadExpression = BindQueryOperatorCall(syntax.AsClause, source,
+                boundCallOrBadExpression = BindQueryOperatorCall(asClause, source,
                                                                  StringConstants.SelectMethod,
                                                                  ImmutableArray.Create(Of BoundExpression)(selectorLambda),
-                                                                 syntax.AsClause.Span,
+                                                                 asClause.Span,
                                                                  diagnostics)
 
                 Debug.Assert(boundCallOrBadExpression.WasCompilerGenerated)
@@ -4414,7 +4468,6 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             Return source
         End Function
-
 
         ''' <summary>
         ''' Convert source expression to queryable type by inferring control variable type 

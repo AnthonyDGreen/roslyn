@@ -29,6 +29,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
             Return Update(forKeyword, eachKeyword, controlVariable, inKeyword, expression, CommaToken, AdditionalVariables, QueryClauses)
         End Function
 
+        Friend ReadOnly Property HasQueryExtensions As Boolean
+            Get
+                Return QueryClauses.Count > 0 OrElse AdditionalVariables.Count > 0 OrElse CommaToken.Node IsNot Nothing
+            End Get
+        End Property
+
     End Class
 End Namespace
 

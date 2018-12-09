@@ -92,6 +92,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             End Get
         End Property
 
+        Friend Overridable ReadOnly Property DeclaringIdentifier As SyntaxToken
+            Get
+                Return Nothing
+            End Get
+        End Property
+
         Friend Overrides Function Accept(Of TArgument, TResult)(visitor As VisualBasicSymbolVisitor(Of TArgument, TResult), arg As TArgument) As TResult
             Return visitor.VisitRangeVariable(Me, arg)
         End Function
@@ -209,6 +215,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                     End If
 
                     Return ImmutableArray(Of SyntaxReference).Empty
+                End Get
+            End Property
+
+            Friend Overrides ReadOnly Property DeclaringIdentifier As SyntaxToken
+                Get
+                    Return _identifierToken
                 End Get
             End Property
 

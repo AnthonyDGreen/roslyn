@@ -650,6 +650,41 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             Dim queryClauses = queryClauseBuilder.ToList()
             Me._pool.Free(queryClauseBuilder)
 
+            ' Unlike simple `For Each` statements, those with query extensions always parse the control variable as a declaration, even if
+            ' the control variable is an simple identifier.
+            If queryClauses.Count > 0 OrElse additionalVariables.Count > 0 OrElse commaToken IsNot Nothing Then
+                Select Case controlVariable.Kind
+                    Case SyntaxKind.IdentifierName
+                        Dim name = DirectCast(controlVariable, IdentifierNameSyntax)
+                        Dim modifiedIdentifier = SyntaxFactory.ModifiedIdentifier(name.Identifier, nullable:=Nothing, arrayBounds:=Nothing, arrayRankSpecifiers:=Nothing)
+
+                        Dim names = _pool.AllocateSeparated(Of ModifiedIdentifierSyntax)()
+                        names.Add(modifiedIdentifier)
+
+                        controlVariable = SyntaxFactory.VariableDeclarator(names.ToList(), asClause:=Nothing, initializer:=Nothing)
+
+                        _pool.Free(names)
+
+                    Case SyntaxKind.VariableDeclarator
+                        ' Do nothing.
+                        Exit Select
+
+                    Case Else
+                        ' TODO: Report error.
+                        Dim missing = InternalSyntaxFactory.MissingIdentifier().AddTrailingSyntax(controlVariable)
+                        missing = ReportSyntaxError(missing, ERRID.ERR_ExpectedIdentifier)
+                        Dim modifiedIdentifier = SyntaxFactory.ModifiedIdentifier(missing, nullable:=Nothing, arrayBounds:=Nothing, arrayRankSpecifiers:=Nothing)
+
+                        Dim names = _pool.AllocateSeparated(Of ModifiedIdentifierSyntax)()
+                        names.Add(modifiedIdentifier)
+
+                        controlVariable = SyntaxFactory.VariableDeclarator(names.ToList(), asClause:=Nothing, initializer:=Nothing)
+
+                        _pool.Free(names)
+
+                End Select
+            End If
+
             Dim statement = SyntaxFactory.ForEachStatement(forKeyword, eachKeyword, controlVariable, inKeyword, expression, commaToken, additionalVariables, queryClauses)
 
             Return statement

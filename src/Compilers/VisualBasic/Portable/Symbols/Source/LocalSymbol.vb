@@ -93,6 +93,19 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
         End Function
 
         ''' <summary>
+        ''' Create an inferred local symbol from a For-each statement.
+        ''' </summary>
+        Friend Shared Function CreateForEachRange(
+                                   container As Symbol,
+                                   binder As Binder,
+                                   rangeVariable As RangeVariableSymbol,
+                                   queryExpression As BoundQueryExpression
+                               ) As LocalSymbol
+
+            Return New ForEachRangeLocalSymbol(container, binder, rangeVariable, queryExpression)
+        End Function
+
+        ''' <summary>
         ''' Create a local variable symbol. Note: this does not insert it automatically into a
         ''' local binder so that it can be found by lookup.
         ''' </summary>
@@ -697,6 +710,48 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             Public Overrides ReadOnly Property DeclaringSyntaxReferences As ImmutableArray(Of SyntaxReference)
                 Get
                     Return GetDeclaringSyntaxReferenceHelper(Of ForEachStatementSyntax)(Me.Locations)
+                End Get
+            End Property
+        End Class
+
+#End Region
+
+#Region "ForEachRangeLocalSymbol"
+
+        ''' <summary>
+        ''' A local symbol created by a for-each statement with query extensions, e.g. `For Each s In strings Where s.Length > 0`.
+        ''' </summary>
+        Private NotInheritable Class ForEachRangeLocalSymbol
+            Inherits SourceLocalSymbol
+
+            Private ReadOnly _rangeVariable As RangeVariableSymbol
+            Private ReadOnly _queryExpression As BoundQueryExpression
+
+            ''' <summary>
+            ''' Create a local variable symbol. Note: this does not insert it automatically into a
+            ''' local binder so that it can be found by lookup.
+            ''' </summary>
+            Public Sub New(container As Symbol,
+                           binder As Binder,
+                           rangeVariable As RangeVariableSymbol,
+                           queryExpression As BoundQueryExpression)
+
+                MyBase.New(container, binder, rangeVariable.DeclaringIdentifier, LocalDeclarationKind.ForEach, rangeVariable.Type)
+                Debug.Assert(queryExpression IsNot Nothing)
+
+                _rangeVariable = rangeVariable
+                _queryExpression = queryExpression
+            End Sub
+
+            Friend Overrides ReadOnly Property HasInferredType As Boolean
+                Get
+                    Return False
+                End Get
+            End Property
+
+            Public Overrides ReadOnly Property DeclaringSyntaxReferences As ImmutableArray(Of SyntaxReference)
+                Get
+                    Return _rangeVariable.DeclaringSyntaxReferences
                 End Get
             End Property
         End Class

@@ -2845,7 +2845,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Function
 
         Public Function BindForEachBlock(node As ForEachBlockSyntax, diagnostics As DiagnosticBag) As BoundStatement
-            If node.ForEachStatement.AdditionalVariables.Count > 0 OrElse node.ForEachStatement.QueryClauses.Count > 0 Then
+
+            If node.ForEachStatement.HasQueryExtensions Then
+                ' TODO: For the case of `For Each r1 In e1, r2 In e2` with no query clauses,
+                ' consider binding/lowering as nested `For Each` loops rather than as `SelectMany`.
+                ' Note that this will make the behavior inconsistent with `For Each r1 In e1 From r2 In e2`.
                 Return BindForEachBlockWithQuery(node, diagnostics)
             End If
 
@@ -2880,13 +2884,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Function
 
         Public Function BindForEachBlockWithQuery(node As ForEachBlockSyntax, diagnostics As DiagnosticBag) As BoundStatement
+            ' NOTE: Unlike traditional `For Each` loops, `Option Infer Off` will have NO effect on the control variables.
             ' For statement has its own binding scope since it may introduce iteration variable
             ' that is visible through the entire For block. It also needs to support Continue/Exit
             ' Interestingly, control variable is in scope when Limit and Step or the collection are bound,
             ' but initialized after Limit and Step or collection are evaluated...
-            Dim loopBinder = Me.GetBinder(node)
-            Debug.Assert(loopBinder IsNot Nothing)
-
+            Dim loopBinder = DirectCast(Me.GetBinder(node), ForOrForEachBlockBinder)
 
             ' For Each a In x, 
             '          b In y,
@@ -2895,16 +2898,118 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             '
             '     ? b
             '
-            ' Next c, b, a ' Should this work
+            ' Next
 
-            ' Bind collection
-            ' synthesize initial source
-            ' bind additional query operators
+            Dim forEachStatement = node.ForEachStatement
+
+            Dim queryExpression = loopBinder.BindForEachBlockQueryExpression(forEachStatement, diagnostics)
+
+            ' If loopBinder.Locals is accessed from elsewhere it will build its locals by binding the query expression for 
+            ' the `For Each` loop to compute the range variables in scope but this information is forgotten.
+            ' Since that info is needed here and it's already been computed we can provide it here instead.
+            ' Note: Technically the built locals are special kind that remember the query so this could be retrieved but
+            ' doing so is even hackier than this.
+            loopBinder.BuildAndSetLocals(queryExpression)
+
+            Select Case queryExpression.LastOperator.RangeVariables.Count
+                Case 0
+                    ' This is an error; But is it even possible?
+
+                    Return New BoundBadStatement(node, childBoundNodes:=Nothing, hasErrors:=True)
+                Case 1
+                    ' It is NOT the case that if the source contains only a single range variable that that range variable has
+                    ' the same name as the `For Each` control variable or the first synthesized collection range variable, e.g.:
+                    ' `For Each s In strings Select length = s.Length`.
+                    ' Therefore it is always the case that the control variables of the loop are inferred from the
+                    ' range variables of the expression so we can't use the default `For Each` binding even for the simple case.
+                    ' i.e. the declaring syntax for the control variables should always refer back to the range variables, 
+                    ' a la anonymous type fields.
+
+                    ' Given code of the form:
+                    ' For Each str In strings Select charCount = str.Length
+
+                    Dim rangeVariable = queryExpression.LastOperator.RangeVariables(0)
+                    Dim declaredOrInferredLocalOpt As LocalSymbol = loopBinder.Locals(0)
+                    Debug.Assert(declaredOrInferredLocalOpt.IdentifierToken = rangeVariable.DeclaringIdentifier)
+                    Debug.Assert(declaredOrInferredLocalOpt.Type IsNot Nothing AndAlso declaredOrInferredLocalOpt.Type = rangeVariable.Type)
+
+                    Dim isInferredLocal As Boolean = False ' No need to perform type inference
+                    Dim controlVariable As BoundExpression = New BoundLocal(forEachStatement.ControlVariable, declaredOrInferredLocalOpt, declaredOrInferredLocalOpt.Type)
+                    Dim loopBody As BoundBlock = Nothing
+                    Dim nextVariables As ImmutableArray(Of BoundExpression) = Nothing ' Not supported.
+                    Dim hasErrors As Boolean = False
+
+                    ' return the specific BoundForEachStatement
+                    Return loopBinder.BindForEachBlockParts(node,
+                                                            declaredOrInferredLocalOpt,
+                                                            controlVariable,
+                                                            isInferredLocal,
+                                                            diagnostics,
+                                                            queryExpression)
+
+                Case Else
+
+                    ' Bind this like for eaching over a simple collection and
+                    ' copying each element out.
+                    ' TODO: What if enumerator is value-type and $enumerator.Current and/or $enumerator.Current.P have side-effects?
+                    ' Is lowering: `v1 = $enumerator.Currrent.V1 : v2 = $enumerator.Currrent.V2` or is $enumerator.Current cached?
+                    ' We can assume anonymous type property accessors won't have side-effects and only worry about value-type
+                    ' $enumerator.Current having side-effects.
+                    Throw New NotImplementedException()
+
+            End Select
+
             ' enumerate result
             ' copy anonymous type fields to locals
 
 
             Throw New NotImplementedException()
+        End Function
+
+        Public Function BindForEachBlockQueryExpression(forEachStatement As ForEachStatementSyntax, diagnostics As DiagnosticBag) As BoundQueryExpression
+            ' For Each a In x, 
+            '          b In y,
+            '          c In z
+            '    Where P(|b|) ' Expect find-all references for b to highlight both range variable and "plain" variable.
+            '
+            '     ? b
+            '
+            ' Next
+
+            Debug.Assert(TypeOf Me Is ForOrForEachBlockBinder)
+
+            ' Bind header as implicit query:
+            ' TODO: Ensure that parse only produces VariableDeclaratorSyntax even with null AsClause rather than IdentifierNameSyntax.
+            Dim declarator = DirectCast(forEachStatement.ControlVariable, VariableDeclaratorSyntax)
+
+            Dim source As BoundQueryClauseBase
+
+            ' Syntax: For Each r As T In s
+            ' This isn't a true CollectionRangeVariableSyntax in the syntax API so we supply the parts
+            ' of it directly.
+            ' TODO: May need a special binder to ensure that control variable doesn't trigger "shadowing" error while binding query.
+            ' May just be able to use ContainingBinder to bind that expression instead.
+            source = ContainingBinder.BindCollectionRangeVariable(forEachStatement, declarator.Names(0), declarator.AsClause, forEachStatement.Expression, beginsTheQuery:=True, declaredNames:=Nothing, diagnostics)
+            Debug.Assert(source.RangeVariables.Length = 1)
+
+            Dim operatorsEnumerator = forEachStatement.QueryClauses.GetEnumerator()
+
+            If forEachStatement.AdditionalVariables.Count > 0 Then
+                source = ContainingBinder.BindAdditionalCollectionRangeVariables(forEachStatement, source, forEachStatement.AdditionalVariables, startIndex:=0, operatorsEnumerator, diagnostics)
+            End If
+
+            source = ContainingBinder.BindSubsequentQueryOperators(source, operatorsEnumerator, diagnostics)
+
+            If Not source.Type.IsErrorType() AndAlso source.Kind = BoundKind.QueryableSource AndAlso
+               DirectCast(source, BoundQueryableSource).Source.Kind = BoundKind.QuerySource Then
+                ' Need to apply implicit Select.
+                source = ContainingBinder.BindFinalImplicitSelectClause(source, diagnostics)
+            End If
+
+            ' QUESTION: Is there any invariant or assumption that if nodeA is contained by nodeB then 
+            ' the binder for nodeA is contained by the binder for nodeB? Because as written
+            ' the query expression is bound with the containing binder outside of the `For Each` binder.
+            Return New BoundQueryExpression(forEachStatement, source, source.Type)
         End Function
 
         ''' <summary>
@@ -3338,7 +3443,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             declaredOrInferredLocalOpt As LocalSymbol,
             controlVariableOpt As BoundExpression,
             isInferredLocal As Boolean,
-            diagnostics As DiagnosticBag
+            diagnostics As DiagnosticBag,
+            Optional collection As BoundExpression = Nothing
         ) As BoundForEachStatement
             Dim forEachStatement = DirectCast(node.ForOrForEachStatement, ForEachStatementSyntax)
 
@@ -3359,11 +3465,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Dim boundCurrentConversion As BoundExpression = Nothing
             Dim boundCurrentPlaceholder As BoundRValuePlaceholder = Nothing
 
-            Dim collection As BoundExpression = Nothing
-
             If isInferredLocal Then
                 Debug.Assert(declaredOrInferredLocalOpt IsNot Nothing)
                 Debug.Assert(controlVariableOpt Is Nothing)
+                Debug.Assert(collection Is Nothing)
 
                 Dim type = InferForEachVariableType(declaredOrInferredLocalOpt,
                                                     forEachStatement.Expression,
@@ -3395,6 +3500,19 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     collection = MakeRValue(collection, diagnostics)
                 End If
 
+                ' check if the collection is valid for a for each statement
+                collection = InterpretForEachStatementCollection(collection,
+                                                                 currentType,
+                                                                 isEnumerable,
+                                                                 boundGetEnumeratorCall,
+                                                                 boundEnumeratorPlaceholder,
+                                                                 boundMoveNextCall,
+                                                                 boundCurrentAccess,
+                                                                 collectionPlaceholder,
+                                                                 needToDispose,
+                                                                 isOrInheritsFromOrImplementsIDisposable,
+                                                                 diagnostics)
+            ElseIf Not isInferredLocal Then
                 ' check if the collection is valid for a for each statement
                 collection = InterpretForEachStatementCollection(collection,
                                                                  currentType,
@@ -3507,7 +3625,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                     ' create TryCast
                     Dim useSiteDiagnostics As HashSet(Of DiagnosticInfo) = Nothing
-                    Dim conversionKind As conversionKind = Conversions.ClassifyTryCastConversion(enumeratorType, idisposableType, useSiteDiagnostics)
+                    Dim conversionKind As ConversionKind = Conversions.ClassifyTryCastConversion(enumeratorType, idisposableType, useSiteDiagnostics)
 
                     If diagnostics.Add(collectionSyntax, useSiteDiagnostics) Then
                         ' Suppress additional diagnostics

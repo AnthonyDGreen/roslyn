@@ -44,7 +44,13 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             If _syntax.Kind = SyntaxKind.ForBlock Then
                 controlVariableSyntax = DirectCast(_syntax.ForOrForEachStatement, ForStatementSyntax).ControlVariable
             Else
-                controlVariableSyntax = DirectCast(_syntax.ForOrForEachStatement, ForEachStatementSyntax).ControlVariable
+                Dim forEachStatement = DirectCast(_syntax, ForEachBlockSyntax).ForEachStatement
+
+                If forEachStatement.HasQueryExtensions Then
+                    Return BuildLocals(BindForEachBlockQueryExpression(forEachStatement, DiagnosticBag.GetInstance()))
+                Else
+                    controlVariableSyntax = forEachStatement.ControlVariable
+                End If
             End If
 
             Dim declarator = TryCast(controlVariableSyntax, VariableDeclaratorSyntax)
@@ -101,6 +107,24 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             Return ImmutableArray(Of LocalSymbol).Empty
         End Function
+
+        ' TODO: Find a way to avoid using `Friend` here.
+        Private Function BuildLocals(queryExpression As BoundQueryExpression) As ImmutableArray(Of LocalSymbol)
+            Dim builder = PooledObjects.ArrayBuilder(Of LocalSymbol).GetInstance()
+
+            For Each rangeVariable In queryExpression.LastOperator.RangeVariables
+                builder.Add(LocalSymbol.CreateForEachRange(ContainingMember, Me, rangeVariable, queryExpression))
+            Next
+
+            ' TODO: Should builder.Free() be called?
+            Return builder.ToImmutableArray()
+        End Function
+
+        Friend Sub BuildAndSetLocals(queryExpression As BoundQueryExpression)
+            If _locals.IsDefault Then
+                ImmutableInterlocked.InterlockedCompareExchange(_locals, BuildLocals(queryExpression), Nothing)
+            End If
+        End Sub
 
         Private Function CreateLocalSymbol(identifier As SyntaxToken) As LocalSymbol
             If _syntax.Kind = SyntaxKind.ForBlock Then
