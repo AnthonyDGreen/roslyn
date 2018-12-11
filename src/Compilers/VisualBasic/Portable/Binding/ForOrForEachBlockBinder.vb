@@ -113,7 +113,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Dim builder = PooledObjects.ArrayBuilder(Of LocalSymbol).GetInstance()
 
             For Each rangeVariable In queryExpression.LastOperator.RangeVariables
-                builder.Add(LocalSymbol.CreateForEachRange(ContainingMember, Me, rangeVariable, queryExpression))
+                ' Kind will be None if this range variable was created for error recovery.
+                If rangeVariable.DeclaringIdentifier.Kind <> SyntaxKind.None Then
+                    builder.Add(LocalSymbol.CreateForEachRange(ContainingMember, Me, rangeVariable, queryExpression))
+                End If
             Next
 
             ' TODO: Should builder.Free() be called?

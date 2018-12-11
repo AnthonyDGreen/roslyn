@@ -142,5 +142,82 @@ End Module
 
         End Sub
 
+        <Fact>
+        Public Sub EmptySelectClauseRecoversGracefully()
+            Dim compilationDef =
+<compilation name="QueryExpressions">
+    <file name="a.vb">
+Option Strict Off
+Option Infer On
+
+Imports System
+Imports System.Collections
+Imports System.Linq
+
+Module Program
+    Sub Main()
+        Dim digits = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+        For Each i In digits Select
+
+        Next
+    End Sub
+End Module
+    </file>
+</compilation>
+
+            Dim compilation = CompilationUtils.CreateCompilationWithMscorlib40AndVBRuntime(compilationDef,
+                                                                                           additionalRefs:={SystemCoreRef},
+                                                                                           TestOptions.ReleaseExe)
+
+            AssertTheseCompileDiagnostics(compilation,
+<expected>
+BC30201: Expression expected.
+        For Each i In digits Select
+                                   ~
+</expected>)
+
+        End Sub
+
+        <Fact>
+        Public Sub SelectClauseWithoutInferableNameRecoversGracefully()
+            Dim compilationDef =
+<compilation name="QueryExpressions">
+    <file name="a.vb">
+Option Strict Off
+Option Infer On
+
+Imports System
+Imports System.Collections
+Imports System.Linq
+
+Module Program
+    Sub Main()
+        Dim digits = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+        For Each i In digits Select
+            Console.Write(i)
+        Next
+    End Sub
+End Module
+    </file>
+</compilation>
+
+            Dim compilation = CompilationUtils.CreateCompilationWithMscorlib40AndVBRuntime(compilationDef,
+                                                                                           additionalRefs:={SystemCoreRef},
+                                                                                           TestOptions.ReleaseExe)
+
+            AssertTheseCompileDiagnostics(compilation,
+<expected>
+BC30491: Expression does not produce a value.
+            Console.Write(i)
+            ~~~~~~~~~~~~~~~~
+BC36599: Range variable name can be inferred only from a simple or qualified name with no arguments.
+            Console.Write(i)
+            ~~~~~~~~~~~~~~~~
+</expected>)
+
+        End Sub
+
     End Class
 End Namespace

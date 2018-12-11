@@ -2889,8 +2889,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             ' that is visible through the entire For block. It also needs to support Continue/Exit
             ' Interestingly, control variable is in scope when Limit and Step or the collection are bound,
             ' but initialized after Limit and Step or collection are evaluated...
-            Dim loopBinder = DirectCast(Me.GetBinder(node), ForOrForEachBlockBinder)
+            Dim loopBinder = TryCast(Me.GetBinder(node), ForOrForEachBlockBinder)
+            If loopBinder Is Nothing Then
+                loopBinder = TryCast(Me.GetBinder(node).ContainingBinder, ForOrForEachBlockBinder)
 
+                ' TODO: This hack is a workaround to the IncrementalBinder being used in the IDE.
+                If loopBinder Is Nothing Then
+                    Stop
+                End If
+            End If
             ' For Each a In x, 
             '          b In y,
             '          c In z
@@ -2911,74 +2918,40 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             ' doing so is even hackier than this.
             loopBinder.BuildAndSetLocals(queryExpression)
 
-            Select Case queryExpression.LastOperator.RangeVariables.Count
-                Case 0
-                    ' This is an error; But is it even possible?
+            Dim declaredOrInferredLocalOpt As LocalSymbol
 
-                    Return New BoundBadStatement(node, childBoundNodes:=Nothing, hasErrors:=True)
-                Case 1
-                    ' It is NOT the case that if the source contains only a single range variable that that range variable has
-                    ' the same name as the `For Each` control variable or the first synthesized collection range variable, e.g.:
-                    ' `For Each s In strings Select length = s.Length`.
-                    ' Therefore it is always the case that the control variables of the loop are inferred from the
-                    ' range variables of the expression so we can't use the default `For Each` binding even for the simple case.
-                    ' i.e. the declaring syntax for the control variables should always refer back to the range variables, 
-                    ' a la anonymous type fields.
+            If loopBinder.Locals.Length = 1 AndAlso queryExpression.LastOperator.RangeVariables.Count = 1 Then
+                ' Note: It is NOT the case that if the source contains only a single range variable that that range variable has
+                ' the same name as the `For Each` control variable or the first synthesized collection range variable, e.g.:
+                ' `For Each s In strings Select length = s.Length`.
 
-                    ' Given code of the form:
-                    ' For Each str In strings Select charCount = str.Length
+                ' This will bind like a simple for each of a collection of scalars.
+                declaredOrInferredLocalOpt = loopBinder.Locals(0)
+                Dim rangeVariable = queryExpression.LastOperator.RangeVariables(0)
+                Debug.Assert(declaredOrInferredLocalOpt.IdentifierToken = rangeVariable.DeclaringIdentifier)
+                Debug.Assert(declaredOrInferredLocalOpt.Type IsNot Nothing AndAlso declaredOrInferredLocalOpt.Type = rangeVariable.Type)
 
-                    Dim rangeVariable = queryExpression.LastOperator.RangeVariables(0)
-                    Dim declaredOrInferredLocalOpt As LocalSymbol = loopBinder.Locals(0)
-                    Debug.Assert(declaredOrInferredLocalOpt.IdentifierToken = rangeVariable.DeclaringIdentifier)
-                    Debug.Assert(declaredOrInferredLocalOpt.Type IsNot Nothing AndAlso declaredOrInferredLocalOpt.Type = rangeVariable.Type)
+            Else
+                ' If 0 locals this is error covery. If then multiple range variables are present.
 
-                    Dim isInferredLocal As Boolean = False ' No need to perform type inference
-                    Dim controlVariable As BoundExpression = New BoundLocal(forEachStatement.ControlVariable, declaredOrInferredLocalOpt, declaredOrInferredLocalOpt.Type)
-                    Dim loopBody As BoundBlock = Nothing
-                    Dim nextVariables As ImmutableArray(Of BoundExpression) = Nothing ' Not supported.
-                    Dim hasErrors As Boolean = False
+                ' Bind this like for eaching over a simple collection and copying each field out like:
+                ' $current = $enumerator.Current
+                ' v1 = $currrent.V1 
+                ' v2 = $currrent.V2
+                ' TODO: What if $enumerator.Current and/or $enumerator.Current.P have side-effects?
+                ' We can assume anonymous type property accessors won't have side-effects and only worry about $enumerator.Current having side-effects.
+                declaredOrInferredLocalOpt = New SynthesizedLocal(ContainingMember, queryExpression.LastOperator.CompoundVariableType, SynthesizedLocalKind.LoweringTemp)
+            End If
 
-                    ' return the specific BoundForEachStatement
-                    Return loopBinder.BindForEachBlockParts(node,
-                                                            declaredOrInferredLocalOpt,
-                                                            controlVariable,
-                                                            isInferredLocal,
-                                                            diagnostics,
-                                                            queryExpression)
+            Dim controlVariable As BoundExpression = New BoundLocal(forEachStatement.ControlVariable, declaredOrInferredLocalOpt, declaredOrInferredLocalOpt.Type)
 
-                Case Else
-
-                    Dim declaredOrInferredLocalOpt As LocalSymbol = New SynthesizedLocal(ContainingMember, queryExpression.LastOperator.CompoundVariableType, SynthesizedLocalKind.LoweringTemp)
-                    Dim isInferredLocal As Boolean = False ' No need to perform type inference
-                    Dim controlVariable As BoundExpression = New BoundLocal(forEachStatement.ControlVariable, declaredOrInferredLocalOpt, declaredOrInferredLocalOpt.Type)
-                    Dim loopBody As BoundBlock = Nothing
-                    Dim nextVariables As ImmutableArray(Of BoundExpression) = Nothing ' Not supported.
-                    Dim hasErrors As Boolean = False
-
-                    ' return the specific BoundForEachStatement
-                    Return loopBinder.BindForEachBlockParts(node,
-                                                            declaredOrInferredLocalOpt,
-                                                            controlVariable,
-                                                            isInferredLocal,
-                                                            diagnostics,
-                                                            queryExpression)
-
-                    ' Bind this like for eaching over a simple collection and
-                    ' copying each element out.
-                    ' TODO: What if enumerator is value-type and $enumerator.Current and/or $enumerator.Current.P have side-effects?
-                    ' Is lowering: `v1 = $enumerator.Currrent.V1 : v2 = $enumerator.Currrent.V2` or is $enumerator.Current cached?
-                    ' We can assume anonymous type property accessors won't have side-effects and only worry about value-type
-                    ' $enumerator.Current having side-effects.
-                    Throw New NotImplementedException()
-
-            End Select
-
-            ' enumerate result
-            ' copy anonymous type fields to locals
-
-
-            Throw New NotImplementedException()
+            ' return the specific BoundForEachStatement
+            Return loopBinder.BindForEachBlockParts(node,
+                                                    declaredOrInferredLocalOpt,
+                                                    controlVariable,
+                                                    isInferredLocal:=False, ' No need to perform type inference
+                                                    diagnostics,
+                                                    queryExpression)
         End Function
 
         Public Function BindForEachBlockQueryExpression(forEachStatement As ForEachStatementSyntax, diagnostics As DiagnosticBag) As BoundQueryExpression

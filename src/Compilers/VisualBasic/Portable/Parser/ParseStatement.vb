@@ -641,10 +641,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                 additionalVariables = Nothing
             End If
 
-            TryEatNewLine()
-
             Dim queryClauseBuilder = Me._pool.Allocate(Of QueryClauseSyntax)()
-
             ParseMoreQueryOperators(queryClauseBuilder)
 
             Dim queryClauses = queryClauseBuilder.ToList()

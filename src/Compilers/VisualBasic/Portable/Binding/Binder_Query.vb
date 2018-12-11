@@ -2787,7 +2787,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Dim requireRangeVariable As Boolean
 
                 If selectVariables.Count = 1 Then
-                    requireRangeVariable = False
+                    requireRangeVariable = [select].Parent.IsKind(SyntaxKind.ForEachStatement)
 
                     ' If there is a Join or a GroupJoin ahead, this operator must
                     ' add a range variable into the scope.

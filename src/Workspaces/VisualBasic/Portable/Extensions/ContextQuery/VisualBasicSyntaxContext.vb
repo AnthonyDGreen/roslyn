@@ -119,7 +119,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Extensions.ContextQuery
             Me.IsInLambda = isInLambda
             Me.IsPreprocessorStartContext = ComputeIsPreprocessorStartContext(position, targetToken)
             Me.IsWithinPreprocessorContext = ComputeIsWithinPreprocessorContext(position, targetToken)
-            Me.IsQueryOperatorContext = syntaxTree.IsFollowingCompleteExpression(Of QueryExpressionSyntax)(position, targetToken, Function(query) query, cancellationToken)
+            Me.IsQueryOperatorContext =
+                syntaxTree.IsFollowingCompleteExpression(Of QueryExpressionSyntax)(position, targetToken, Function(query) query, cancellationToken) OrElse
+                syntaxTree.IsFollowingCompleteExpression(Of ForEachStatementSyntax)(position, targetToken, Function(statement) statement.Expression, cancellationToken) OrElse
+                syntaxTree.IsFollowingCompleteQueryClause(Of ForEachStatementSyntax)(position, targetToken, Function(statement) statement.QueryClauses.LastOrDefault(), cancellationToken)
 
             Me.EnclosingNamedType = CancellableLazy.Create(AddressOf ComputeEnclosingNamedType)
             Me.IsCustomEventContext = isCustomEventContext

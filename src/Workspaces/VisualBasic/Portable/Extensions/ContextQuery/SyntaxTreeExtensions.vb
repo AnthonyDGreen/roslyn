@@ -832,6 +832,44 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Extensions.ContextQuery
             Return False
         End Function
 
+        <Extension()>
+        Friend Function IsFollowingCompleteQueryClause(Of TParent As SyntaxNode)(
+            syntaxTree As SyntaxTree,
+            position As Integer,
+            targetToken As SyntaxToken,
+            childGetter As Func(Of TParent, QueryClauseSyntax),
+            cancellationToken As CancellationToken,
+            Optional allowImplicitLineContinuation As Boolean = True
+        ) As Boolean
+
+            Contract.Requires(targetToken = syntaxTree.GetTargetToken(position, cancellationToken))
+
+            ' Check if our position begins a new statement
+            If targetToken.MustBeginNewStatement(position) OrElse
+                (targetToken.FollowsEndOfStatement(position) AndAlso Not allowImplicitLineContinuation) Then
+
+                Return False
+            End If
+
+            For Each parent In targetToken.GetAncestors(Of TParent)()
+                Dim clause = childGetter(parent)
+
+                If clause Is Nothing Then
+                    Continue For
+                End If
+
+                Dim terminatingToken = GetQueryClauseTerminatingToken(clause)
+                If terminatingToken.Kind <> SyntaxKind.None AndAlso
+                   Not terminatingToken.IsMissing AndAlso
+                   terminatingToken = targetToken Then
+
+                    Return True
+                End If
+            Next
+
+            Return False
+        End Function
+
         ''' <summary>
         ''' Given a syntax node, this returns the token that is the "end" token that ends this
         ''' expression.
