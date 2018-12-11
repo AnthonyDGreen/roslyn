@@ -2949,6 +2949,21 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                 Case Else
 
+                    Dim declaredOrInferredLocalOpt As LocalSymbol = New SynthesizedLocal(ContainingMember, queryExpression.LastOperator.CompoundVariableType, SynthesizedLocalKind.LoweringTemp)
+                    Dim isInferredLocal As Boolean = False ' No need to perform type inference
+                    Dim controlVariable As BoundExpression = New BoundLocal(forEachStatement.ControlVariable, declaredOrInferredLocalOpt, declaredOrInferredLocalOpt.Type)
+                    Dim loopBody As BoundBlock = Nothing
+                    Dim nextVariables As ImmutableArray(Of BoundExpression) = Nothing ' Not supported.
+                    Dim hasErrors As Boolean = False
+
+                    ' return the specific BoundForEachStatement
+                    Return loopBinder.BindForEachBlockParts(node,
+                                                            declaredOrInferredLocalOpt,
+                                                            controlVariable,
+                                                            isInferredLocal,
+                                                            diagnostics,
+                                                            queryExpression)
+
                     ' Bind this like for eaching over a simple collection and
                     ' copying each element out.
                     ' TODO: What if enumerator is value-type and $enumerator.Current and/or $enumerator.Current.P have side-effects?
@@ -3444,7 +3459,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             controlVariableOpt As BoundExpression,
             isInferredLocal As Boolean,
             diagnostics As DiagnosticBag,
-            Optional collection As BoundExpression = Nothing
+            Optional queryExpression As BoundQueryExpression = Nothing
         ) As BoundForEachStatement
             Dim forEachStatement = DirectCast(node.ForOrForEachStatement, ForEachStatementSyntax)
 
@@ -3464,6 +3479,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             Dim boundCurrentConversion As BoundExpression = Nothing
             Dim boundCurrentPlaceholder As BoundRValuePlaceholder = Nothing
+
+            Dim collection As BoundExpression = Nothing
 
             If isInferredLocal Then
                 Debug.Assert(declaredOrInferredLocalOpt IsNot Nothing)
@@ -3493,26 +3510,17 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             End If
 
             If collection Is Nothing Then
-                ' bind the expression that describes the collection to iterate over
-                collection = BindValue(forEachStatement.Expression, diagnostics)
+                If queryExpression Is Nothing Then
+                    ' bind the expression that describes the collection to iterate over
+                    collection = BindValue(forEachStatement.Expression, diagnostics)
 
-                If Not collection.IsLValue AndAlso Not collection.IsNothingLiteral Then
-                    collection = MakeRValue(collection, diagnostics)
+                    If Not collection.IsLValue AndAlso Not collection.IsNothingLiteral Then
+                        collection = MakeRValue(collection, diagnostics)
+                    End If
+                Else
+                    collection = queryExpression
                 End If
 
-                ' check if the collection is valid for a for each statement
-                collection = InterpretForEachStatementCollection(collection,
-                                                                 currentType,
-                                                                 isEnumerable,
-                                                                 boundGetEnumeratorCall,
-                                                                 boundEnumeratorPlaceholder,
-                                                                 boundMoveNextCall,
-                                                                 boundCurrentAccess,
-                                                                 collectionPlaceholder,
-                                                                 needToDispose,
-                                                                 isOrInheritsFromOrImplementsIDisposable,
-                                                                 diagnostics)
-            ElseIf Not isInferredLocal Then
                 ' check if the collection is valid for a for each statement
                 collection = InterpretForEachStatementCollection(collection,
                                                                  currentType,
@@ -3645,6 +3653,57 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Dim nextVariables As ImmutableArray(Of BoundExpression) = Nothing
             Me.BindForLoopBodyAndNextControlVariables(node, nextVariables, loopBody, diagnostics)
 
+            Dim rangeAssignments = ArrayBuilder(Of BoundStatement).GetInstance()
+
+            If queryExpression IsNot Nothing AndAlso queryExpression.LastOperator.RangeVariables.Count > 1 Then
+                Dim anonymousType = queryExpression.LastOperator.CompoundVariableType
+                ' TODO: Hack
+                Dim loopBinder = DirectCast(Me, ForOrForEachBlockBinder)
+
+                For Each local In loopBinder.Locals
+                    Dim lookupResult As New LookupResult()
+
+                    If Not GetMemberIfMatchesRequirements(local.Name,
+                                                          anonymousType,
+                                                          s_isReadablePropertyWithoutArguments,
+                                                          lookupResult,
+                                                          forEachStatement,
+                                                          diagnostics) _
+                    Then
+                        Debug.Fail("Should report error here")
+                    End If
+
+                    Debug.Assert(lookupResult.IsGood)
+
+                    ' bind the call to Current (incl. overload resolution, handling of param arrays, optional parameters, ...)
+                    Dim propertyGroup = New BoundPropertyGroup(forEachStatement,
+                                                               lookupResult.Symbols.ToDowncastedImmutable(Of PropertySymbol),
+                                                               lookupResult.Kind,
+                                                               boundCurrentAccess,
+                                                               QualificationKind.QualifiedViaValue)
+
+                    Dim boundPropertyAccess = CreateBoundInvocationExpressionFromMethodOrPropertyGroup(forEachStatement,
+                                                                                                       propertyGroup,
+                                                                                                       diagnostics)
+
+                    ' the requirement is a "readable" property that takes no parameters, but the get property could be inaccessible
+                    ' and then binding a property access will fail.
+                    If boundPropertyAccess.HasErrors Then
+                        Debug.Fail("Should report error here")
+                    End If
+
+                    ' assign the returned value from current to the control variable
+                    Dim boundAssignment = New BoundAssignmentOperator(forEachStatement,
+                                                                      New BoundLocal(forEachStatement, local, local.Type),
+                                                                      boundPropertyAccess,
+                                                                      suppressObjectClone:=False,
+                                                                      type:=local.Type).ToStatement()
+                    boundAssignment.SetWasCompilerGenerated() ' used to not create sequence points
+
+                    rangeAssignments.Add(boundAssignment)
+                Next
+            End If
+
             Dim enumeratorInfo = New ForEachEnumeratorInfo(boundGetEnumeratorCall,
                                                            boundMoveNextCall,
                                                            boundCurrentAccess,
@@ -3655,7 +3714,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                                            boundCurrentConversion,
                                                            boundEnumeratorPlaceholder,
                                                            boundCurrentPlaceholder,
-                                                           collectionPlaceholder)
+                                                           collectionPlaceholder,
+                                                           rangeAssignments.ToImmutableAndFree())
 
             Return New BoundForEachStatement(node,
                                              collection,

@@ -601,12 +601,38 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                                                      type:=node.ControlVariable.Type).ToStatement
             boundCurrentAssignment.SetWasCompilerGenerated() ' used to not create sequence points
 
-            Dim rewrittenBodyStatements = ImmutableArray.Create(Of BoundStatement)(DirectCast(Visit(boundCurrentAssignment), BoundStatement),
-                                                                                  DirectCast(Visit(node.Body), BoundStatement))
+            Dim rewrittenBodyStatements As ImmutableArray(Of BoundStatement)
+            Dim rewrittenLocals As ImmutableArray(Of LocalSymbol)
+
+            If enumeratorInfo.RangeAssignments.IsDefault Then
+                rewrittenBodyStatements = ImmutableArray.Create(Of BoundStatement)(DirectCast(Visit(boundCurrentAssignment), BoundStatement),
+                                                                                   DirectCast(Visit(node.Body), BoundStatement))
+
+                rewrittenLocals = If(node.DeclaredOrInferredLocalOpt IsNot Nothing,
+                                     ImmutableArray.Create(Of LocalSymbol)(node.DeclaredOrInferredLocalOpt),
+                                     ImmutableArray(Of LocalSymbol).Empty)
+            Else
+                Dim localsBuilder = ArrayBuilder(Of LocalSymbol).GetInstance()
+                Dim statementsBuilder = ArrayBuilder(Of BoundStatement).GetInstance()
+
+                localsBuilder.Add(node.DeclaredOrInferredLocalOpt)
+                statementsBuilder.Add(DirectCast(Visit(boundCurrentAssignment), BoundStatement))
+
+                For Each assignment In enumeratorInfo.RangeAssignments
+                    ' TODO: Hack.
+                    localsBuilder.Add(DirectCast(DirectCast(DirectCast(assignment, BoundExpressionStatement).Expression, BoundAssignmentOperator).Left, BoundLocal).LocalSymbol)
+                    statementsBuilder.Add(DirectCast(Visit(assignment), BoundStatement))
+                Next
+
+                statementsBuilder.Add(DirectCast(Visit(node.Body), BoundStatement))
+
+                rewrittenLocals = localsBuilder.ToImmutableAndFree()
+                rewrittenBodyStatements = statementsBuilder.ToImmutableAndFree()
+            End If
 
             ' declare the control variable inside of the while loop to capture it for each
             ' iteration of this loop with a copy constructor
-            Dim rewrittenBodyBlock As BoundBlock = New BoundBlock(syntaxNode, Nothing, If(node.DeclaredOrInferredLocalOpt IsNot Nothing, ImmutableArray.Create(Of LocalSymbol)(node.DeclaredOrInferredLocalOpt), ImmutableArray(Of LocalSymbol).Empty), rewrittenBodyStatements)
+            Dim rewrittenBodyBlock As BoundBlock = New BoundBlock(syntaxNode, Nothing, rewrittenLocals, rewrittenBodyStatements)
 
             Dim bodyEpilogue As BoundStatement = New BoundLabelStatement(syntaxNode, node.ContinueLabel)
 

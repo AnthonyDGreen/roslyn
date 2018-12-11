@@ -82,6 +82,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         Public ReadOnly CollectionPlaceholder As BoundRValuePlaceholder
 
         ''' <summary>
+        ''' For `For Each` loops with query extensions, stores the assignment of range variables to locals.
+        ''' </summary>
+        Public ReadOnly RangeAssignments As Immutable.ImmutableArray(Of BoundStatement)
+
+        ''' <summary>
         ''' Initializes a new instance of the <see cref="ForEachEnumeratorInfo" /> class.
         ''' </summary>
         ''' <param name="getEnumerator">A bound call to the GetEnumerator method.</param>
@@ -106,7 +111,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             currentConversion As BoundExpression,
             enumeratorPlaceholder As BoundLValuePlaceholder,
             currentPlaceholder As BoundRValuePlaceholder,
-            collectionPlaceholder As BoundRValuePlaceholder
+            collectionPlaceholder As BoundRValuePlaceholder,
+            Optional rangeAssignments As Immutable.ImmutableArray(Of BoundStatement) = Nothing
         )
             Me.GetEnumerator = getEnumerator
             Me.MoveNext = moveNext
@@ -119,6 +125,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Me.EnumeratorPlaceholder = enumeratorPlaceholder
             Me.CurrentPlaceholder = currentPlaceholder
             Me.CollectionPlaceholder = collectionPlaceholder
+            Me.RangeAssignments = rangeAssignments
         End Sub
     End Class
 End Namespace

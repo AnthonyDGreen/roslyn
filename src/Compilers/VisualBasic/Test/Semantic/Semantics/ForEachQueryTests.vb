@@ -41,5 +41,106 @@ End Module
 
         End Sub
 
+        <Fact>
+        Public Sub SimpleCaseWithSelectClause()
+            Dim compilationDef =
+<compilation name="QueryExpressions">
+    <file name="a.vb">
+Option Strict Off
+Option Infer On
+
+Imports System
+Imports System.Collections
+Imports System.Linq
+
+Module Program
+    Sub Main()
+        Dim digits = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+        For Each i In digits Where i &lt; 4 Select square = i * i
+            Console.Write(square)
+        Next
+    End Sub
+End Module
+    </file>
+</compilation>
+
+            Dim compilation = CompilationUtils.CreateCompilationWithMscorlib40AndVBRuntime(compilationDef,
+                                                                                           additionalRefs:={SystemCoreRef},
+                                                                                           TestOptions.ReleaseExe)
+
+            Dim verifier = CompileAndVerify(compilation, expectedOutput:="0149")
+
+        End Sub
+
+        <Fact>
+        Public Sub SelectClauseHidesRangeVariables()
+            Dim compilationDef =
+<compilation name="QueryExpressions">
+    <file name="a.vb">
+Option Strict Off
+Option Infer On
+
+Imports System
+Imports System.Collections
+Imports System.Linq
+
+Module Program
+    Sub Main()
+        Dim digits = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+        For Each i In digits Where i &lt; 4 Select square = i * i
+            Console.Write(i)
+        Next
+    End Sub
+End Module
+    </file>
+</compilation>
+
+            Dim compilation = CompilationUtils.CreateCompilationWithMscorlib40AndVBRuntime(compilationDef,
+                                                                                           additionalRefs:={SystemCoreRef},
+                                                                                           TestOptions.ReleaseExe)
+
+            AssertTheseCompileDiagnostics(compilation,
+<expected>
+BC30451: 'i' is not declared. It may be inaccessible due to its protection level.
+            Console.Write(i)
+                          ~
+</expected>)
+
+        End Sub
+
+        <Fact>
+        Public Sub MultiSelect()
+            Dim compilationDef =
+<compilation name="QueryExpressions">
+    <file name="a.vb">
+Option Strict Off
+Option Infer On
+
+Imports System
+Imports System.Collections
+Imports System.Linq
+
+Module Program
+    Sub Main()
+        Dim digits = {1, 2, 3, 4, 5}
+
+        For Each i In digits Select square = i * i, cube = i * i * i
+            Console.Write(square &amp; cube)
+        Next
+    End Sub
+End Module
+    </file>
+</compilation>
+
+            Dim compilation = CompilationUtils.CreateCompilationWithMscorlib40AndVBRuntime(compilationDef,
+                                                                                           additionalRefs:={SystemCoreRef},
+                                                                                           TestOptions.ReleaseExe)
+
+            Dim verifier = CompileAndVerify(compilation, expectedOutput:="1148927166425125")
+
+        End Sub
+
     End Class
 End Namespace
