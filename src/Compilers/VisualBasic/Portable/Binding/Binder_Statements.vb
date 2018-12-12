@@ -3652,7 +3652,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     Dim propertyGroup = New BoundPropertyGroup(forEachStatement,
                                                                lookupResult.Symbols.ToDowncastedImmutable(Of PropertySymbol),
                                                                lookupResult.Kind,
-                                                               boundCurrentAccess,
+                                                               controlVariableOpt,
                                                                QualificationKind.QualifiedViaValue)
 
                     Dim boundPropertyAccess = CreateBoundInvocationExpressionFromMethodOrPropertyGroup(forEachStatement,

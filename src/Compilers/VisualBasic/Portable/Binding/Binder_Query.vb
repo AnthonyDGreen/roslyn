@@ -4348,7 +4348,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     VerifyRangeVariableName(variable, identifier.Identifier, diagnostics)
 
                     If Not beginsTheQuery AndAlso declaredNames Is Nothing Then
-                        Debug.Assert(syntax.Parent.Kind = SyntaxKind.FromClause OrElse syntax.Parent.Kind = SyntaxKind.AggregateClause)
+                        Debug.Assert(syntax.Parent.Kind = SyntaxKind.FromClause OrElse
+                                     syntax.Parent.Kind = SyntaxKind.AggregateClause OrElse
+                                     syntax.Parent.Kind = SyntaxKind.ForEachStatement)
                         ' We are about to add this range variable to the current child scope.
                         If ShadowsRangeVariableInTheChildScope(Me, variable) Then
                             ' Shadowing error was reported earlier.

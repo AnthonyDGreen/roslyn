@@ -396,7 +396,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Case SyntaxKind.CollectionRangeVariable
                     Dim clause = lambda.Parent
                     Select Case clause.Kind
-                        Case SyntaxKind.FromClause
+                        Case SyntaxKind.FromClause, SyntaxKind.ForEachStatement
                             Return SpecializedCollections.SingletonEnumerable(lambdaBody)
 
                         Case SyntaxKind.AggregateClause
@@ -558,7 +558,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Return False
             End If
 
-            Debug.Assert(clause.IsKind(SyntaxKind.FromClause) OrElse clause.IsKind(SyntaxKind.AggregateClause))
+            Debug.Assert(clause.IsKind(SyntaxKind.FromClause) OrElse clause.IsKind(SyntaxKind.AggregateClause) OrElse clause.IsKind(SyntaxKind.ForEachStatement))
 
             If IsQueryStartingClause(clause) Then
                 ' Only the first collection range variable of the starting From/Aggregate clause is not a lambda
@@ -580,6 +580,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Select Case clause.Kind
                 Case SyntaxKind.FromClause
                     Return DirectCast(clause, FromClauseSyntax).Variables
+
+                Case SyntaxKind.ForEachStatement
+                    ' Hope this case is never hit as the range variables of a `For Each` include both the control variable and the additional range variables.
+                    Throw ExceptionUtilities.Unreachable
 
                 Case SyntaxKind.AggregateClause
                     Return DirectCast(clause, AggregateClauseSyntax).Variables
@@ -620,7 +624,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                    syntax.IsKind(SyntaxKind.AggregateClause) OrElse
                    syntax.IsKind(SyntaxKind.FromClause) OrElse
                    syntax.IsKind(SyntaxKind.GroupByClause) OrElse
-                   syntax.IsKind(SyntaxKind.SimpleAsClause)
+                   syntax.IsKind(SyntaxKind.SimpleAsClause) OrElse
+                   syntax.IsKind(SyntaxKind.ForEachStatement)
         End Function
 
         ''' <summary>
