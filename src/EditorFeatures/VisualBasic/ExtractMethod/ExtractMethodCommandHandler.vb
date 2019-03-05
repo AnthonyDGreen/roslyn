@@ -7,10 +7,10 @@ Imports Microsoft.VisualStudio.Utilities
 Imports VSCommanding = Microsoft.VisualStudio.Commanding
 
 Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.ExtractMethod
-    <Export(GetType(VSCommanding.ICommandHandler))>
-    <ContentType(ContentTypeNames.VisualBasicContentType)>
-    <Name(PredefinedCommandHandlerNames.ExtractMethod)>
-    <Order(After:=PredefinedCommandHandlerNames.DocumentationComments)>
+    '<Export(GetType(VSCommanding.ICommandHandler))>
+    '<ContentType(ContentTypeNames.VisualBasicContentType)>
+    '<Name(PredefinedCommandHandlerNames.ExtractMethod)>
+    '<Order(After:=PredefinedCommandHandlerNames.DocumentationComments)>
     Friend Class ExtractMethodCommandHandler
         Inherits AbstractExtractMethodCommandHandler
 

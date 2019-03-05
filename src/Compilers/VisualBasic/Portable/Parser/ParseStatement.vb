@@ -595,6 +595,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
         Private Function ParseForEachStatement(forKeyword As KeywordSyntax, eachKeyword As KeywordSyntax) As ForEachStatementSyntax
 
+            TryEatNewLine()
+
             Dim controlVariable = ParseForLoopControlVariable()
 
             Dim expression As ExpressionSyntax = Nothing

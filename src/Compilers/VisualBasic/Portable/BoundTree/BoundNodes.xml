@@ -1241,8 +1241,11 @@
     <!-- The bound collection that this for each iterates over. -->
     <Field Name="Collection" Type="BoundExpression" />
 
-    <!-- All information needed to rewrite the for each statement in the local rewriter. -->
+    <!-- All information needed to rewrite the standard for each statement in the local rewriter. -->
     <Field Name="EnumeratorInfo" Type="ForEachEnumeratorInfo" SkipInVisitor="true" />
+
+    <!-- Additional information needed to rewrite the for each statement with query extensions in the local rewriter. -->
+    <Field Name="RangeInfoOpt" Type="ForEachRangeInfo" Null="allow" SkipInVisitor="true" />
   </Node>
 
   <Node Name="BoundExitStatement" Base="BoundStatement">

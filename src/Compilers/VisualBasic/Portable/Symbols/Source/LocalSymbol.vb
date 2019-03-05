@@ -512,11 +512,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                          LocalDeclarationKind.Using,
                          LocalDeclarationKind.Static
                         node = _identifierToken.Parent
-                        Debug.Assert(TypeOf node Is ModifiedIdentifierSyntax)
+                        Debug.Assert(TypeOf node Is ModifiedIdentifierSyntax, "TypeOf node Is ModifiedIdentifierSyntax")
 
                     Case LocalDeclarationKind.ImplicitVariable
                         node = _identifierToken.Parent
-                        Debug.Assert(TypeOf node Is IdentifierNameSyntax)
+                        Debug.Assert(TypeOf node Is IdentifierNameSyntax, "TypeOf node Is IdentifierNameSyntax")
 
                     Case LocalDeclarationKind.FunctionValue
                         node = _identifierToken.Parent
@@ -529,24 +529,24 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                             Return eventBlock.Accessors.Where(Function(a) a.IsKind(SyntaxKind.AddHandlerAccessorBlock)).Single().BlockStatement
                         End If
 
-                        Debug.Assert(node.IsKind(SyntaxKind.FunctionStatement))
+                        Debug.Assert(node.IsKind(SyntaxKind.FunctionStatement), "node.IsKind(SyntaxKind.FunctionStatement)")
 
                     Case LocalDeclarationKind.Catch
                         node = _identifierToken.Parent.Parent
-                        Debug.Assert(TypeOf node Is CatchStatementSyntax)
+                        Debug.Assert(TypeOf node Is CatchStatementSyntax, "TypeOf node Is CatchStatementSyntax")
 
                     Case LocalDeclarationKind.For
                         node = _identifierToken.Parent
                         If Not node.IsKind(SyntaxKind.ModifiedIdentifier) Then
                             node = node.Parent
-                            Debug.Assert(node.IsKind(SyntaxKind.ForStatement))
+                            Debug.Assert(node.IsKind(SyntaxKind.ForStatement), "node.IsKind(SyntaxKind.ForStatement)")
                         End If
 
                     Case LocalDeclarationKind.ForEach
                         node = _identifierToken.Parent
                         If Not node.IsKind(SyntaxKind.ModifiedIdentifier) Then
                             node = node.Parent
-                            Debug.Assert(node.IsKind(SyntaxKind.ForEachStatement))
+                            Debug.Assert(node.IsKind(SyntaxKind.ForEachStatement), "node.IsKind(SyntaxKind.ForEachStatement)")
                         End If
 
                     Case Else
@@ -754,6 +754,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                     Return _rangeVariable.DeclaringSyntaxReferences
                 End Get
             End Property
+
+            Friend Overrides Function GetDeclaratorSyntax() As SyntaxNode
+                Return _rangeVariable.DeclaringIdentifier.Parent
+            End Function
         End Class
 
 #End Region

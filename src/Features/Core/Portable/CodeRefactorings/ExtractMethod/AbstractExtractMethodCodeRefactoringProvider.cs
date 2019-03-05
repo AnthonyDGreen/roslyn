@@ -11,8 +11,8 @@ using Roslyn.Utilities;
 
 namespace Microsoft.CodeAnalysis.CodeRefactorings.ExtractMethod
 {
-    [ExportCodeRefactoringProvider(LanguageNames.CSharp, LanguageNames.VisualBasic,
-        Name = PredefinedCodeRefactoringProviderNames.ExtractMethod), Shared]
+    //[ExportCodeRefactoringProvider(LanguageNames.CSharp, LanguageNames.VisualBasic,
+    //    Name = PredefinedCodeRefactoringProviderNames.ExtractMethod), Shared]
     internal class ExtractMethodCodeRefactoringProvider : CodeRefactoringProvider
     {
         public override async Task ComputeRefactoringsAsync(CodeRefactoringContext context)

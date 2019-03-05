@@ -7,7 +7,7 @@ Imports Microsoft.CodeAnalysis.Options
 Imports Microsoft.CodeAnalysis.Text
 
 Namespace Microsoft.CodeAnalysis.VisualBasic.ExtractMethod
-    <Export(GetType(IExtractMethodService)), ExportLanguageService(GetType(IExtractMethodService), LanguageNames.VisualBasic), [Shared]>
+    '<Export(GetType(IExtractMethodService)), ExportLanguageService(GetType(IExtractMethodService), LanguageNames.VisualBasic), [Shared]>
     Friend Class VisualBasicExtractMethodService
         Inherits AbstractExtractMethodService(Of VisualBasicSelectionValidator, VisualBasicMethodExtractor, VisualBasicSelectionResult)
 

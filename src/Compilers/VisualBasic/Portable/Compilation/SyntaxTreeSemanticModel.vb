@@ -1,5 +1,5 @@
 ﻿' Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
-
+#Const HACK = True
 Imports System.Collections.Concurrent
 Imports System.Collections.Generic
 Imports System.Collections.Immutable
@@ -1501,6 +1501,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ''' <returns>An object that can be used to obtain the result of the control flow analysis.</returns>
         ''' <exception cref="ArgumentException">The two statements are not contained within the same statement list.</exception>
         Public Overrides Function AnalyzeControlFlow(firstStatement As StatementSyntax, lastStatement As StatementSyntax) As ControlFlowAnalysis
+#If HACK Then
+            Return New VisualBasicControlFlowAnalysis(CreateFailedRegionAnalysisContext())
+#Else
             Dim context As RegionAnalysisContext = If(ValidateRegionDefiningStatementsRange(firstStatement, lastStatement),
                                                       CreateRegionAnalysisContext(firstStatement, lastStatement),
                                                       CreateFailedRegionAnalysisContext())
@@ -1511,6 +1514,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Debug.Assert(result.Succeeded OrElse context.Failed)
 
             Return result
+#End If
         End Function
 
         ''' <summary>
@@ -1521,19 +1525,21 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ''' <returns>An object that can be used to obtain the result of the data flow analysis.</returns>
         ''' <exception cref="ArgumentException">The two statements are not contained within the same statement list.</exception>
         Public Overrides Function AnalyzeDataFlow(firstStatement As StatementSyntax, lastStatement As StatementSyntax) As DataFlowAnalysis
+            ' TODO: Fix flow analysis.
+#If HACK Then
+            Return New VisualBasicDataFlowAnalysis(CreateFailedRegionAnalysisContext())
+#Else
             Dim context As RegionAnalysisContext = If(ValidateRegionDefiningStatementsRange(firstStatement, lastStatement),
                                                       CreateRegionAnalysisContext(firstStatement, lastStatement),
                                                       CreateFailedRegionAnalysisContext())
 
             Dim result = New VisualBasicDataFlowAnalysis(context)
 
-            ' TODO: Fix flow analysis.
-#If HACK Then
             ' we assume the analysis should only fail if the original context is invalid
             Debug.Assert(result.Succeeded OrElse result.InvalidRegionDetectedInternal OrElse context.Failed)
-#End If
 
             Return result
+#End If
         End Function
 
         ''' <summary>
@@ -1542,6 +1548,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ''' <param name="expression">The expression within the associated SyntaxTree to analyze.</param>
         ''' <returns>An object that can be used to obtain the result of the data flow analysis.</returns>
         Public Overrides Function AnalyzeDataFlow(expression As ExpressionSyntax) As DataFlowAnalysis
+#If HACK Then
+            Return New VisualBasicDataFlowAnalysis(CreateFailedRegionAnalysisContext())
+#Else
             Dim context As RegionAnalysisContext = If(ValidateRegionDefiningExpression(expression),
                                                       CreateRegionAnalysisContext(expression),
                                                       CreateFailedRegionAnalysisContext())
@@ -1553,6 +1562,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             CheckSucceededFlagInAnalyzeDataFlow(expression, result, context)
 
             Return result
+#End If
         End Function
 
         <Conditional("DEBUG")>
