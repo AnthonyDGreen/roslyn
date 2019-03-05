@@ -704,6 +704,18 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         Public Overridable Function VisitInterpolationFormatClause(ByVal node As InterpolationFormatClauseSyntax) As TResult
             Return Me.DefaultVisit(node)
         End Function
+        Public Overridable Function VisitJsonObjectExpression(ByVal node As JsonObjectExpressionSyntax) As TResult
+            Return Me.DefaultVisit(node)
+        End Function
+        Public Overridable Function VisitJsonNameValuePairExpression(ByVal node As JsonNameValuePairExpressionSyntax) As TResult
+            Return Me.DefaultVisit(node)
+        End Function
+        Public Overridable Function VisitJsonArrayExpression(ByVal node As JsonArrayExpressionSyntax) As TResult
+            Return Me.DefaultVisit(node)
+        End Function
+        Public Overridable Function VisitJsonConstantExpression(ByVal node As JsonConstantExpressionSyntax) As TResult
+            Return Me.DefaultVisit(node)
+        End Function
         Public Overridable Function VisitConstDirectiveTrivia(ByVal node As ConstDirectiveTriviaSyntax) As TResult
             Return Me.DefaultVisit(node)
         End Function
@@ -1437,6 +1449,18 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Me.DefaultVisit(node): Return
         End Sub
         Public Overridable Sub VisitInterpolationFormatClause(ByVal node As InterpolationFormatClauseSyntax)
+            Me.DefaultVisit(node): Return
+        End Sub
+        Public Overridable Sub VisitJsonObjectExpression(ByVal node As JsonObjectExpressionSyntax)
+            Me.DefaultVisit(node): Return
+        End Sub
+        Public Overridable Sub VisitJsonNameValuePairExpression(ByVal node As JsonNameValuePairExpressionSyntax)
+            Me.DefaultVisit(node): Return
+        End Sub
+        Public Overridable Sub VisitJsonArrayExpression(ByVal node As JsonArrayExpressionSyntax)
+            Me.DefaultVisit(node): Return
+        End Sub
+        Public Overridable Sub VisitJsonConstantExpression(ByVal node As JsonConstantExpressionSyntax)
             Me.DefaultVisit(node): Return
         End Sub
         Public Overridable Sub VisitConstDirectiveTrivia(ByVal node As ConstDirectiveTriviaSyntax)
@@ -5421,6 +5445,70 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             If anyChanges Then
                 Return New InterpolationFormatClauseSyntax(node.Kind, node.Green.GetDiagnostics, node.Green.GetAnnotations, newColonToken, newFormatStringToken)
+            Else
+                Return node
+            End If
+        End Function
+
+        Public Overrides Function VisitJsonObjectExpression(ByVal node As JsonObjectExpressionSyntax) As SyntaxNode
+            Dim anyChanges As Boolean = False
+
+            Dim newOpenBraceToken = DirectCast(VisitToken(node.OpenBraceToken).Node, InternalSyntax.PunctuationSyntax)
+            If node.OpenBraceToken.Node IsNot newOpenBraceToken Then anyChanges = True
+            Dim newMembers = VisitList(node.Members)
+            If node._members IsNot newMembers.Node Then anyChanges = True
+            Dim newCloseBraceToken = DirectCast(VisitToken(node.CloseBraceToken).Node, InternalSyntax.PunctuationSyntax)
+            If node.CloseBraceToken.Node IsNot newCloseBraceToken Then anyChanges = True
+
+            If anyChanges Then
+                Return New JsonObjectExpressionSyntax(node.Kind, node.Green.GetDiagnostics, node.Green.GetAnnotations, newOpenBraceToken, newMembers.Node, newCloseBraceToken)
+            Else
+                Return node
+            End If
+        End Function
+
+        Public Overrides Function VisitJsonNameValuePairExpression(ByVal node As JsonNameValuePairExpressionSyntax) As SyntaxNode
+            Dim anyChanges As Boolean = False
+
+            Dim newNameExpression = DirectCast(Visit(node.NameExpression), ExpressionSyntax)
+            If node.NameExpression IsNot newNameExpression Then anyChanges = True
+            Dim newColonToken = DirectCast(VisitToken(node.ColonToken).Node, InternalSyntax.PunctuationSyntax)
+            If node.ColonToken.Node IsNot newColonToken Then anyChanges = True
+            Dim newValueExpression = DirectCast(Visit(node.ValueExpression), ExpressionSyntax)
+            If node.ValueExpression IsNot newValueExpression Then anyChanges = True
+
+            If anyChanges Then
+                Return New JsonNameValuePairExpressionSyntax(node.Kind, node.Green.GetDiagnostics, node.Green.GetAnnotations, newNameExpression, newColonToken, newValueExpression)
+            Else
+                Return node
+            End If
+        End Function
+
+        Public Overrides Function VisitJsonArrayExpression(ByVal node As JsonArrayExpressionSyntax) As SyntaxNode
+            Dim anyChanges As Boolean = False
+
+            Dim newOpenBracketToken = DirectCast(VisitToken(node.OpenBracketToken).Node, InternalSyntax.PunctuationSyntax)
+            If node.OpenBracketToken.Node IsNot newOpenBracketToken Then anyChanges = True
+            Dim newElements = VisitList(node.Elements)
+            If node._elements IsNot newElements.Node Then anyChanges = True
+            Dim newCloseBracketToken = DirectCast(VisitToken(node.CloseBracketToken).Node, InternalSyntax.PunctuationSyntax)
+            If node.CloseBracketToken.Node IsNot newCloseBracketToken Then anyChanges = True
+
+            If anyChanges Then
+                Return New JsonArrayExpressionSyntax(node.Kind, node.Green.GetDiagnostics, node.Green.GetAnnotations, newOpenBracketToken, newElements.Node, newCloseBracketToken)
+            Else
+                Return node
+            End If
+        End Function
+
+        Public Overrides Function VisitJsonConstantExpression(ByVal node As JsonConstantExpressionSyntax) As SyntaxNode
+            Dim anyChanges As Boolean = False
+
+            Dim newValueToken = DirectCast(VisitToken(node.ValueToken).Node, InternalSyntax.IdentifierTokenSyntax)
+            If node.ValueToken.Node IsNot newValueToken Then anyChanges = True
+
+            If anyChanges Then
+                Return New JsonConstantExpressionSyntax(node.Kind, node.Green.GetDiagnostics, node.Green.GetAnnotations, newValueToken)
             Else
                 Return node
             End If
@@ -12044,7 +12132,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -12191,7 +12283,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("value")
              End Select
@@ -12627,7 +12723,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -12758,7 +12858,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -14063,7 +14167,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -14350,7 +14458,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -14529,7 +14641,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -14912,7 +15028,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("filter")
              End Select
@@ -15119,7 +15239,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("errorNumber")
              End Select
@@ -15829,7 +15953,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -16266,7 +16394,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("value")
              End Select
@@ -16395,7 +16527,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("lowerBound")
              End Select
@@ -16512,7 +16648,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("upperBound")
              End Select
@@ -16666,7 +16806,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("value")
              End Select
@@ -16812,7 +16956,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("value")
              End Select
@@ -16958,7 +17106,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("value")
              End Select
@@ -17104,7 +17256,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("value")
              End Select
@@ -17250,7 +17406,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("value")
              End Select
@@ -17396,7 +17556,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("value")
              End Select
@@ -17549,7 +17713,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("value")
              End Select
@@ -17720,7 +17888,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -18574,7 +18746,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -18720,7 +18896,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -18871,7 +19051,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -19013,7 +19197,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -19264,6 +19452,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
                      SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression,
                      SyntaxKind.VariableDeclarator
                 Case Else
                     Throw new ArgumentException("controlVariable")
@@ -19381,7 +19573,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("fromValue")
              End Select
@@ -19498,7 +19694,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("toValue")
              End Select
@@ -19682,7 +19882,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("stepValue")
              End Select
@@ -19848,6 +20052,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
                      SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression,
                      SyntaxKind.VariableDeclarator
                 Case Else
                     Throw new ArgumentException("controlVariable")
@@ -19965,7 +20173,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -20258,7 +20470,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -20384,7 +20600,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -20530,7 +20750,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -20647,7 +20871,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -20793,7 +21021,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -20910,7 +21142,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -21056,7 +21292,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -21173,7 +21413,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -21319,7 +21563,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -21436,7 +21684,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -21582,7 +21834,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -21699,7 +21955,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -21845,7 +22105,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -21962,7 +22226,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -22108,7 +22376,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -22225,7 +22497,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -22371,7 +22647,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -22488,7 +22768,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -22634,7 +22918,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -22751,7 +23039,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -22897,7 +23189,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -23014,7 +23310,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -23172,7 +23472,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -23287,7 +23591,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -23536,7 +23844,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("eventExpression")
              End Select
@@ -23653,7 +23965,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("delegateExpression")
              End Select
@@ -23806,7 +24122,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("eventExpression")
              End Select
@@ -23923,7 +24243,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("delegateExpression")
              End Select
@@ -24082,7 +24406,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("eventExpression")
              End Select
@@ -24199,7 +24527,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("delegateExpression")
              End Select
@@ -24420,7 +24752,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -24709,7 +25045,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -25189,7 +25529,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -25649,7 +25993,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -25823,7 +26171,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -26003,7 +26355,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -27039,7 +27395,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -27222,7 +27582,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -27405,7 +27769,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -27601,7 +27969,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -27749,7 +28121,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -27889,7 +28265,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -28033,7 +28413,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -28150,7 +28534,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -28294,7 +28682,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -28411,7 +28803,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -28555,7 +28951,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -28672,7 +29072,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -28816,7 +29220,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -28933,7 +29341,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -29077,7 +29489,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -29194,7 +29610,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -29338,7 +29758,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -29455,7 +29879,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -29599,7 +30027,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -29716,7 +30148,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -29860,7 +30296,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -29977,7 +30417,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -30121,7 +30565,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -30238,7 +30686,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -30382,7 +30834,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -30499,7 +30955,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -30643,7 +31103,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -30760,7 +31224,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -30904,7 +31372,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -31021,7 +31493,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -31165,7 +31641,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -31282,7 +31762,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -31426,7 +31910,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -31543,7 +32031,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -31687,7 +32179,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -31804,7 +32300,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -31948,7 +32448,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -32065,7 +32569,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -32209,7 +32717,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -32326,7 +32838,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -32470,7 +32986,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -32587,7 +33107,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -32731,7 +33255,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -32848,7 +33376,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -32992,7 +33524,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -33109,7 +33645,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -33253,7 +33793,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -33370,7 +33914,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -33514,7 +34062,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -33631,7 +34183,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -33775,7 +34331,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -33892,7 +34452,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -34050,7 +34614,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -34165,7 +34733,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -34353,7 +34925,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("operand")
              End Select
@@ -34495,7 +35071,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("operand")
              End Select
@@ -34637,7 +35217,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("operand")
              End Select
@@ -34779,7 +35363,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("operand")
              End Select
@@ -34927,7 +35515,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("operand")
              End Select
@@ -35090,7 +35682,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("firstExpression")
              End Select
@@ -35207,7 +35803,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("secondExpression")
              End Select
@@ -35382,7 +35982,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -35499,7 +36103,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("whenTrue")
              End Select
@@ -35616,7 +36224,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("whenFalse")
              End Select
@@ -35777,6 +36389,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
                      SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression,
                      SyntaxKind.EmptyStatement,
                      SyntaxKind.EndIfStatement,
                      SyntaxKind.EndUsingStatement,
@@ -36071,6 +36687,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
                      SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression,
                      SyntaxKind.EmptyStatement,
                      SyntaxKind.EndIfStatement,
                      SyntaxKind.EndUsingStatement,
@@ -36373,6 +36993,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
                      SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression,
                      SyntaxKind.EmptyStatement,
                      SyntaxKind.EndIfStatement,
                      SyntaxKind.EndUsingStatement,
@@ -37109,7 +37733,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -37289,7 +37917,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("lowerBound")
              End Select
@@ -37406,7 +38038,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("upperBound")
              End Select
@@ -37595,7 +38231,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -37756,7 +38396,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -38265,7 +38909,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -38417,7 +39065,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -38569,7 +39221,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -38726,7 +39382,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -38887,7 +39547,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("count")
              End Select
@@ -39029,7 +39693,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("count")
              End Select
@@ -39176,7 +39844,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("count")
              End Select
@@ -39386,7 +40058,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("left")
              End Select
@@ -39503,7 +40179,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("right")
              End Select
@@ -39853,7 +40533,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -39993,7 +40677,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -40140,7 +40828,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -40891,7 +41583,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -41534,7 +42230,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -41676,7 +42376,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -42317,7 +43021,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("argument")
              End Select
@@ -42548,7 +43256,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("expression")
              End Select
@@ -42714,7 +43426,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("value")
              End Select
@@ -42765,6 +43481,393 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ''' </summary>
         Public Shared Function InterpolationFormatClause() As InterpolationFormatClauseSyntax
             Return SyntaxFactory.InterpolationFormatClause(SyntaxFactory.Token(SyntaxKind.ColonToken), SyntaxFactory.Token(SyntaxKind.InterpolatedStringTextToken))
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON object expression.
+        ''' </summary>
+        ''' <param name="openBraceToken">
+        ''' The opening '{' token.
+        ''' </param>
+        ''' <param name="members">
+        ''' The members of the JSON object.
+        ''' </param>
+        ''' <param name="closeBraceToken">
+        ''' The closing '}' token.
+        ''' </param>
+        Public Shared Function JsonObjectExpression(openBraceToken As SyntaxToken, members As SeparatedSyntaxList(Of ExpressionSyntax), closeBraceToken As SyntaxToken) As JsonObjectExpressionSyntax
+            Select Case openBraceToken.Kind()
+                Case SyntaxKind.OpenBraceToken
+                Case Else
+                    Throw new ArgumentException("openBraceToken")
+             End Select
+            Select Case closeBraceToken.Kind()
+                Case SyntaxKind.CloseBraceToken
+                Case Else
+                    Throw new ArgumentException("closeBraceToken")
+             End Select
+            Return New JsonObjectExpressionSyntax(SyntaxKind.JsonObjectExpression, Nothing, Nothing, DirectCast(openBraceToken.Node, InternalSyntax.PunctuationSyntax), members.Node, DirectCast(closeBraceToken.Node, InternalSyntax.PunctuationSyntax))
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON object expression.
+        ''' </summary>
+        ''' <param name="members">
+        ''' The members of the JSON object.
+        ''' </param>
+        Public Shared Function JsonObjectExpression(members As SeparatedSyntaxList(Of ExpressionSyntax)) As JsonObjectExpressionSyntax
+            Return SyntaxFactory.JsonObjectExpression(SyntaxFactory.Token(SyntaxKind.OpenBraceToken), members, SyntaxFactory.Token(SyntaxKind.CloseBraceToken))
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON object expression.
+        ''' </summary>
+        Public Shared Function JsonObjectExpression() As JsonObjectExpressionSyntax
+            Return SyntaxFactory.JsonObjectExpression(SyntaxFactory.Token(SyntaxKind.OpenBraceToken), Nothing, SyntaxFactory.Token(SyntaxKind.CloseBraceToken))
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON name-value pair.
+        ''' </summary>
+        ''' <param name="nameExpression">
+        ''' The name expression.
+        ''' </param>
+        ''' <param name="colonToken">
+        ''' The colon ':' token.
+        ''' </param>
+        ''' <param name="valueExpression">
+        ''' The value expression.
+        ''' </param>
+        Public Shared Function JsonNameValuePairExpression(nameExpression As ExpressionSyntax, colonToken As SyntaxToken, valueExpression As ExpressionSyntax) As JsonNameValuePairExpressionSyntax
+            if nameExpression Is Nothing Then
+                Throw New ArgumentNullException(NameOf(nameExpression))
+            End If
+            Select Case nameExpression.Kind()
+                Case SyntaxKind.KeywordEventContainer,
+                     SyntaxKind.WithEventsEventContainer,
+                     SyntaxKind.WithEventsPropertyEventContainer,
+                     SyntaxKind.IdentifierLabel,
+                     SyntaxKind.NumericLabel,
+                     SyntaxKind.NextLabel,
+                     SyntaxKind.MidExpression,
+                     SyntaxKind.CharacterLiteralExpression,
+                     SyntaxKind.TrueLiteralExpression,
+                     SyntaxKind.FalseLiteralExpression,
+                     SyntaxKind.NumericLiteralExpression,
+                     SyntaxKind.DateLiteralExpression,
+                     SyntaxKind.StringLiteralExpression,
+                     SyntaxKind.NothingLiteralExpression,
+                     SyntaxKind.ParenthesizedExpression,
+                     SyntaxKind.TupleExpression,
+                     SyntaxKind.TupleType,
+                     SyntaxKind.MeExpression,
+                     SyntaxKind.MyBaseExpression,
+                     SyntaxKind.MyClassExpression,
+                     SyntaxKind.GetTypeExpression,
+                     SyntaxKind.TypeOfIsExpression,
+                     SyntaxKind.TypeOfIsNotExpression,
+                     SyntaxKind.GetXmlNamespaceExpression,
+                     SyntaxKind.SimpleMemberAccessExpression,
+                     SyntaxKind.DictionaryAccessExpression,
+                     SyntaxKind.XmlElementAccessExpression,
+                     SyntaxKind.XmlDescendantAccessExpression,
+                     SyntaxKind.XmlAttributeAccessExpression,
+                     SyntaxKind.InvocationExpression,
+                     SyntaxKind.ObjectCreationExpression,
+                     SyntaxKind.AnonymousObjectCreationExpression,
+                     SyntaxKind.ArrayCreationExpression,
+                     SyntaxKind.CollectionInitializer,
+                     SyntaxKind.CTypeExpression,
+                     SyntaxKind.DirectCastExpression,
+                     SyntaxKind.TryCastExpression,
+                     SyntaxKind.PredefinedCastExpression,
+                     SyntaxKind.AddExpression,
+                     SyntaxKind.SubtractExpression,
+                     SyntaxKind.MultiplyExpression,
+                     SyntaxKind.DivideExpression,
+                     SyntaxKind.IntegerDivideExpression,
+                     SyntaxKind.ExponentiateExpression,
+                     SyntaxKind.LeftShiftExpression,
+                     SyntaxKind.RightShiftExpression,
+                     SyntaxKind.ConcatenateExpression,
+                     SyntaxKind.ModuloExpression,
+                     SyntaxKind.EqualsExpression,
+                     SyntaxKind.NotEqualsExpression,
+                     SyntaxKind.LessThanExpression,
+                     SyntaxKind.LessThanOrEqualExpression,
+                     SyntaxKind.GreaterThanOrEqualExpression,
+                     SyntaxKind.GreaterThanExpression,
+                     SyntaxKind.IsExpression,
+                     SyntaxKind.IsNotExpression,
+                     SyntaxKind.LikeExpression,
+                     SyntaxKind.OrExpression,
+                     SyntaxKind.ExclusiveOrExpression,
+                     SyntaxKind.AndExpression,
+                     SyntaxKind.OrElseExpression,
+                     SyntaxKind.AndAlsoExpression,
+                     SyntaxKind.UnaryPlusExpression,
+                     SyntaxKind.UnaryMinusExpression,
+                     SyntaxKind.NotExpression,
+                     SyntaxKind.AddressOfExpression,
+                     SyntaxKind.BinaryConditionalExpression,
+                     SyntaxKind.TernaryConditionalExpression,
+                     SyntaxKind.SingleLineFunctionLambdaExpression,
+                     SyntaxKind.SingleLineSubLambdaExpression,
+                     SyntaxKind.MultiLineFunctionLambdaExpression,
+                     SyntaxKind.MultiLineSubLambdaExpression,
+                     SyntaxKind.QueryExpression,
+                     SyntaxKind.FunctionAggregation,
+                     SyntaxKind.GroupAggregation,
+                     SyntaxKind.XmlDocument,
+                     SyntaxKind.XmlElement,
+                     SyntaxKind.XmlText,
+                     SyntaxKind.XmlElementStartTag,
+                     SyntaxKind.XmlElementEndTag,
+                     SyntaxKind.XmlEmptyElement,
+                     SyntaxKind.XmlAttribute,
+                     SyntaxKind.XmlString,
+                     SyntaxKind.XmlPrefixName,
+                     SyntaxKind.XmlName,
+                     SyntaxKind.XmlBracketedName,
+                     SyntaxKind.XmlComment,
+                     SyntaxKind.XmlProcessingInstruction,
+                     SyntaxKind.XmlCDataSection,
+                     SyntaxKind.XmlEmbeddedExpression,
+                     SyntaxKind.ArrayType,
+                     SyntaxKind.NullableType,
+                     SyntaxKind.PredefinedType,
+                     SyntaxKind.IdentifierName,
+                     SyntaxKind.GenericName,
+                     SyntaxKind.QualifiedName,
+                     SyntaxKind.GlobalName,
+                     SyntaxKind.CrefOperatorReference,
+                     SyntaxKind.QualifiedCrefOperatorReference,
+                     SyntaxKind.AwaitExpression,
+                     SyntaxKind.XmlCrefAttribute,
+                     SyntaxKind.XmlNameAttribute,
+                     SyntaxKind.ConditionalAccessExpression,
+                     SyntaxKind.NameOfExpression,
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
+                Case Else
+                    Throw new ArgumentException("nameExpression")
+             End Select
+            Select Case colonToken.Kind()
+                Case SyntaxKind.ColonToken
+                Case Else
+                    Throw new ArgumentException("colonToken")
+             End Select
+            if valueExpression Is Nothing Then
+                Throw New ArgumentNullException(NameOf(valueExpression))
+            End If
+            Select Case valueExpression.Kind()
+                Case SyntaxKind.KeywordEventContainer,
+                     SyntaxKind.WithEventsEventContainer,
+                     SyntaxKind.WithEventsPropertyEventContainer,
+                     SyntaxKind.IdentifierLabel,
+                     SyntaxKind.NumericLabel,
+                     SyntaxKind.NextLabel,
+                     SyntaxKind.MidExpression,
+                     SyntaxKind.CharacterLiteralExpression,
+                     SyntaxKind.TrueLiteralExpression,
+                     SyntaxKind.FalseLiteralExpression,
+                     SyntaxKind.NumericLiteralExpression,
+                     SyntaxKind.DateLiteralExpression,
+                     SyntaxKind.StringLiteralExpression,
+                     SyntaxKind.NothingLiteralExpression,
+                     SyntaxKind.ParenthesizedExpression,
+                     SyntaxKind.TupleExpression,
+                     SyntaxKind.TupleType,
+                     SyntaxKind.MeExpression,
+                     SyntaxKind.MyBaseExpression,
+                     SyntaxKind.MyClassExpression,
+                     SyntaxKind.GetTypeExpression,
+                     SyntaxKind.TypeOfIsExpression,
+                     SyntaxKind.TypeOfIsNotExpression,
+                     SyntaxKind.GetXmlNamespaceExpression,
+                     SyntaxKind.SimpleMemberAccessExpression,
+                     SyntaxKind.DictionaryAccessExpression,
+                     SyntaxKind.XmlElementAccessExpression,
+                     SyntaxKind.XmlDescendantAccessExpression,
+                     SyntaxKind.XmlAttributeAccessExpression,
+                     SyntaxKind.InvocationExpression,
+                     SyntaxKind.ObjectCreationExpression,
+                     SyntaxKind.AnonymousObjectCreationExpression,
+                     SyntaxKind.ArrayCreationExpression,
+                     SyntaxKind.CollectionInitializer,
+                     SyntaxKind.CTypeExpression,
+                     SyntaxKind.DirectCastExpression,
+                     SyntaxKind.TryCastExpression,
+                     SyntaxKind.PredefinedCastExpression,
+                     SyntaxKind.AddExpression,
+                     SyntaxKind.SubtractExpression,
+                     SyntaxKind.MultiplyExpression,
+                     SyntaxKind.DivideExpression,
+                     SyntaxKind.IntegerDivideExpression,
+                     SyntaxKind.ExponentiateExpression,
+                     SyntaxKind.LeftShiftExpression,
+                     SyntaxKind.RightShiftExpression,
+                     SyntaxKind.ConcatenateExpression,
+                     SyntaxKind.ModuloExpression,
+                     SyntaxKind.EqualsExpression,
+                     SyntaxKind.NotEqualsExpression,
+                     SyntaxKind.LessThanExpression,
+                     SyntaxKind.LessThanOrEqualExpression,
+                     SyntaxKind.GreaterThanOrEqualExpression,
+                     SyntaxKind.GreaterThanExpression,
+                     SyntaxKind.IsExpression,
+                     SyntaxKind.IsNotExpression,
+                     SyntaxKind.LikeExpression,
+                     SyntaxKind.OrExpression,
+                     SyntaxKind.ExclusiveOrExpression,
+                     SyntaxKind.AndExpression,
+                     SyntaxKind.OrElseExpression,
+                     SyntaxKind.AndAlsoExpression,
+                     SyntaxKind.UnaryPlusExpression,
+                     SyntaxKind.UnaryMinusExpression,
+                     SyntaxKind.NotExpression,
+                     SyntaxKind.AddressOfExpression,
+                     SyntaxKind.BinaryConditionalExpression,
+                     SyntaxKind.TernaryConditionalExpression,
+                     SyntaxKind.SingleLineFunctionLambdaExpression,
+                     SyntaxKind.SingleLineSubLambdaExpression,
+                     SyntaxKind.MultiLineFunctionLambdaExpression,
+                     SyntaxKind.MultiLineSubLambdaExpression,
+                     SyntaxKind.QueryExpression,
+                     SyntaxKind.FunctionAggregation,
+                     SyntaxKind.GroupAggregation,
+                     SyntaxKind.XmlDocument,
+                     SyntaxKind.XmlElement,
+                     SyntaxKind.XmlText,
+                     SyntaxKind.XmlElementStartTag,
+                     SyntaxKind.XmlElementEndTag,
+                     SyntaxKind.XmlEmptyElement,
+                     SyntaxKind.XmlAttribute,
+                     SyntaxKind.XmlString,
+                     SyntaxKind.XmlPrefixName,
+                     SyntaxKind.XmlName,
+                     SyntaxKind.XmlBracketedName,
+                     SyntaxKind.XmlComment,
+                     SyntaxKind.XmlProcessingInstruction,
+                     SyntaxKind.XmlCDataSection,
+                     SyntaxKind.XmlEmbeddedExpression,
+                     SyntaxKind.ArrayType,
+                     SyntaxKind.NullableType,
+                     SyntaxKind.PredefinedType,
+                     SyntaxKind.IdentifierName,
+                     SyntaxKind.GenericName,
+                     SyntaxKind.QualifiedName,
+                     SyntaxKind.GlobalName,
+                     SyntaxKind.CrefOperatorReference,
+                     SyntaxKind.QualifiedCrefOperatorReference,
+                     SyntaxKind.AwaitExpression,
+                     SyntaxKind.XmlCrefAttribute,
+                     SyntaxKind.XmlNameAttribute,
+                     SyntaxKind.ConditionalAccessExpression,
+                     SyntaxKind.NameOfExpression,
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
+                Case Else
+                    Throw new ArgumentException("valueExpression")
+             End Select
+            Return New JsonNameValuePairExpressionSyntax(SyntaxKind.JsonNameValuePairExpression, Nothing, Nothing, nameExpression, DirectCast(colonToken.Node, InternalSyntax.PunctuationSyntax), valueExpression)
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON name-value pair.
+        ''' </summary>
+        ''' <param name="nameExpression">
+        ''' The name expression.
+        ''' </param>
+        ''' <param name="valueExpression">
+        ''' The value expression.
+        ''' </param>
+        Public Shared Function JsonNameValuePairExpression(nameExpression As ExpressionSyntax, valueExpression As ExpressionSyntax) As JsonNameValuePairExpressionSyntax
+            Return SyntaxFactory.JsonNameValuePairExpression(nameExpression, SyntaxFactory.Token(SyntaxKind.ColonToken), valueExpression)
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON array expression.
+        ''' </summary>
+        ''' <param name="openBracketToken">
+        ''' The opening '[' token.
+        ''' </param>
+        ''' <param name="elements">
+        ''' The elements of the JSON array.
+        ''' </param>
+        ''' <param name="closeBracketToken">
+        ''' The closing ']' token.
+        ''' </param>
+        Public Shared Function JsonArrayExpression(openBracketToken As SyntaxToken, elements As SeparatedSyntaxList(Of ExpressionSyntax), closeBracketToken As SyntaxToken) As JsonArrayExpressionSyntax
+            Select Case openBracketToken.Kind()
+                Case SyntaxKind.OpenBracketToken
+                Case Else
+                    Throw new ArgumentException("openBracketToken")
+             End Select
+            Select Case closeBracketToken.Kind()
+                Case SyntaxKind.CloseBracketToken
+                Case Else
+                    Throw new ArgumentException("closeBracketToken")
+             End Select
+            Return New JsonArrayExpressionSyntax(SyntaxKind.JsonArrayExpression, Nothing, Nothing, DirectCast(openBracketToken.Node, InternalSyntax.PunctuationSyntax), elements.Node, DirectCast(closeBracketToken.Node, InternalSyntax.PunctuationSyntax))
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON array expression.
+        ''' </summary>
+        ''' <param name="elements">
+        ''' The elements of the JSON array.
+        ''' </param>
+        Public Shared Function JsonArrayExpression(elements As SeparatedSyntaxList(Of ExpressionSyntax)) As JsonArrayExpressionSyntax
+            Return SyntaxFactory.JsonArrayExpression(SyntaxFactory.Token(SyntaxKind.OpenBracketToken), elements, SyntaxFactory.Token(SyntaxKind.CloseBracketToken))
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON array expression.
+        ''' </summary>
+        Public Shared Function JsonArrayExpression() As JsonArrayExpressionSyntax
+            Return SyntaxFactory.JsonArrayExpression(SyntaxFactory.Token(SyntaxKind.OpenBracketToken), Nothing, SyntaxFactory.Token(SyntaxKind.CloseBracketToken))
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON 'true', 'false', or 'null' expression.
+        ''' </summary>
+        ''' <param name="valueToken">
+        ''' The 'true', 'false', or 'null' token.
+        ''' </param>
+        Public Shared Function JsonConstantExpression(valueToken As SyntaxToken) As JsonConstantExpressionSyntax
+            Select Case valueToken.Kind()
+                Case SyntaxKind.IdentifierToken
+                Case Else
+                    Throw new ArgumentException("valueToken")
+             End Select
+            Return New JsonConstantExpressionSyntax(SyntaxKind.JsonConstantExpression, Nothing, Nothing, DirectCast(valueToken.Node, InternalSyntax.IdentifierTokenSyntax))
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON 'true', 'false', or 'null' expression.
+        ''' </summary>
+        ''' <param name="valueToken">
+        ''' The 'true', 'false', or 'null' token.
+        ''' </param>
+        Public Shared Function JsonConstantExpression(valueToken As String) As JsonConstantExpressionSyntax
+            Return SyntaxFactory.JsonConstantExpression(SyntaxFactory.Identifier(valueToken))
         End Function
 
 
@@ -43069,7 +44172,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("value")
              End Select
@@ -43234,7 +44341,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -43378,7 +44489,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -43529,7 +44644,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                      SyntaxKind.XmlNameAttribute,
                      SyntaxKind.ConditionalAccessExpression,
                      SyntaxKind.NameOfExpression,
-                     SyntaxKind.InterpolatedStringExpression
+                     SyntaxKind.InterpolatedStringExpression,
+                     SyntaxKind.JsonObjectExpression,
+                     SyntaxKind.JsonNameValuePairExpression,
+                     SyntaxKind.JsonArrayExpression,
+                     SyntaxKind.JsonConstantExpression
                 Case Else
                     Throw new ArgumentException("condition")
              End Select
@@ -45235,6 +46354,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 SyntaxKind.DoubleQuoteToken,
                 SyntaxKind.DollarSignDoubleQuoteToken,
                 SyntaxKind.EndOfInterpolatedStringToken,
+                SyntaxKind.OpenBracketToken,
+                SyntaxKind.CloseBracketToken,
                 SyntaxKind.StatementTerminatorToken,
                 SyntaxKind.EndOfFileToken,
                 SyntaxKind.EmptyToken,
@@ -45826,6 +46947,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Return """"
         Case SyntaxKind.DollarSignDoubleQuoteToken
             Return "$"""
+        Case SyntaxKind.OpenBracketToken
+            Return "["
+        Case SyntaxKind.CloseBracketToken
+            Return "]"
         Case SyntaxKind.StatementTerminatorToken
             Return vbCrLf
         Case SyntaxKind.SlashGreaterThanToken

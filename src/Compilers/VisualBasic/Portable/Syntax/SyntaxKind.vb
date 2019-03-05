@@ -3199,5 +3199,35 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ''' </summary>
         ConflictMarkerTrivia = 792
 
+        ''' <summary>
+        ''' Represents a '[' token.
+        ''' </summary>
+        OpenBracketToken = 793                                          ' PunctuationSyntax : SyntaxToken
+
+        ''' <summary>
+        ''' Represents a ']' token.
+        ''' </summary>
+        CloseBracketToken                                          ' PunctuationSyntax : SyntaxToken
+
+        ''' <summary>
+        ''' Represents a JSON object expression.
+        ''' </summary>
+        JsonObjectExpression                                       ' JsonObjectExpressionSyntax : ExpressionSyntax
+
+        ''' <summary>
+        ''' Represents a JSON name-value pair expression.
+        ''' </summary>
+        JsonNameValuePairExpression                                ' JsonNameValuePairExpressionSyntax : ExpressionSyntax
+
+        ''' <summary>
+        ''' Represents a JSON array.
+        ''' </summary>
+        JsonArrayExpression                                        ' JsonArrayExpressionSyntax : ExpressionSyntax
+
+        ''' <summary>
+        ''' Represents a JSON 'true', 'false', or 'null' constant expression.
+        ''' </summary>
+        JsonConstantExpression                                     ' JsonConstantExpressionSyntax : ExpressionSyntax
+
     End Enum
 End Namespace

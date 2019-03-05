@@ -9086,6 +9086,21 @@
         <target state="translated">aradeğerlendirme dizeleri</target>
         <note />
       </trans-unit>
+      <trans-unit id="ERR_JsonFeaturesNotAvailable">
+        <source>JSON literals are not available. Add a references to Newtonsoft.Json or other assemblies declaring Newtonsoft.Json.Linq.JObject, Newtonsoft.Json.Linq.JProperty, and Newtonsoft.Json.Linq.JArray types.</source>
+        <target state="new">JSON literals are not available. Add a references to Newtonsoft.Json or other assemblies declaring Newtonsoft.Json.Linq.JObject, Newtonsoft.Json.Linq.JProperty, and Newtonsoft.Json.Linq.JArray types.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ERR_InvalidEscapeSequenceInJsonString">
+        <source>Invalid JSON string escape sequence; " '\', '/', 'b', 'f', 'n', 'r', 't', or 'u' expected.</source>
+        <target state="new">Invalid JSON string escape sequence; " '\', '/', 'b', 'f', 'n', 'r', 't', or 'u' expected.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ERR_HexDigitExpected">
+        <source>Hexadecimal digit (1-9, A-F) expected.</source>
+        <target state="new">Hexadecimal digit (1-9, A-F) expected.</target>
+        <note />
+      </trans-unit>
     </body>
   </file>
 </xliff>

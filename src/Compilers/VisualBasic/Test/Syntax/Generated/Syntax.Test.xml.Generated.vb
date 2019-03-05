@@ -1468,6 +1468,22 @@ Partial Public Class GeneratedTests
             return InternalSyntax.SyntaxFactory.InterpolationFormatClause(new InternalSyntax.PunctuationSyntax(SyntaxKind.ColonToken, String.Empty, Nothing, Nothing), GenerateGreenInterpolatedStringTextToken())
         End Function
 
+        Private Shared Function GenerateGreenJsonObjectExpression() As InternalSyntax.JsonObjectExpressionSyntax
+            return InternalSyntax.SyntaxFactory.JsonObjectExpression(new InternalSyntax.PunctuationSyntax(SyntaxKind.OpenBraceToken, String.Empty, Nothing, Nothing), Nothing, new InternalSyntax.PunctuationSyntax(SyntaxKind.CloseBraceToken, String.Empty, Nothing, Nothing))
+        End Function
+
+        Private Shared Function GenerateGreenJsonNameValuePairExpression() As InternalSyntax.JsonNameValuePairExpressionSyntax
+            return InternalSyntax.SyntaxFactory.JsonNameValuePairExpression(GenerateGreenKeywordEventContainer(), new InternalSyntax.PunctuationSyntax(SyntaxKind.ColonToken, String.Empty, Nothing, Nothing), GenerateGreenKeywordEventContainer())
+        End Function
+
+        Private Shared Function GenerateGreenJsonArrayExpression() As InternalSyntax.JsonArrayExpressionSyntax
+            return InternalSyntax.SyntaxFactory.JsonArrayExpression(new InternalSyntax.PunctuationSyntax(SyntaxKind.OpenBracketToken, String.Empty, Nothing, Nothing), Nothing, new InternalSyntax.PunctuationSyntax(SyntaxKind.CloseBracketToken, String.Empty, Nothing, Nothing))
+        End Function
+
+        Private Shared Function GenerateGreenJsonConstantExpression() As InternalSyntax.JsonConstantExpressionSyntax
+            return InternalSyntax.SyntaxFactory.JsonConstantExpression(GenerateGreenIdentifierToken())
+        End Function
+
         Private Shared Function GenerateGreenWhitespaceTrivia() As InternalSyntax.SyntaxTrivia
             return InternalSyntax.SyntaxFactory.WhitespaceTrivia(String.Empty)
         End Function
@@ -3726,6 +3742,30 @@ Partial Public Class GeneratedTests
         <Fact>
         Public Sub TestGreenInterpolationFormatClause()
             dim objectUnderTest = GenerateGreenInterpolationFormatClause()
+            AttachAndCheckDiagnostics(objectUnderTest)
+        End Sub
+
+        <Fact>
+        Public Sub TestGreenJsonObjectExpression()
+            dim objectUnderTest = GenerateGreenJsonObjectExpression()
+            AttachAndCheckDiagnostics(objectUnderTest)
+        End Sub
+
+        <Fact>
+        Public Sub TestGreenJsonNameValuePairExpression()
+            dim objectUnderTest = GenerateGreenJsonNameValuePairExpression()
+            AttachAndCheckDiagnostics(objectUnderTest)
+        End Sub
+
+        <Fact>
+        Public Sub TestGreenJsonArrayExpression()
+            dim objectUnderTest = GenerateGreenJsonArrayExpression()
+            AttachAndCheckDiagnostics(objectUnderTest)
+        End Sub
+
+        <Fact>
+        Public Sub TestGreenJsonConstantExpression()
+            dim objectUnderTest = GenerateGreenJsonConstantExpression()
             AttachAndCheckDiagnostics(objectUnderTest)
         End Sub
 
@@ -6685,6 +6725,38 @@ Partial Public Class GeneratedTests
         End Sub
 
         <Fact>
+        Public Sub TestGreenJsonObjectExpressionRewriter()
+            dim oldNode = GenerateGreenJsonObjectExpression()
+            Dim rewriter = New GreenIdentityRewriter()
+            Dim newNode = rewriter.Visit(oldNode)
+            Assert.Equal(oldNode, newNode)
+        End Sub
+
+        <Fact>
+        Public Sub TestGreenJsonNameValuePairExpressionRewriter()
+            dim oldNode = GenerateGreenJsonNameValuePairExpression()
+            Dim rewriter = New GreenIdentityRewriter()
+            Dim newNode = rewriter.Visit(oldNode)
+            Assert.Equal(oldNode, newNode)
+        End Sub
+
+        <Fact>
+        Public Sub TestGreenJsonArrayExpressionRewriter()
+            dim oldNode = GenerateGreenJsonArrayExpression()
+            Dim rewriter = New GreenIdentityRewriter()
+            Dim newNode = rewriter.Visit(oldNode)
+            Assert.Equal(oldNode, newNode)
+        End Sub
+
+        <Fact>
+        Public Sub TestGreenJsonConstantExpressionRewriter()
+            dim oldNode = GenerateGreenJsonConstantExpression()
+            Dim rewriter = New GreenIdentityRewriter()
+            Dim newNode = rewriter.Visit(oldNode)
+            Assert.Equal(oldNode, newNode)
+        End Sub
+
+        <Fact>
         Public Sub TestGreenConstDirectiveTriviaRewriter()
             dim oldNode = GenerateGreenConstDirectiveTrivia()
             Dim rewriter = New GreenIdentityRewriter()
@@ -9257,6 +9329,34 @@ Partial Public Class GeneratedTests
         <Fact>
         Public Sub TestGreenInterpolationFormatClauseVisitor()
             Dim oldNode = GenerateGreenInterpolationFormatClause()
+            Dim visitor = New GreenNodeVisitor()
+            visitor.Visit(oldNode)
+        End Sub
+
+        <Fact>
+        Public Sub TestGreenJsonObjectExpressionVisitor()
+            Dim oldNode = GenerateGreenJsonObjectExpression()
+            Dim visitor = New GreenNodeVisitor()
+            visitor.Visit(oldNode)
+        End Sub
+
+        <Fact>
+        Public Sub TestGreenJsonNameValuePairExpressionVisitor()
+            Dim oldNode = GenerateGreenJsonNameValuePairExpression()
+            Dim visitor = New GreenNodeVisitor()
+            visitor.Visit(oldNode)
+        End Sub
+
+        <Fact>
+        Public Sub TestGreenJsonArrayExpressionVisitor()
+            Dim oldNode = GenerateGreenJsonArrayExpression()
+            Dim visitor = New GreenNodeVisitor()
+            visitor.Visit(oldNode)
+        End Sub
+
+        <Fact>
+        Public Sub TestGreenJsonConstantExpressionVisitor()
+            Dim oldNode = GenerateGreenJsonConstantExpression()
             Dim visitor = New GreenNodeVisitor()
             visitor.Visit(oldNode)
         End Sub
@@ -17944,6 +18044,90 @@ Partial Public Class GeneratedTests
             return SyntaxFactory.InterpolationFormatClause(SyntaxFactory.Token(SyntaxKind.ColonToken), GenerateRedInterpolatedStringTextToken())
         End Function
 
+        Private Shared Function GenerateRedJsonObjectExpression() As JsonObjectExpressionSyntax
+            Dim exceptionTest as boolean = false
+            Try
+            SyntaxFactory.JsonObjectExpression(SyntaxFactory.Token(SyntaxKind.ExternalSourceKeyword), Nothing, SyntaxFactory.Token(SyntaxKind.CloseBraceToken))
+            catch e as ArgumentException
+            exceptionTest = true
+            End Try
+            Debug.Assert(exceptionTest)
+            exceptionTest = false
+
+            Try
+            SyntaxFactory.JsonObjectExpression(SyntaxFactory.Token(SyntaxKind.OpenBraceToken), Nothing, SyntaxFactory.Token(SyntaxKind.ExternalSourceKeyword))
+            catch e as ArgumentException
+            exceptionTest = true
+            End Try
+            Debug.Assert(exceptionTest)
+            exceptionTest = false
+
+            return SyntaxFactory.JsonObjectExpression(SyntaxFactory.Token(SyntaxKind.OpenBraceToken), Nothing, SyntaxFactory.Token(SyntaxKind.CloseBraceToken))
+        End Function
+
+        Private Shared Function GenerateRedJsonNameValuePairExpression() As JsonNameValuePairExpressionSyntax
+            Dim exceptionTest as boolean = false
+            Try
+            SyntaxFactory.JsonNameValuePairExpression(Nothing, SyntaxFactory.Token(SyntaxKind.ColonToken), GenerateRedKeywordEventContainer())
+            catch e as ArgumentNullException
+            exceptionTest = true
+            End Try
+            Debug.Assert(exceptionTest)
+            exceptionTest = false
+
+            Try
+            SyntaxFactory.JsonNameValuePairExpression(GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.ColonToken), Nothing)
+            catch e as ArgumentNullException
+            exceptionTest = true
+            End Try
+            Debug.Assert(exceptionTest)
+            exceptionTest = false
+
+            Try
+            SyntaxFactory.JsonNameValuePairExpression(GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.ExternalSourceKeyword), GenerateRedKeywordEventContainer())
+            catch e as ArgumentException
+            exceptionTest = true
+            End Try
+            Debug.Assert(exceptionTest)
+            exceptionTest = false
+
+            return SyntaxFactory.JsonNameValuePairExpression(GenerateRedKeywordEventContainer(), SyntaxFactory.Token(SyntaxKind.ColonToken), GenerateRedKeywordEventContainer())
+        End Function
+
+        Private Shared Function GenerateRedJsonArrayExpression() As JsonArrayExpressionSyntax
+            Dim exceptionTest as boolean = false
+            Try
+            SyntaxFactory.JsonArrayExpression(SyntaxFactory.Token(SyntaxKind.ExternalSourceKeyword), Nothing, SyntaxFactory.Token(SyntaxKind.CloseBracketToken))
+            catch e as ArgumentException
+            exceptionTest = true
+            End Try
+            Debug.Assert(exceptionTest)
+            exceptionTest = false
+
+            Try
+            SyntaxFactory.JsonArrayExpression(SyntaxFactory.Token(SyntaxKind.OpenBracketToken), Nothing, SyntaxFactory.Token(SyntaxKind.ExternalSourceKeyword))
+            catch e as ArgumentException
+            exceptionTest = true
+            End Try
+            Debug.Assert(exceptionTest)
+            exceptionTest = false
+
+            return SyntaxFactory.JsonArrayExpression(SyntaxFactory.Token(SyntaxKind.OpenBracketToken), Nothing, SyntaxFactory.Token(SyntaxKind.CloseBracketToken))
+        End Function
+
+        Private Shared Function GenerateRedJsonConstantExpression() As JsonConstantExpressionSyntax
+            Dim exceptionTest as boolean = false
+            Try
+            SyntaxFactory.JsonConstantExpression(SyntaxFactory.Token(SyntaxKind.ExternalSourceKeyword))
+            catch e as ArgumentException
+            exceptionTest = true
+            End Try
+            Debug.Assert(exceptionTest)
+            exceptionTest = false
+
+            return SyntaxFactory.JsonConstantExpression(GenerateRedIdentifierToken())
+        End Function
+
         Private Shared Function GenerateRedWhitespaceTrivia() As SyntaxTrivia
             Dim exceptionTest as boolean = false
             Try
@@ -21743,6 +21927,42 @@ Partial Public Class GeneratedTests
         End Sub
 
         <Fact>
+        Public Sub TestRedJsonObjectExpression()
+            dim objectUnderTest = GenerateRedJsonObjectExpression()
+            Assert.NotNull(objectUnderTest.openBraceToken)
+            Assert.NotNull(objectUnderTest.closeBraceToken)
+            Dim withObj = objectUnderTest.WithOpenBraceToken(objectUnderTest.OpenBraceToken).WithMembers(objectUnderTest.Members).WithCloseBraceToken(objectUnderTest.CloseBraceToken)
+            Assert.Equal(withobj, objectUnderTest)
+        End Sub
+
+        <Fact>
+        Public Sub TestRedJsonNameValuePairExpression()
+            dim objectUnderTest = GenerateRedJsonNameValuePairExpression()
+            Assert.NotNull(objectUnderTest.nameExpression)
+            Assert.NotNull(objectUnderTest.colonToken)
+            Assert.NotNull(objectUnderTest.valueExpression)
+            Dim withObj = objectUnderTest.WithNameExpression(objectUnderTest.NameExpression).WithColonToken(objectUnderTest.ColonToken).WithValueExpression(objectUnderTest.ValueExpression)
+            Assert.Equal(withobj, objectUnderTest)
+        End Sub
+
+        <Fact>
+        Public Sub TestRedJsonArrayExpression()
+            dim objectUnderTest = GenerateRedJsonArrayExpression()
+            Assert.NotNull(objectUnderTest.openBracketToken)
+            Assert.NotNull(objectUnderTest.closeBracketToken)
+            Dim withObj = objectUnderTest.WithOpenBracketToken(objectUnderTest.OpenBracketToken).WithElements(objectUnderTest.Elements).WithCloseBracketToken(objectUnderTest.CloseBracketToken)
+            Assert.Equal(withobj, objectUnderTest)
+        End Sub
+
+        <Fact>
+        Public Sub TestRedJsonConstantExpression()
+            dim objectUnderTest = GenerateRedJsonConstantExpression()
+            Assert.NotNull(objectUnderTest.valueToken)
+            Dim withObj = objectUnderTest.WithValueToken(objectUnderTest.ValueToken)
+            Assert.Equal(withobj, objectUnderTest)
+        End Sub
+
+        <Fact>
         Public Sub TestRedWhitespaceTrivia()
             dim objectUnderTest = GenerateRedWhitespaceTrivia()
         End Sub
@@ -24739,6 +24959,38 @@ Partial Public Class GeneratedTests
         <Fact>
         Public Sub TestRedInterpolationFormatClauseRewriter()
             dim oldNode = GenerateRedInterpolationFormatClause()
+            Dim rewriter = New RedIdentityRewriter()
+            Dim newNode = rewriter.Visit(oldNode)
+            Assert.Equal(oldNode, newNode)
+        End Sub
+
+        <Fact>
+        Public Sub TestRedJsonObjectExpressionRewriter()
+            dim oldNode = GenerateRedJsonObjectExpression()
+            Dim rewriter = New RedIdentityRewriter()
+            Dim newNode = rewriter.Visit(oldNode)
+            Assert.Equal(oldNode, newNode)
+        End Sub
+
+        <Fact>
+        Public Sub TestRedJsonNameValuePairExpressionRewriter()
+            dim oldNode = GenerateRedJsonNameValuePairExpression()
+            Dim rewriter = New RedIdentityRewriter()
+            Dim newNode = rewriter.Visit(oldNode)
+            Assert.Equal(oldNode, newNode)
+        End Sub
+
+        <Fact>
+        Public Sub TestRedJsonArrayExpressionRewriter()
+            dim oldNode = GenerateRedJsonArrayExpression()
+            Dim rewriter = New RedIdentityRewriter()
+            Dim newNode = rewriter.Visit(oldNode)
+            Assert.Equal(oldNode, newNode)
+        End Sub
+
+        <Fact>
+        Public Sub TestRedJsonConstantExpressionRewriter()
+            dim oldNode = GenerateRedJsonConstantExpression()
             Dim rewriter = New RedIdentityRewriter()
             Dim newNode = rewriter.Visit(oldNode)
             Assert.Equal(oldNode, newNode)

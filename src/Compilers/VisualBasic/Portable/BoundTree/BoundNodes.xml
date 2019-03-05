@@ -1920,4 +1920,33 @@
     <Field Name="FormatStringOpt" Type="BoundLiteral" Null="allow"/>
   </Node>
 
+  <Node Name="BoundJsonObject" Base="BoundExpression" HasValidate="true">
+    <!-- Type is required for this node type; may not be null -->
+    <Field Name="Type" Type="TypeSymbol" Override="true" Null="disallow"/>
+    <Field Name="Members" Type="ImmutableArray(Of BoundNode)"/>
+    <Field Name="Binder" Type="Binder" Null="disallow" />
+  </Node>
+
+  <Node Name="BoundJsonArray" Base="BoundExpression" HasValidate="true">
+    <!-- Type is required for this node type; may not be null -->
+    <Field Name="Type" Type="TypeSymbol" Override="true" Null="disallow"/>
+    <Field Name="Elements" Type="ImmutableArray(Of BoundNode)"/>
+    <Field Name="Binder" Type="Binder" Null="disallow" />
+  </Node>
+
+  <Node Name="BoundJsonNameValuePair" Base="BoundExpression" HasValidate="true">
+    <!-- Type is required for this node type; may not be null -->
+    <Field Name="Type" Type="TypeSymbol" Override="true" Null="disallow"/>
+    <Field Name="Name" Type="BoundExpression" Null="disallow"/>
+    <Field Name="Value" Type="BoundExpression" Null="disallow"/>
+    <Field Name="Binder" Type="Binder" Null="disallow" />
+  </Node>
+
+  <Node Name="BoundJsonConstant" Base="BoundExpression" HasValidate="true">
+    <!-- Type is required for this node type; may not be null -->
+    <Field Name="Type" Type="TypeSymbol" Override="true" Null="allow"/>
+    <Field Name="Value" Type="BoundExpression" Null="disallow"/>
+    <Field Name="Binder" Type="Binder" Null="disallow" />
+  </Node>
+  
 </Tree>

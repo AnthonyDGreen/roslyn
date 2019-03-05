@@ -1,0 +1,66 @@
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax.AddElements(ParamArray items As Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax()) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax.CloseBracketToken() -> Microsoft.CodeAnalysis.SyntaxToken
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax.Elements() -> Microsoft.CodeAnalysis.SeparatedSyntaxList(Of Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax)
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax.OpenBracketToken() -> Microsoft.CodeAnalysis.SyntaxToken
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax.Update(openBracketToken As Microsoft.CodeAnalysis.SyntaxToken, elements As Microsoft.CodeAnalysis.SeparatedSyntaxList(Of Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax), closeBracketToken As Microsoft.CodeAnalysis.SyntaxToken) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax.WithCloseBracketToken(closeBracketToken As Microsoft.CodeAnalysis.SyntaxToken) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax.WithElements(elements As Microsoft.CodeAnalysis.SeparatedSyntaxList(Of Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax)) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax.WithOpenBracketToken(openBracketToken As Microsoft.CodeAnalysis.SyntaxToken) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax.Update(valueToken As Microsoft.CodeAnalysis.SyntaxToken) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax.ValueToken() -> Microsoft.CodeAnalysis.SyntaxToken
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax.WithValueToken(valueToken As Microsoft.CodeAnalysis.SyntaxToken) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax.ColonToken() -> Microsoft.CodeAnalysis.SyntaxToken
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax.NameExpression() -> Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax.Update(nameExpression As Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax, colonToken As Microsoft.CodeAnalysis.SyntaxToken, valueExpression As Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax.ValueExpression() -> Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax.WithColonToken(colonToken As Microsoft.CodeAnalysis.SyntaxToken) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax.WithNameExpression(nameExpression As Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax.WithValueExpression(valueExpression As Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax.AddMembers(ParamArray items As Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax()) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax.CloseBraceToken() -> Microsoft.CodeAnalysis.SyntaxToken
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax.Members() -> Microsoft.CodeAnalysis.SeparatedSyntaxList(Of Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax)
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax.OpenBraceToken() -> Microsoft.CodeAnalysis.SyntaxToken
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax.Update(openBraceToken As Microsoft.CodeAnalysis.SyntaxToken, members As Microsoft.CodeAnalysis.SeparatedSyntaxList(Of Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax), closeBraceToken As Microsoft.CodeAnalysis.SyntaxToken) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax.WithCloseBraceToken(closeBraceToken As Microsoft.CodeAnalysis.SyntaxToken) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax.WithMembers(members As Microsoft.CodeAnalysis.SeparatedSyntaxList(Of Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax)) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax.WithOpenBraceToken(openBraceToken As Microsoft.CodeAnalysis.SyntaxToken) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax
+Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.CloseBracketToken = 794 -> Microsoft.CodeAnalysis.VisualBasic.SyntaxKind
+Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.JsonArrayExpression = 797 -> Microsoft.CodeAnalysis.VisualBasic.SyntaxKind
+Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.JsonConstantExpression = 798 -> Microsoft.CodeAnalysis.VisualBasic.SyntaxKind
+Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.JsonNameValuePairExpression = 796 -> Microsoft.CodeAnalysis.VisualBasic.SyntaxKind
+Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.JsonObjectExpression = 795 -> Microsoft.CodeAnalysis.VisualBasic.SyntaxKind
+Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.OpenBracketToken = 793 -> Microsoft.CodeAnalysis.VisualBasic.SyntaxKind
+Overridable Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor(Of TResult).VisitJsonArrayExpression(node As Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax) -> TResult
+Overridable Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor(Of TResult).VisitJsonConstantExpression(node As Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax) -> TResult
+Overridable Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor(Of TResult).VisitJsonNameValuePairExpression(node As Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax) -> TResult
+Overridable Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor(Of TResult).VisitJsonObjectExpression(node As Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax) -> TResult
+Overridable Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor.VisitJsonArrayExpression(node As Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax) -> Void
+Overridable Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor.VisitJsonConstantExpression(node As Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax) -> Void
+Overridable Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor.VisitJsonNameValuePairExpression(node As Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax) -> Void
+Overridable Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor.VisitJsonObjectExpression(node As Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax) -> Void
+Overrides Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax.Accept(Of TResult)(visitor As Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor(Of TResult)) -> TResult
+Overrides Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax.Accept(visitor As Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor) -> Void
+Overrides Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax.Accept(Of TResult)(visitor As Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor(Of TResult)) -> TResult
+Overrides Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax.Accept(visitor As Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor) -> Void
+Overrides Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax.Accept(Of TResult)(visitor As Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor(Of TResult)) -> TResult
+Overrides Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax.Accept(visitor As Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor) -> Void
+Overrides Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax.Accept(Of TResult)(visitor As Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor(Of TResult)) -> TResult
+Overrides Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax.Accept(visitor As Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor) -> Void
+Overrides Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxRewriter.VisitJsonArrayExpression(node As Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax) -> Microsoft.CodeAnalysis.SyntaxNode
+Overrides Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxRewriter.VisitJsonConstantExpression(node As Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax) -> Microsoft.CodeAnalysis.SyntaxNode
+Overrides Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxRewriter.VisitJsonNameValuePairExpression(node As Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax) -> Microsoft.CodeAnalysis.SyntaxNode
+Overrides Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxRewriter.VisitJsonObjectExpression(node As Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax) -> Microsoft.CodeAnalysis.SyntaxNode
+Shared Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.JsonArrayExpression() -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax
+Shared Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.JsonArrayExpression(elements As Microsoft.CodeAnalysis.SeparatedSyntaxList(Of Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax)) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax
+Shared Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.JsonArrayExpression(openBracketToken As Microsoft.CodeAnalysis.SyntaxToken, elements As Microsoft.CodeAnalysis.SeparatedSyntaxList(Of Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax), closeBracketToken As Microsoft.CodeAnalysis.SyntaxToken) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax
+Shared Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.JsonConstantExpression(valueToken As Microsoft.CodeAnalysis.SyntaxToken) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax
+Shared Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.JsonConstantExpression(valueToken As String) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax
+Shared Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.JsonNameValuePairExpression(nameExpression As Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax, colonToken As Microsoft.CodeAnalysis.SyntaxToken, valueExpression As Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax
+Shared Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.JsonNameValuePairExpression(nameExpression As Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax, valueExpression As Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax
+Shared Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.JsonObjectExpression() -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax
+Shared Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.JsonObjectExpression(members As Microsoft.CodeAnalysis.SeparatedSyntaxList(Of Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax)) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax
+Shared Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.JsonObjectExpression(openBraceToken As Microsoft.CodeAnalysis.SyntaxToken, members As Microsoft.CodeAnalysis.SeparatedSyntaxList(Of Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax), closeBraceToken As Microsoft.CodeAnalysis.SyntaxToken) -> Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax

@@ -34703,6 +34703,547 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
     End Class
 
     ''' <summary>
+    ''' Represents a JSON object expression.
+    ''' </summary>
+    Friend NotInheritable Class JsonObjectExpressionSyntax
+        Inherits ExpressionSyntax
+
+        Friend ReadOnly _openBraceToken as PunctuationSyntax
+        Friend ReadOnly _members as GreenNode
+        Friend ReadOnly _closeBraceToken as PunctuationSyntax
+
+        Friend Sub New(ByVal kind As SyntaxKind, openBraceToken As InternalSyntax.PunctuationSyntax, members As GreenNode, closeBraceToken As InternalSyntax.PunctuationSyntax)
+            MyBase.New(kind)
+            MyBase._slotCount = 3
+
+            AdjustFlagsAndWidth(openBraceToken)
+            Me._openBraceToken = openBraceToken
+            If members IsNot Nothing Then
+                AdjustFlagsAndWidth(members)
+                Me._members = members
+            End If
+            AdjustFlagsAndWidth(closeBraceToken)
+            Me._closeBraceToken = closeBraceToken
+
+        End Sub
+
+        Friend Sub New(ByVal kind As SyntaxKind, openBraceToken As InternalSyntax.PunctuationSyntax, members As GreenNode, closeBraceToken As InternalSyntax.PunctuationSyntax, context As ISyntaxFactoryContext)
+            MyBase.New(kind)
+            MyBase._slotCount = 3
+            Me.SetFactoryContext(context)
+
+            AdjustFlagsAndWidth(openBraceToken)
+            Me._openBraceToken = openBraceToken
+            If members IsNot Nothing Then
+                AdjustFlagsAndWidth(members)
+                Me._members = members
+            End If
+            AdjustFlagsAndWidth(closeBraceToken)
+            Me._closeBraceToken = closeBraceToken
+
+        End Sub
+
+        Friend Sub New(ByVal kind As SyntaxKind, ByVal errors as DiagnosticInfo(), ByVal annotations as SyntaxAnnotation(), openBraceToken As InternalSyntax.PunctuationSyntax, members As GreenNode, closeBraceToken As InternalSyntax.PunctuationSyntax)
+            MyBase.New(kind, errors, annotations)
+            MyBase._slotCount = 3
+
+            AdjustFlagsAndWidth(openBraceToken)
+            Me._openBraceToken = openBraceToken
+            If members IsNot Nothing Then
+                AdjustFlagsAndWidth(members)
+                Me._members = members
+            End If
+            AdjustFlagsAndWidth(closeBraceToken)
+            Me._closeBraceToken = closeBraceToken
+
+        End Sub
+
+        Friend Sub New(reader as ObjectReader)
+          MyBase.New(reader)
+            MyBase._slotCount = 3
+          Dim _openBraceToken = DirectCast(reader.ReadValue(), PunctuationSyntax)
+          If _openBraceToken isnot Nothing 
+             AdjustFlagsAndWidth(_openBraceToken)
+             Me._openBraceToken = _openBraceToken
+          End If
+          Dim _members = DirectCast(reader.ReadValue(), GreenNode)
+          If _members isnot Nothing 
+             AdjustFlagsAndWidth(_members)
+             Me._members = _members
+          End If
+          Dim _closeBraceToken = DirectCast(reader.ReadValue(), PunctuationSyntax)
+          If _closeBraceToken isnot Nothing 
+             AdjustFlagsAndWidth(_closeBraceToken)
+             Me._closeBraceToken = _closeBraceToken
+          End If
+        End Sub
+        Friend Shared CreateInstance As Func(Of ObjectReader, Object) = Function(o) New JsonObjectExpressionSyntax(o)
+
+
+        Friend Overrides Sub WriteTo(writer as ObjectWriter)
+          MyBase.WriteTo(writer)
+          writer.WriteValue(Me._openBraceToken)
+          writer.WriteValue(Me._members)
+          writer.WriteValue(Me._closeBraceToken)
+        End Sub
+
+        Shared Sub New()
+          ObjectBinder.RegisterTypeReader(GetType(JsonObjectExpressionSyntax), Function(r) New JsonObjectExpressionSyntax(r))
+        End Sub
+
+        Friend Overrides Function CreateRed(ByVal parent As SyntaxNode, ByVal startLocation As Integer) As SyntaxNode
+            Return new Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonObjectExpressionSyntax(Me, parent, startLocation)
+        End Function
+
+        ''' <summary>
+        ''' The opening '{' token.
+        ''' </summary>
+        Friend  ReadOnly Property OpenBraceToken As InternalSyntax.PunctuationSyntax
+            Get
+                Return Me._openBraceToken
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' The members of the JSON object.
+        ''' </summary>
+        ''' <remarks>
+        ''' If nothing is present, an empty list is returned.
+        ''' </remarks>
+        Friend  ReadOnly Property Members As Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(Of ExpressionSyntax)
+            Get
+                Return new Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(Of ExpressionSyntax)(New Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxList(of ExpressionSyntax)(Me._members))
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' The closing '}' token.
+        ''' </summary>
+        Friend  ReadOnly Property CloseBraceToken As InternalSyntax.PunctuationSyntax
+            Get
+                Return Me._closeBraceToken
+            End Get
+        End Property
+
+        Friend Overrides Function GetSlot(i as Integer) as GreenNode
+            Select case i
+                Case 0
+                    Return Me._openBraceToken
+                Case 1
+                    Return Me._members
+                Case 2
+                    Return Me._closeBraceToken
+                Case Else
+                     Debug.Assert(false, "child index out of range")
+                     Return Nothing
+            End Select
+        End Function
+
+
+        Friend Overrides Function SetDiagnostics(ByVal newErrors As DiagnosticInfo()) As GreenNode
+            Return new JsonObjectExpressionSyntax(Me.Kind, newErrors, GetAnnotations, _openBraceToken, _members, _closeBraceToken)
+        End Function
+
+        Friend Overrides Function SetAnnotations(ByVal annotations As SyntaxAnnotation()) As GreenNode
+            Return new JsonObjectExpressionSyntax(Me.Kind, GetDiagnostics, annotations, _openBraceToken, _members, _closeBraceToken)
+        End Function
+
+        Public Overrides Function Accept(ByVal visitor As VisualBasicSyntaxVisitor) As VisualBasicSyntaxNode
+            Return visitor.VisitJsonObjectExpression(Me)
+        End Function
+
+    End Class
+
+    ''' <summary>
+    ''' Represents a JSON name-value pair.
+    ''' </summary>
+    Friend NotInheritable Class JsonNameValuePairExpressionSyntax
+        Inherits ExpressionSyntax
+
+        Friend ReadOnly _nameExpression as ExpressionSyntax
+        Friend ReadOnly _colonToken as PunctuationSyntax
+        Friend ReadOnly _valueExpression as ExpressionSyntax
+
+        Friend Sub New(ByVal kind As SyntaxKind, nameExpression As ExpressionSyntax, colonToken As InternalSyntax.PunctuationSyntax, valueExpression As ExpressionSyntax)
+            MyBase.New(kind)
+            MyBase._slotCount = 3
+
+            AdjustFlagsAndWidth(nameExpression)
+            Me._nameExpression = nameExpression
+            AdjustFlagsAndWidth(colonToken)
+            Me._colonToken = colonToken
+            AdjustFlagsAndWidth(valueExpression)
+            Me._valueExpression = valueExpression
+
+        End Sub
+
+        Friend Sub New(ByVal kind As SyntaxKind, nameExpression As ExpressionSyntax, colonToken As InternalSyntax.PunctuationSyntax, valueExpression As ExpressionSyntax, context As ISyntaxFactoryContext)
+            MyBase.New(kind)
+            MyBase._slotCount = 3
+            Me.SetFactoryContext(context)
+
+            AdjustFlagsAndWidth(nameExpression)
+            Me._nameExpression = nameExpression
+            AdjustFlagsAndWidth(colonToken)
+            Me._colonToken = colonToken
+            AdjustFlagsAndWidth(valueExpression)
+            Me._valueExpression = valueExpression
+
+        End Sub
+
+        Friend Sub New(ByVal kind As SyntaxKind, ByVal errors as DiagnosticInfo(), ByVal annotations as SyntaxAnnotation(), nameExpression As ExpressionSyntax, colonToken As InternalSyntax.PunctuationSyntax, valueExpression As ExpressionSyntax)
+            MyBase.New(kind, errors, annotations)
+            MyBase._slotCount = 3
+
+            AdjustFlagsAndWidth(nameExpression)
+            Me._nameExpression = nameExpression
+            AdjustFlagsAndWidth(colonToken)
+            Me._colonToken = colonToken
+            AdjustFlagsAndWidth(valueExpression)
+            Me._valueExpression = valueExpression
+
+        End Sub
+
+        Friend Sub New(reader as ObjectReader)
+          MyBase.New(reader)
+            MyBase._slotCount = 3
+          Dim _nameExpression = DirectCast(reader.ReadValue(), ExpressionSyntax)
+          If _nameExpression isnot Nothing 
+             AdjustFlagsAndWidth(_nameExpression)
+             Me._nameExpression = _nameExpression
+          End If
+          Dim _colonToken = DirectCast(reader.ReadValue(), PunctuationSyntax)
+          If _colonToken isnot Nothing 
+             AdjustFlagsAndWidth(_colonToken)
+             Me._colonToken = _colonToken
+          End If
+          Dim _valueExpression = DirectCast(reader.ReadValue(), ExpressionSyntax)
+          If _valueExpression isnot Nothing 
+             AdjustFlagsAndWidth(_valueExpression)
+             Me._valueExpression = _valueExpression
+          End If
+        End Sub
+        Friend Shared CreateInstance As Func(Of ObjectReader, Object) = Function(o) New JsonNameValuePairExpressionSyntax(o)
+
+
+        Friend Overrides Sub WriteTo(writer as ObjectWriter)
+          MyBase.WriteTo(writer)
+          writer.WriteValue(Me._nameExpression)
+          writer.WriteValue(Me._colonToken)
+          writer.WriteValue(Me._valueExpression)
+        End Sub
+
+        Shared Sub New()
+          ObjectBinder.RegisterTypeReader(GetType(JsonNameValuePairExpressionSyntax), Function(r) New JsonNameValuePairExpressionSyntax(r))
+        End Sub
+
+        Friend Overrides Function CreateRed(ByVal parent As SyntaxNode, ByVal startLocation As Integer) As SyntaxNode
+            Return new Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonNameValuePairExpressionSyntax(Me, parent, startLocation)
+        End Function
+
+        ''' <summary>
+        ''' The name expression.
+        ''' </summary>
+        Friend  ReadOnly Property NameExpression As InternalSyntax.ExpressionSyntax
+            Get
+                Return Me._nameExpression
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' The colon ':' token.
+        ''' </summary>
+        Friend  ReadOnly Property ColonToken As InternalSyntax.PunctuationSyntax
+            Get
+                Return Me._colonToken
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' The value expression.
+        ''' </summary>
+        Friend  ReadOnly Property ValueExpression As InternalSyntax.ExpressionSyntax
+            Get
+                Return Me._valueExpression
+            End Get
+        End Property
+
+        Friend Overrides Function GetSlot(i as Integer) as GreenNode
+            Select case i
+                Case 0
+                    Return Me._nameExpression
+                Case 1
+                    Return Me._colonToken
+                Case 2
+                    Return Me._valueExpression
+                Case Else
+                     Debug.Assert(false, "child index out of range")
+                     Return Nothing
+            End Select
+        End Function
+
+
+        Friend Overrides Function SetDiagnostics(ByVal newErrors As DiagnosticInfo()) As GreenNode
+            Return new JsonNameValuePairExpressionSyntax(Me.Kind, newErrors, GetAnnotations, _nameExpression, _colonToken, _valueExpression)
+        End Function
+
+        Friend Overrides Function SetAnnotations(ByVal annotations As SyntaxAnnotation()) As GreenNode
+            Return new JsonNameValuePairExpressionSyntax(Me.Kind, GetDiagnostics, annotations, _nameExpression, _colonToken, _valueExpression)
+        End Function
+
+        Public Overrides Function Accept(ByVal visitor As VisualBasicSyntaxVisitor) As VisualBasicSyntaxNode
+            Return visitor.VisitJsonNameValuePairExpression(Me)
+        End Function
+
+    End Class
+
+    ''' <summary>
+    ''' Represents a JSON array expression.
+    ''' </summary>
+    Friend NotInheritable Class JsonArrayExpressionSyntax
+        Inherits ExpressionSyntax
+
+        Friend ReadOnly _openBracketToken as PunctuationSyntax
+        Friend ReadOnly _elements as GreenNode
+        Friend ReadOnly _closeBracketToken as PunctuationSyntax
+
+        Friend Sub New(ByVal kind As SyntaxKind, openBracketToken As InternalSyntax.PunctuationSyntax, elements As GreenNode, closeBracketToken As InternalSyntax.PunctuationSyntax)
+            MyBase.New(kind)
+            MyBase._slotCount = 3
+
+            AdjustFlagsAndWidth(openBracketToken)
+            Me._openBracketToken = openBracketToken
+            If elements IsNot Nothing Then
+                AdjustFlagsAndWidth(elements)
+                Me._elements = elements
+            End If
+            AdjustFlagsAndWidth(closeBracketToken)
+            Me._closeBracketToken = closeBracketToken
+
+        End Sub
+
+        Friend Sub New(ByVal kind As SyntaxKind, openBracketToken As InternalSyntax.PunctuationSyntax, elements As GreenNode, closeBracketToken As InternalSyntax.PunctuationSyntax, context As ISyntaxFactoryContext)
+            MyBase.New(kind)
+            MyBase._slotCount = 3
+            Me.SetFactoryContext(context)
+
+            AdjustFlagsAndWidth(openBracketToken)
+            Me._openBracketToken = openBracketToken
+            If elements IsNot Nothing Then
+                AdjustFlagsAndWidth(elements)
+                Me._elements = elements
+            End If
+            AdjustFlagsAndWidth(closeBracketToken)
+            Me._closeBracketToken = closeBracketToken
+
+        End Sub
+
+        Friend Sub New(ByVal kind As SyntaxKind, ByVal errors as DiagnosticInfo(), ByVal annotations as SyntaxAnnotation(), openBracketToken As InternalSyntax.PunctuationSyntax, elements As GreenNode, closeBracketToken As InternalSyntax.PunctuationSyntax)
+            MyBase.New(kind, errors, annotations)
+            MyBase._slotCount = 3
+
+            AdjustFlagsAndWidth(openBracketToken)
+            Me._openBracketToken = openBracketToken
+            If elements IsNot Nothing Then
+                AdjustFlagsAndWidth(elements)
+                Me._elements = elements
+            End If
+            AdjustFlagsAndWidth(closeBracketToken)
+            Me._closeBracketToken = closeBracketToken
+
+        End Sub
+
+        Friend Sub New(reader as ObjectReader)
+          MyBase.New(reader)
+            MyBase._slotCount = 3
+          Dim _openBracketToken = DirectCast(reader.ReadValue(), PunctuationSyntax)
+          If _openBracketToken isnot Nothing 
+             AdjustFlagsAndWidth(_openBracketToken)
+             Me._openBracketToken = _openBracketToken
+          End If
+          Dim _elements = DirectCast(reader.ReadValue(), GreenNode)
+          If _elements isnot Nothing 
+             AdjustFlagsAndWidth(_elements)
+             Me._elements = _elements
+          End If
+          Dim _closeBracketToken = DirectCast(reader.ReadValue(), PunctuationSyntax)
+          If _closeBracketToken isnot Nothing 
+             AdjustFlagsAndWidth(_closeBracketToken)
+             Me._closeBracketToken = _closeBracketToken
+          End If
+        End Sub
+        Friend Shared CreateInstance As Func(Of ObjectReader, Object) = Function(o) New JsonArrayExpressionSyntax(o)
+
+
+        Friend Overrides Sub WriteTo(writer as ObjectWriter)
+          MyBase.WriteTo(writer)
+          writer.WriteValue(Me._openBracketToken)
+          writer.WriteValue(Me._elements)
+          writer.WriteValue(Me._closeBracketToken)
+        End Sub
+
+        Shared Sub New()
+          ObjectBinder.RegisterTypeReader(GetType(JsonArrayExpressionSyntax), Function(r) New JsonArrayExpressionSyntax(r))
+        End Sub
+
+        Friend Overrides Function CreateRed(ByVal parent As SyntaxNode, ByVal startLocation As Integer) As SyntaxNode
+            Return new Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonArrayExpressionSyntax(Me, parent, startLocation)
+        End Function
+
+        ''' <summary>
+        ''' The opening '[' token.
+        ''' </summary>
+        Friend  ReadOnly Property OpenBracketToken As InternalSyntax.PunctuationSyntax
+            Get
+                Return Me._openBracketToken
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' The elements of the JSON array.
+        ''' </summary>
+        ''' <remarks>
+        ''' If nothing is present, an empty list is returned.
+        ''' </remarks>
+        Friend  ReadOnly Property Elements As Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(Of ExpressionSyntax)
+            Get
+                Return new Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(Of ExpressionSyntax)(New Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxList(of ExpressionSyntax)(Me._elements))
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' The closing ']' token.
+        ''' </summary>
+        Friend  ReadOnly Property CloseBracketToken As InternalSyntax.PunctuationSyntax
+            Get
+                Return Me._closeBracketToken
+            End Get
+        End Property
+
+        Friend Overrides Function GetSlot(i as Integer) as GreenNode
+            Select case i
+                Case 0
+                    Return Me._openBracketToken
+                Case 1
+                    Return Me._elements
+                Case 2
+                    Return Me._closeBracketToken
+                Case Else
+                     Debug.Assert(false, "child index out of range")
+                     Return Nothing
+            End Select
+        End Function
+
+
+        Friend Overrides Function SetDiagnostics(ByVal newErrors As DiagnosticInfo()) As GreenNode
+            Return new JsonArrayExpressionSyntax(Me.Kind, newErrors, GetAnnotations, _openBracketToken, _elements, _closeBracketToken)
+        End Function
+
+        Friend Overrides Function SetAnnotations(ByVal annotations As SyntaxAnnotation()) As GreenNode
+            Return new JsonArrayExpressionSyntax(Me.Kind, GetDiagnostics, annotations, _openBracketToken, _elements, _closeBracketToken)
+        End Function
+
+        Public Overrides Function Accept(ByVal visitor As VisualBasicSyntaxVisitor) As VisualBasicSyntaxNode
+            Return visitor.VisitJsonArrayExpression(Me)
+        End Function
+
+    End Class
+
+    ''' <summary>
+    ''' Represents a JSON 'true', 'false', or 'null' expression.
+    ''' </summary>
+    Friend NotInheritable Class JsonConstantExpressionSyntax
+        Inherits ExpressionSyntax
+
+        Friend ReadOnly _valueToken as IdentifierTokenSyntax
+
+        Friend Sub New(ByVal kind As SyntaxKind, valueToken As InternalSyntax.IdentifierTokenSyntax)
+            MyBase.New(kind)
+            MyBase._slotCount = 1
+
+            AdjustFlagsAndWidth(valueToken)
+            Me._valueToken = valueToken
+
+        End Sub
+
+        Friend Sub New(ByVal kind As SyntaxKind, valueToken As InternalSyntax.IdentifierTokenSyntax, context As ISyntaxFactoryContext)
+            MyBase.New(kind)
+            MyBase._slotCount = 1
+            Me.SetFactoryContext(context)
+
+            AdjustFlagsAndWidth(valueToken)
+            Me._valueToken = valueToken
+
+        End Sub
+
+        Friend Sub New(ByVal kind As SyntaxKind, ByVal errors as DiagnosticInfo(), ByVal annotations as SyntaxAnnotation(), valueToken As InternalSyntax.IdentifierTokenSyntax)
+            MyBase.New(kind, errors, annotations)
+            MyBase._slotCount = 1
+
+            AdjustFlagsAndWidth(valueToken)
+            Me._valueToken = valueToken
+
+        End Sub
+
+        Friend Sub New(reader as ObjectReader)
+          MyBase.New(reader)
+            MyBase._slotCount = 1
+          Dim _valueToken = DirectCast(reader.ReadValue(), IdentifierTokenSyntax)
+          If _valueToken isnot Nothing 
+             AdjustFlagsAndWidth(_valueToken)
+             Me._valueToken = _valueToken
+          End If
+        End Sub
+        Friend Shared CreateInstance As Func(Of ObjectReader, Object) = Function(o) New JsonConstantExpressionSyntax(o)
+
+
+        Friend Overrides Sub WriteTo(writer as ObjectWriter)
+          MyBase.WriteTo(writer)
+          writer.WriteValue(Me._valueToken)
+        End Sub
+
+        Shared Sub New()
+          ObjectBinder.RegisterTypeReader(GetType(JsonConstantExpressionSyntax), Function(r) New JsonConstantExpressionSyntax(r))
+        End Sub
+
+        Friend Overrides Function CreateRed(ByVal parent As SyntaxNode, ByVal startLocation As Integer) As SyntaxNode
+            Return new Microsoft.CodeAnalysis.VisualBasic.Syntax.JsonConstantExpressionSyntax(Me, parent, startLocation)
+        End Function
+
+        ''' <summary>
+        ''' The 'true', 'false', or 'null' token.
+        ''' </summary>
+        Friend  ReadOnly Property ValueToken As InternalSyntax.IdentifierTokenSyntax
+            Get
+                Return Me._valueToken
+            End Get
+        End Property
+
+        Friend Overrides Function GetSlot(i as Integer) as GreenNode
+            If i = 0 Then
+                Return Me._valueToken
+            Else
+                Debug.Assert(false, "child index out of range")
+                Return Nothing
+            End If
+        End Function
+
+
+        Friend Overrides Function SetDiagnostics(ByVal newErrors As DiagnosticInfo()) As GreenNode
+            Return new JsonConstantExpressionSyntax(Me.Kind, newErrors, GetAnnotations, _valueToken)
+        End Function
+
+        Friend Overrides Function SetAnnotations(ByVal annotations As SyntaxAnnotation()) As GreenNode
+            Return new JsonConstantExpressionSyntax(Me.Kind, GetDiagnostics, annotations, _valueToken)
+        End Function
+
+        Public Overrides Function Accept(ByVal visitor As VisualBasicSyntaxVisitor) As VisualBasicSyntaxNode
+            Return visitor.VisitJsonConstantExpression(Me)
+        End Function
+
+    End Class
+
+    ''' <summary>
     ''' Represents a pre-processing directive (such as #If, #Const or #Region)
     ''' appearing in source.
     ''' </summary>
@@ -37676,6 +38217,22 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
         Public Overridable Function VisitInterpolationFormatClause(ByVal node As InterpolationFormatClauseSyntax) As VisualBasicSyntaxNode
             Debug.Assert(node IsNot Nothing)
             Return VisitVisualBasicSyntaxNode(node)
+        End Function
+        Public Overridable Function VisitJsonObjectExpression(ByVal node As JsonObjectExpressionSyntax) As VisualBasicSyntaxNode
+            Debug.Assert(node IsNot Nothing)
+            Return VisitExpression(node)
+        End Function
+        Public Overridable Function VisitJsonNameValuePairExpression(ByVal node As JsonNameValuePairExpressionSyntax) As VisualBasicSyntaxNode
+            Debug.Assert(node IsNot Nothing)
+            Return VisitExpression(node)
+        End Function
+        Public Overridable Function VisitJsonArrayExpression(ByVal node As JsonArrayExpressionSyntax) As VisualBasicSyntaxNode
+            Debug.Assert(node IsNot Nothing)
+            Return VisitExpression(node)
+        End Function
+        Public Overridable Function VisitJsonConstantExpression(ByVal node As JsonConstantExpressionSyntax) As VisualBasicSyntaxNode
+            Debug.Assert(node IsNot Nothing)
+            Return VisitExpression(node)
         End Function
         Public Overridable Function VisitDirectiveTrivia(ByVal node As DirectiveTriviaSyntax) As VisualBasicSyntaxNode
             Debug.Assert(node IsNot Nothing)
@@ -41681,6 +42238,70 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             End If
         End Function
 
+        Public Overrides Function VisitJsonObjectExpression(ByVal node As JsonObjectExpressionSyntax) As VisualBasicSyntaxNode
+            Dim anyChanges As Boolean = False
+
+            Dim newOpenBraceToken = DirectCast(Visit(node.OpenBraceToken), PunctuationSyntax)
+            If node._openBraceToken IsNot newOpenBraceToken Then anyChanges = True
+            Dim newMembers = VisitList(node.Members)
+            If node._members IsNot newMembers.Node Then anyChanges = True
+            Dim newCloseBraceToken = DirectCast(Visit(node.CloseBraceToken), PunctuationSyntax)
+            If node._closeBraceToken IsNot newCloseBraceToken Then anyChanges = True
+
+            If anyChanges Then
+                Return New JsonObjectExpressionSyntax(node.Kind, node.GetDiagnostics, node.GetAnnotations, newOpenBraceToken, newMembers.Node, newCloseBraceToken)
+            Else
+                Return node
+            End If
+        End Function
+
+        Public Overrides Function VisitJsonNameValuePairExpression(ByVal node As JsonNameValuePairExpressionSyntax) As VisualBasicSyntaxNode
+            Dim anyChanges As Boolean = False
+
+            Dim newNameExpression = DirectCast(Visit(node._nameExpression), ExpressionSyntax)
+            If node._nameExpression IsNot newNameExpression Then anyChanges = True
+            Dim newColonToken = DirectCast(Visit(node.ColonToken), PunctuationSyntax)
+            If node._colonToken IsNot newColonToken Then anyChanges = True
+            Dim newValueExpression = DirectCast(Visit(node._valueExpression), ExpressionSyntax)
+            If node._valueExpression IsNot newValueExpression Then anyChanges = True
+
+            If anyChanges Then
+                Return New JsonNameValuePairExpressionSyntax(node.Kind, node.GetDiagnostics, node.GetAnnotations, newNameExpression, newColonToken, newValueExpression)
+            Else
+                Return node
+            End If
+        End Function
+
+        Public Overrides Function VisitJsonArrayExpression(ByVal node As JsonArrayExpressionSyntax) As VisualBasicSyntaxNode
+            Dim anyChanges As Boolean = False
+
+            Dim newOpenBracketToken = DirectCast(Visit(node.OpenBracketToken), PunctuationSyntax)
+            If node._openBracketToken IsNot newOpenBracketToken Then anyChanges = True
+            Dim newElements = VisitList(node.Elements)
+            If node._elements IsNot newElements.Node Then anyChanges = True
+            Dim newCloseBracketToken = DirectCast(Visit(node.CloseBracketToken), PunctuationSyntax)
+            If node._closeBracketToken IsNot newCloseBracketToken Then anyChanges = True
+
+            If anyChanges Then
+                Return New JsonArrayExpressionSyntax(node.Kind, node.GetDiagnostics, node.GetAnnotations, newOpenBracketToken, newElements.Node, newCloseBracketToken)
+            Else
+                Return node
+            End If
+        End Function
+
+        Public Overrides Function VisitJsonConstantExpression(ByVal node As JsonConstantExpressionSyntax) As VisualBasicSyntaxNode
+            Dim anyChanges As Boolean = False
+
+            Dim newValueToken = DirectCast(Visit(node.ValueToken), IdentifierTokenSyntax)
+            If node._valueToken IsNot newValueToken Then anyChanges = True
+
+            If anyChanges Then
+                Return New JsonConstantExpressionSyntax(node.Kind, node.GetDiagnostics, node.GetAnnotations, newValueToken)
+            Else
+                Return node
+            End If
+        End Function
+
         Public Overrides Function VisitConstDirectiveTrivia(ByVal node As ConstDirectiveTriviaSyntax) As VisualBasicSyntaxNode
             Dim anyChanges As Boolean = False
 
@@ -42219,6 +42840,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
               GetType(InterpolationSyntax),
               GetType(InterpolationAlignmentClauseSyntax),
               GetType(InterpolationFormatClauseSyntax),
+              GetType(JsonObjectExpressionSyntax),
+              GetType(JsonNameValuePairExpressionSyntax),
+              GetType(JsonArrayExpressionSyntax),
+              GetType(JsonConstantExpressionSyntax),
               GetType(DirectiveTriviaSyntax),
               GetType(SyntaxTrivia),
               GetType(ConstDirectiveTriviaSyntax),
@@ -53924,6 +54549,124 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             End If
 
             Dim result = New InterpolationFormatClauseSyntax(SyntaxKind.InterpolationFormatClause, colonToken, formatStringToken)
+            If hash >= 0 Then
+                SyntaxNodeCache.AddNode(result, hash)
+            End If
+
+            Return result
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON object expression.
+        ''' </summary>
+        ''' <param name="openBraceToken">
+        ''' The opening '{' token.
+        ''' </param>
+        ''' <param name="members">
+        ''' The members of the JSON object.
+        ''' </param>
+        ''' <param name="closeBraceToken">
+        ''' The closing '}' token.
+        ''' </param>
+        Friend Shared Function JsonObjectExpression(openBraceToken As PunctuationSyntax, members As Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(of GreenNode), closeBraceToken As PunctuationSyntax) As JsonObjectExpressionSyntax
+            Debug.Assert(openBraceToken IsNot Nothing AndAlso openBraceToken.Kind = SyntaxKind.OpenBraceToken)
+            Debug.Assert(closeBraceToken IsNot Nothing AndAlso closeBraceToken.Kind = SyntaxKind.CloseBraceToken)
+
+            Dim hash As Integer
+            Dim cached = SyntaxNodeCache.TryGetNode(SyntaxKind.JsonObjectExpression, openBraceToken, members.Node, closeBraceToken, hash)
+            If cached IsNot Nothing Then
+                Return DirectCast(cached, JsonObjectExpressionSyntax)
+            End If
+
+            Dim result = New JsonObjectExpressionSyntax(SyntaxKind.JsonObjectExpression, openBraceToken, members.Node, closeBraceToken)
+            If hash >= 0 Then
+                SyntaxNodeCache.AddNode(result, hash)
+            End If
+
+            Return result
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON name-value pair.
+        ''' </summary>
+        ''' <param name="nameExpression">
+        ''' The name expression.
+        ''' </param>
+        ''' <param name="colonToken">
+        ''' The colon ':' token.
+        ''' </param>
+        ''' <param name="valueExpression">
+        ''' The value expression.
+        ''' </param>
+        Friend Shared Function JsonNameValuePairExpression(nameExpression As ExpressionSyntax, colonToken As PunctuationSyntax, valueExpression As ExpressionSyntax) As JsonNameValuePairExpressionSyntax
+            Debug.Assert(nameExpression IsNot Nothing)
+            Debug.Assert(colonToken IsNot Nothing AndAlso colonToken.Kind = SyntaxKind.ColonToken)
+            Debug.Assert(valueExpression IsNot Nothing)
+
+            Dim hash As Integer
+            Dim cached = SyntaxNodeCache.TryGetNode(SyntaxKind.JsonNameValuePairExpression, nameExpression, colonToken, valueExpression, hash)
+            If cached IsNot Nothing Then
+                Return DirectCast(cached, JsonNameValuePairExpressionSyntax)
+            End If
+
+            Dim result = New JsonNameValuePairExpressionSyntax(SyntaxKind.JsonNameValuePairExpression, nameExpression, colonToken, valueExpression)
+            If hash >= 0 Then
+                SyntaxNodeCache.AddNode(result, hash)
+            End If
+
+            Return result
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON array expression.
+        ''' </summary>
+        ''' <param name="openBracketToken">
+        ''' The opening '[' token.
+        ''' </param>
+        ''' <param name="elements">
+        ''' The elements of the JSON array.
+        ''' </param>
+        ''' <param name="closeBracketToken">
+        ''' The closing ']' token.
+        ''' </param>
+        Friend Shared Function JsonArrayExpression(openBracketToken As PunctuationSyntax, elements As Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(of GreenNode), closeBracketToken As PunctuationSyntax) As JsonArrayExpressionSyntax
+            Debug.Assert(openBracketToken IsNot Nothing AndAlso openBracketToken.Kind = SyntaxKind.OpenBracketToken)
+            Debug.Assert(closeBracketToken IsNot Nothing AndAlso closeBracketToken.Kind = SyntaxKind.CloseBracketToken)
+
+            Dim hash As Integer
+            Dim cached = SyntaxNodeCache.TryGetNode(SyntaxKind.JsonArrayExpression, openBracketToken, elements.Node, closeBracketToken, hash)
+            If cached IsNot Nothing Then
+                Return DirectCast(cached, JsonArrayExpressionSyntax)
+            End If
+
+            Dim result = New JsonArrayExpressionSyntax(SyntaxKind.JsonArrayExpression, openBracketToken, elements.Node, closeBracketToken)
+            If hash >= 0 Then
+                SyntaxNodeCache.AddNode(result, hash)
+            End If
+
+            Return result
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON 'true', 'false', or 'null' expression.
+        ''' </summary>
+        ''' <param name="valueToken">
+        ''' The 'true', 'false', or 'null' token.
+        ''' </param>
+        Friend Shared Function JsonConstantExpression(valueToken As IdentifierTokenSyntax) As JsonConstantExpressionSyntax
+            Debug.Assert(valueToken IsNot Nothing AndAlso valueToken.Kind = SyntaxKind.IdentifierToken)
+
+            Dim hash As Integer
+            Dim cached = SyntaxNodeCache.TryGetNode(SyntaxKind.JsonConstantExpression, valueToken, hash)
+            If cached IsNot Nothing Then
+                Return DirectCast(cached, JsonConstantExpressionSyntax)
+            End If
+
+            Dim result = New JsonConstantExpressionSyntax(SyntaxKind.JsonConstantExpression, valueToken)
             If hash >= 0 Then
                 SyntaxNodeCache.AddNode(result, hash)
             End If
@@ -66000,6 +66743,124 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             End If
 
             Dim result = New InterpolationFormatClauseSyntax(SyntaxKind.InterpolationFormatClause, colonToken, formatStringToken, _factoryContext)
+            If hash >= 0 Then
+                SyntaxNodeCache.AddNode(result, hash)
+            End If
+
+            Return result
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON object expression.
+        ''' </summary>
+        ''' <param name="openBraceToken">
+        ''' The opening '{' token.
+        ''' </param>
+        ''' <param name="members">
+        ''' The members of the JSON object.
+        ''' </param>
+        ''' <param name="closeBraceToken">
+        ''' The closing '}' token.
+        ''' </param>
+        Friend Function JsonObjectExpression(openBraceToken As PunctuationSyntax, members As Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(of GreenNode), closeBraceToken As PunctuationSyntax) As JsonObjectExpressionSyntax
+            Debug.Assert(openBraceToken IsNot Nothing AndAlso openBraceToken.Kind = SyntaxKind.OpenBraceToken)
+            Debug.Assert(closeBraceToken IsNot Nothing AndAlso closeBraceToken.Kind = SyntaxKind.CloseBraceToken)
+
+            Dim hash As Integer
+            Dim cached = VisualBasicSyntaxNodeCache.TryGetNode(SyntaxKind.JsonObjectExpression, openBraceToken, members.Node, closeBraceToken, _factoryContext, hash)
+            If cached IsNot Nothing Then
+                Return DirectCast(cached, JsonObjectExpressionSyntax)
+            End If
+
+            Dim result = New JsonObjectExpressionSyntax(SyntaxKind.JsonObjectExpression, openBraceToken, members.Node, closeBraceToken, _factoryContext)
+            If hash >= 0 Then
+                SyntaxNodeCache.AddNode(result, hash)
+            End If
+
+            Return result
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON name-value pair.
+        ''' </summary>
+        ''' <param name="nameExpression">
+        ''' The name expression.
+        ''' </param>
+        ''' <param name="colonToken">
+        ''' The colon ':' token.
+        ''' </param>
+        ''' <param name="valueExpression">
+        ''' The value expression.
+        ''' </param>
+        Friend Function JsonNameValuePairExpression(nameExpression As ExpressionSyntax, colonToken As PunctuationSyntax, valueExpression As ExpressionSyntax) As JsonNameValuePairExpressionSyntax
+            Debug.Assert(nameExpression IsNot Nothing)
+            Debug.Assert(colonToken IsNot Nothing AndAlso colonToken.Kind = SyntaxKind.ColonToken)
+            Debug.Assert(valueExpression IsNot Nothing)
+
+            Dim hash As Integer
+            Dim cached = VisualBasicSyntaxNodeCache.TryGetNode(SyntaxKind.JsonNameValuePairExpression, nameExpression, colonToken, valueExpression, _factoryContext, hash)
+            If cached IsNot Nothing Then
+                Return DirectCast(cached, JsonNameValuePairExpressionSyntax)
+            End If
+
+            Dim result = New JsonNameValuePairExpressionSyntax(SyntaxKind.JsonNameValuePairExpression, nameExpression, colonToken, valueExpression, _factoryContext)
+            If hash >= 0 Then
+                SyntaxNodeCache.AddNode(result, hash)
+            End If
+
+            Return result
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON array expression.
+        ''' </summary>
+        ''' <param name="openBracketToken">
+        ''' The opening '[' token.
+        ''' </param>
+        ''' <param name="elements">
+        ''' The elements of the JSON array.
+        ''' </param>
+        ''' <param name="closeBracketToken">
+        ''' The closing ']' token.
+        ''' </param>
+        Friend Function JsonArrayExpression(openBracketToken As PunctuationSyntax, elements As Global.Microsoft.CodeAnalysis.Syntax.InternalSyntax.SeparatedSyntaxList(of GreenNode), closeBracketToken As PunctuationSyntax) As JsonArrayExpressionSyntax
+            Debug.Assert(openBracketToken IsNot Nothing AndAlso openBracketToken.Kind = SyntaxKind.OpenBracketToken)
+            Debug.Assert(closeBracketToken IsNot Nothing AndAlso closeBracketToken.Kind = SyntaxKind.CloseBracketToken)
+
+            Dim hash As Integer
+            Dim cached = VisualBasicSyntaxNodeCache.TryGetNode(SyntaxKind.JsonArrayExpression, openBracketToken, elements.Node, closeBracketToken, _factoryContext, hash)
+            If cached IsNot Nothing Then
+                Return DirectCast(cached, JsonArrayExpressionSyntax)
+            End If
+
+            Dim result = New JsonArrayExpressionSyntax(SyntaxKind.JsonArrayExpression, openBracketToken, elements.Node, closeBracketToken, _factoryContext)
+            If hash >= 0 Then
+                SyntaxNodeCache.AddNode(result, hash)
+            End If
+
+            Return result
+        End Function
+
+
+        ''' <summary>
+        ''' Represents a JSON 'true', 'false', or 'null' expression.
+        ''' </summary>
+        ''' <param name="valueToken">
+        ''' The 'true', 'false', or 'null' token.
+        ''' </param>
+        Friend Function JsonConstantExpression(valueToken As IdentifierTokenSyntax) As JsonConstantExpressionSyntax
+            Debug.Assert(valueToken IsNot Nothing AndAlso valueToken.Kind = SyntaxKind.IdentifierToken)
+
+            Dim hash As Integer
+            Dim cached = VisualBasicSyntaxNodeCache.TryGetNode(SyntaxKind.JsonConstantExpression, valueToken, _factoryContext, hash)
+            If cached IsNot Nothing Then
+                Return DirectCast(cached, JsonConstantExpressionSyntax)
+            End If
+
+            Dim result = New JsonConstantExpressionSyntax(SyntaxKind.JsonConstantExpression, valueToken, _factoryContext)
             If hash >= 0 Then
                 SyntaxNodeCache.AddNode(result, hash)
             End If
