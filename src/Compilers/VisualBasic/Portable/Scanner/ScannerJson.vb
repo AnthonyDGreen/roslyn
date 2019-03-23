@@ -10,16 +10,23 @@ Imports CoreInternalSyntax = Microsoft.CodeAnalysis.Syntax.InternalSyntax
 Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
     Partial Friend Class Scanner
 
-        Private Function ScanJson() As SyntaxToken
+        Private Function ScanJson(Optional leadingTrivia As CoreInternalSyntax.SyntaxList(Of VisualBasicSyntaxNode) = Nothing) As SyntaxToken
             If Not CanGet() Then
                 Return MakeEofToken()
             End If
 
             Dim kind As SyntaxKind
 
-            Dim leadingTriviaLength = GetWhitespaceLength(0)
-            Dim offset = leadingTriviaLength
+            Dim leadingTriviaLength As Integer
+            Dim offset As Integer
             Dim length As Integer
+
+            If leadingTrivia.Node Is Nothing Then
+                leadingTriviaLength = GetWhitespaceLength(0)
+                offset = leadingTriviaLength
+            Else
+                offset = 0
+            End If
 
             If Not CanGet(offset) Then
                 Return MakeEofToken()
@@ -50,7 +57,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                     Return token
             End Select
 
-            Dim leadingTrivia = ScanWhitespace(leadingTriviaLength)
+            If leadingTrivia.Node Is Nothing Then
+                leadingTrivia = ScanWhitespace(leadingTriviaLength)
+            End If
 
             Dim text = GetText(length)
 

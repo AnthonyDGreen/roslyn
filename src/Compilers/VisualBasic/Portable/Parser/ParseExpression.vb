@@ -411,6 +411,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
                     term = ParseInterpolatedStringExpression()
 
+                Case SyntaxKind.OpenBracketToken
+
+                    term = ParseJsonArray(isTopLevel:=True)
+
                 Case Else
 
                     If start.Kind = SyntaxKind.QuestionToken AndAlso CanStartConsequenceExpression(Me.PeekToken(1).Kind, qualified:=False) Then

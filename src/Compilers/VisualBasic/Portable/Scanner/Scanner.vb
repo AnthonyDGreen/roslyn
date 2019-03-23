@@ -1593,6 +1593,7 @@ FullWidthRepeat:
             Return _KeywordsObjs.GetOrMakeValue(spelling)
         End Function
 
+        ' TODO: Consider renaming to ScanBracketedIdentifierOrOpenBracketToken.
         Private Function ScanBracketedIdentifier(precedingTrivia As CoreInternalSyntax.SyntaxList(Of VisualBasicSyntaxNode)) As SyntaxToken
             Debug.Assert(CanGet)  ' [
             Debug.Assert(Peek() = "["c OrElse Peek() = FULLWIDTH_LEFT_SQUARE_BRACKET)
@@ -1609,8 +1610,20 @@ FullWidthRepeat:
             Dim ch = Peek(Here)
 
             ' check if we can start an ident.
-            If Not IsIdentifierStartCharacter(ch) OrElse
-                (IsConnectorPunctuation(ch) AndAlso
+            If Not IsIdentifierStartCharacter(ch) Then
+                If Peek() = FULLWIDTH_LEFT_SQUARE_BRACKET Then
+
+                    InvalidIdentifier = True
+
+                Else
+
+                    Dim bracket = ScanJson(precedingTrivia)
+                    Debug.Assert(bracket.Kind = SyntaxKind.OpenBracketToken)
+
+                    Return bracket
+
+                End If
+            ElseIf (IsConnectorPunctuation(ch) AndAlso
                     Not (CanGet(Here + 1) AndAlso
                          IsIdentifierPartCharacter(Peek(Here + 1)))) Then
 
@@ -1634,7 +1647,7 @@ FullWidthRepeat:
                         Dim id As SyntaxToken = MakeIdentifier(
                             spelling,
                             SyntaxKind.IdentifierToken,
-                            True,
+                            isBracketed:=True,
                             baseText,
                             TypeCharacter.None,
                             precedingTrivia)

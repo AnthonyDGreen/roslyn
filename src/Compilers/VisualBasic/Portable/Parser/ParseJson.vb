@@ -122,7 +122,7 @@ AfterFirstExpression:
 
         End Function
 
-        Private Function ParseJsonArray() As JsonArrayExpressionSyntax
+        Private Function ParseJsonArray(Optional isTopLevel As Boolean = False) As JsonArrayExpressionSyntax
 
             Debug.Assert(CurrentToken.Kind = SyntaxKind.OpenBracketToken)
 
@@ -170,7 +170,12 @@ AfterFirstExpression:
 
             If CurrentToken.Kind = SyntaxKind.CloseBracketToken Then
                 closeBracket = DirectCast(CurrentToken, PunctuationSyntax)
-                GetNextToken(ScannerState.Json)
+
+                If isTopLevel Then
+                    GetNextToken()
+                Else
+                    GetNextToken(ScannerState.Json)
+                End If
             Else
                 closeBracket = DirectCast(HandleUnexpectedToken(SyntaxKind.CloseBracketToken), PunctuationSyntax)
             End If
