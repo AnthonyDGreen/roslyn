@@ -29,7 +29,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
         Friend Overrides ReadOnly Property IsWithinAsyncMethodOrLambda As Boolean
             Get
-                Return Parser.IsScript
+                Return Parser.IsScript OrElse Parser.AllowTopLevelExecutableStatementsAndExpressions
             End Get
         End Property
 
@@ -62,7 +62,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
                     Case Else
                         ' only allow executable statements in top-level script code
-                        If _parser.IsScript Then
+                        If _parser.IsScript OrElse _parser.AllowTopLevelExecutableStatementsAndExpressions Then
                             Dim newContext = TryProcessExecutableStatement(node)
                             If newContext IsNot Nothing Then
                                 Return newContext
@@ -75,7 +75,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
         End Function
 
         Friend Overrides Function TryLinkSyntax(node As VisualBasicSyntaxNode, ByRef newContext As BlockContext) As LinkResult
-            If _parser.IsScript Then
+            If _parser.IsScript OrElse _parser.AllowTopLevelExecutableStatementsAndExpressions Then
                 Return TryLinkStatement(node, newContext)
             Else
                 Return MyBase.TryLinkSyntax(node, newContext)

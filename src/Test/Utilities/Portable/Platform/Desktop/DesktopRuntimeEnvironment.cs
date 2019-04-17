@@ -187,6 +187,7 @@ namespace Roslyn.Test.Utilities.Desktop
             }
         }
 
+        [System.Diagnostics.DebuggerNonUserCode]
         public void Emit(
             Compilation mainCompilation,
             IEnumerable<ResourceDescription> manifestResources,

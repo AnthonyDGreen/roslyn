@@ -86,6 +86,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     Return GetBinderForNodeAndUsage(DirectCast(node.Parent, VisualBasicSyntaxNode), NodeUsage.TopLevelExecutableStatement, DirectCast(node.Parent, VisualBasicSyntaxNode), _position)
                 End If
 
+                If node.Parent.Kind = SyntaxKind.CompilationUnit Then
+                    Dim root = DirectCast(node.Parent, CompilationUnitSyntax)
+
+                    If root.HasTopLevelCode Then
+                        ' See comment above re: binder caching.
+                        Return GetBinderForNodeAndUsage(root, NodeUsage.CompilationUnitExecutableStatementList, root, _position)
+                    End If
+                End If
+
                 Return Nothing
             End Function
 

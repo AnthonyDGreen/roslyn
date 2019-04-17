@@ -132,6 +132,14 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 Case SyntaxKind.DelegateFunctionStatement, SyntaxKind.DelegateSubStatement
                     Return DirectCast(node, DelegateStatementSyntax).Identifier
 
+                Case SyntaxKind.CompilationUnit
+                    Dim unit = DirectCast(node, CompilationUnitSyntax)
+                    If unit.HasTopLevelCode Then
+                        Return SyntaxFactory.MissingIdentifier()
+                    Else
+                        Throw ExceptionUtilities.UnexpectedValue(node.Kind)
+                    End If
+
                 Case Else
                     Throw ExceptionUtilities.UnexpectedValue(node.Kind)
             End Select
@@ -218,6 +226,24 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             End If
         End Sub
 
+        ''' <summary>
+        ''' Returns the members of this type declaration correctly whether the type declaration is explicit or implicit (i.e. top-level).
+        ''' </summary>
+        Private Shared Function GetMembersForSyntax(node As SyntaxNode) As SyntaxList(Of StatementSyntax)
+            If node.Kind = SyntaxKind.CompilationUnit Then
+                Debug.Assert(DirectCast(node, CompilationUnitSyntax).HasTopLevelCode)
+                Return DirectCast(node, CompilationUnitSyntax).Members
+            Else
+                Dim typeBlock = TryCast(node, TypeBlockSyntax)
+
+                If typeBlock IsNot Nothing Then
+                    Return typeBlock.Members
+                Else
+                    Throw ExceptionUtilities.UnexpectedValue(node.Kind)
+                End If
+            End If
+        End Function
+
         ' Declare all the non-type members in a single part of this type, and add them to the member list.
         Private Function AddMembersInPart(binder As Binder,
                                           node As VisualBasicSyntaxNode,
@@ -265,8 +291,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 Dim enumBlock = DirectCast(node, EnumBlockSyntax)
                 AddEnumMembers(enumBlock, binder, diagBag, members)
             Else
-                Dim typeBlock = DirectCast(node, TypeBlockSyntax)
-                For Each memberSyntax In typeBlock.Members
+                For Each memberSyntax In GetMembersForSyntax(node)
                     AddMember(memberSyntax, binder, diagBag, members, staticInitializers, instanceInitializers, reportAsInvalid:=False)
                 Next
             End If
@@ -443,6 +468,14 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                     err = ERRID.ERR_BadDelegateFlags1
                     modifiers = DirectCast(node, DelegateStatementSyntax).Modifiers
                     id = DirectCast(node, DelegateStatementSyntax).Identifier
+
+                Case SyntaxKind.CompilationUnit
+                    Debug.Assert(DirectCast(node, CompilationUnitSyntax).HasTopLevelCode)
+
+                    err = Nothing
+                    modifiers = Nothing
+                    id = SyntaxFactory.MissingIdentifier
+                    Return Nothing
 
                 Case Else
                     Throw ExceptionUtilities.UnexpectedValue(node.Kind)
@@ -2563,63 +2596,153 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
         End Sub
 
         Protected Overrides Sub AddEntryPointIfNeeded(membersBuilder As MembersAndInitializersBuilder)
-            If Me.TypeKind = TypeKind.Class AndAlso Not Me.IsGenericType Then
-                Dim mainTypeName As String = DeclaringCompilation.Options.MainTypeName
 
-                If mainTypeName IsNot Nothing AndAlso
-                   IdentifierComparison.EndsWith(mainTypeName, Me.Name) AndAlso
-                   IdentifierComparison.Equals(mainTypeName, Me.ToDisplayString(SymbolDisplayFormat.QualifiedNameOnlyFormat)) Then
+            If Me.TypeKind <> TypeKind.Class OrElse Me.IsGenericType Then Return
 
-                    ' Must derive from Windows.Forms.Form
-                    Dim formClass As NamedTypeSymbol = DeclaringCompilation.GetWellKnownType(WellKnownType.System_Windows_Forms_Form)
+            Dim mainTypeName As String = DeclaringCompilation.Options.MainTypeName
+            Dim isMainType = (mainTypeName IsNot Nothing AndAlso
+                              IdentifierComparison.EndsWith(mainTypeName, Me.Name) AndAlso
+                              IdentifierComparison.Equals(mainTypeName, Me.ToDisplayString(SymbolDisplayFormat.QualifiedNameOnlyFormat)))
 
-                    If formClass.IsErrorType() OrElse Not Me.IsOrDerivedFrom(formClass, useSiteDiagnostics:=Nothing) Then
-                        Return
+            ' Must derive from Windows.Forms.Form
+            Dim formClass As NamedTypeSymbol = DeclaringCompilation.GetWellKnownType(WellKnownType.System_Windows_Forms_Form)
+            Dim isFormOrFormDerivedMainType = (isMainType AndAlso
+                                               Not formClass.IsErrorType() AndAlso
+                                               Me.IsOrDerivedFrom(formClass, useSiteDiagnostics:=Nothing))
+
+            Dim isTopLevelMainMethodType As Boolean
+
+            If isFormOrFormDerivedMainType Then
+                isTopLevelMainMethodType = False
+            Else
+                Dim hasTopLevelCode As Boolean
+
+                For Each ref In Me.SyntaxReferences
+                    Dim syntax = TryCast(ref.GetSyntax(), CompilationUnitSyntax)
+
+                    If syntax Is Nothing Then Continue For
+
+                    If syntax.HasTopLevelExecutableStatements Then
+                        hasTopLevelCode = True
+                        Exit For
                     End If
+                Next
 
-                    Dim entryPointMethodName As String = WellKnownMemberNames.EntryPointMethodName
+                If hasTopLevelCode Then
+                    If isMainType Then
+                        isTopLevelMainMethodType = True
+                    Else
+                        ' We know (for now) that all top-level code has to be in the same (project root) namespace.
 
-                    ' If we already have a child named 'Main', do not add a synthetic one.
-                    If membersBuilder.Members.ContainsKey(entryPointMethodName) Then
-                        Return
-                    End If
+                        Dim otherTypesWithTopLevelMethods = False
+                        For Each t As SourceNamedTypeSymbol In Me.ContainingNamespace.GetTypeMembersUnordered()
+                            ' Should this be .Equals or .IsSame?
+                            If t Is Me Then Continue For
+                            If otherTypesWithTopLevelMethods Then Exit For
 
-                    If GetTypeMembersDictionary().ContainsKey(entryPointMethodName) Then
-                        Return
-                    End If
+                            For Each ref In t.SyntaxReferences
+                                Dim syntax = TryCast(ref.GetSyntax(), CompilationUnitSyntax)
 
-                    ' We need to have a constructor that can be called without arguments.
-                    Dim symbols As ArrayBuilder(Of Symbol) = Nothing
-                    Dim haveSuitableConstructor As Boolean = False
+                                If syntax Is Nothing Then Continue For
 
-                    If membersBuilder.Members.TryGetValue(WellKnownMemberNames.InstanceConstructorName, symbols) Then
-                        For Each method As MethodSymbol In symbols
-                            If method.MethodKind = MethodKind.Constructor AndAlso method.ParameterCount = 0 Then
-                                haveSuitableConstructor = True
-                                Exit For
-                            End If
-                        Next
-
-                        If Not haveSuitableConstructor Then
-                            ' Do the second pass to check for optional parameters, etc., it will require binding parameter modifiers and probably types.
-                            For Each method As MethodSymbol In symbols
-                                If method.MethodKind = MethodKind.Constructor AndAlso method.CanBeCalledWithNoParameters() Then
-                                    haveSuitableConstructor = True
+                                If syntax.HasTopLevelExecutableStatements Then
+                                    ' TODO: Report error, multiple files with top-level code; cannot infer entry-point type.
+                                    otherTypesWithTopLevelMethods = True
                                     Exit For
                                 End If
                             Next
-                        End If
+                        Next
+
+                        isTopLevelMainMethodType = Not otherTypesWithTopLevelMethods
                     End If
 
-                    If haveSuitableConstructor Then
-                        Dim syntaxRef = SyntaxReferences.First() ' use arbitrary part
-
-                        Dim binder As Binder = BinderBuilder.CreateBinderForType(ContainingSourceModule, syntaxRef.SyntaxTree, Me)
-                        Dim entryPoint As New SynthesizedMainTypeEntryPoint(syntaxRef.GetVisualBasicSyntax(), Me)
-                        AddMember(entryPoint, binder, membersBuilder, omitDiagnostics:=True)
-                    End If
+                ElseIf isMainType Then
+                    ' TODO: Report error, main type without top-level code and does not inherit System.Windows.Forms.Form.
                 End If
             End If
+
+            If Not isFormOrFormDerivedMainType AndAlso Not isTopLevelMainMethodType Then Return
+
+            Dim entryPointMethodName As String = WellKnownMemberNames.EntryPointMethodName
+
+            ' If we already have a child named 'Main', do not add a synthetic one.
+            If membersBuilder.Members.ContainsKey(entryPointMethodName) Then
+                Return
+            End If
+
+            If GetTypeMembersDictionary().ContainsKey(entryPointMethodName) Then
+                Return
+            End If
+
+            ' We need to have a constructor that can be called without arguments.
+            Dim symbols As ArrayBuilder(Of Symbol) = Nothing
+            Dim haveSuitableConstructor As Boolean = False
+
+            If membersBuilder.Members.TryGetValue(WellKnownMemberNames.InstanceConstructorName, symbols) Then
+                For Each method As MethodSymbol In symbols
+                    If method.MethodKind = MethodKind.Constructor AndAlso method.ParameterCount = 0 Then
+                        haveSuitableConstructor = True
+                        Exit For
+                    End If
+                Next
+
+                If Not haveSuitableConstructor Then
+                    ' Do the second pass to check for optional parameters, etc., it will require binding parameter modifiers and probably types.
+                    For Each method As MethodSymbol In symbols
+                        If method.MethodKind = MethodKind.Constructor AndAlso method.CanBeCalledWithNoParameters() Then
+                            haveSuitableConstructor = True
+                            Exit For
+                        End If
+                    Next
+                End If
+            End If
+
+            ' TODO: Consider reporting warning here that type is invalid.
+            If Not haveSuitableConstructor Then Return
+
+            Dim syntaxRef = SyntaxReferences.First() ' use arbitrary part
+
+            Dim binder As Binder = BinderBuilder.CreateBinderForType(ContainingSourceModule, syntaxRef.SyntaxTree, Me)
+
+            If isFormOrFormDerivedMainType Then
+                AddMember(New SynthesizedMainTypeEntryPoint(syntaxRef.GetVisualBasicSyntax(), Me), binder, membersBuilder, omitDiagnostics:=True)
+            Else
+                Debug.Assert(isTopLevelMainMethodType)
+                AddMember(New SynthesizedTopLevelCodeExecuteEntryPoint(syntaxRef.GetVisualBasicSyntax(), Me), binder, membersBuilder, omitDiagnostics:=True)
+            End If
+        End Sub
+
+        Protected Overrides Sub AddTopLevelExecuteMethodIfNeeded(members As MembersAndInitializersBuilder, diagnostics As DiagnosticBag)
+            If TypeKind <> TypeKind.Class Then Return
+
+            Dim hasAnyTopLevelExecutableCode = False
+
+            Dim node As CompilationUnitSyntax = Nothing
+
+            For Each ref In SyntaxReferences
+                Dim syntax = ref.GetVisualBasicSyntax()
+
+                If syntax.Kind <> SyntaxKind.CompilationUnit Then Continue For
+
+                node = DirectCast(syntax, CompilationUnitSyntax)
+
+                If Not node.HasTopLevelExecutableStatements Then Continue For
+
+                If hasAnyTopLevelExecutableCode Then
+                    ' TODO: Report error.
+                End If
+
+                Dim code = node.GetTopLevelExecutableStatements()
+
+                ' TODO: Should go find an Execute method to override. This will allow reduction in user-code.
+
+                Dim binder As Binder = BinderBuilder.CreateBinderForType(ContainingSourceModule, ref.SyntaxTree, Me)
+                Dim executeMethod As New SynthesizedTopLevelCodeExecuteMethodSymbol(syntax, "Execute", Me, code)
+                AddMember(executeMethod, binder, members, omitDiagnostics:=False)
+
+                hasAnyTopLevelExecutableCode = True
+            Next
+
         End Sub
 
     End Class

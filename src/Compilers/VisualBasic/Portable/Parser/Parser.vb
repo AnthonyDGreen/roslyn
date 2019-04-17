@@ -74,6 +74,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             End Get
         End Property
 
+        Friend ReadOnly Property AllowTopLevelExecutableStatementsAndExpressions As Boolean
+            Get
+                Return True
+            End Get
+        End Property
+
         Private Function ParseSimpleName(
                                      allowGenericArguments As Boolean,
                                      allowGenericsWithoutOf As Boolean,
@@ -2099,16 +2105,36 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
             Dim isFieldDeclaration As Boolean = False
             Select Case Context.BlockKind
-                Case _
-                    SyntaxKind.ModuleBlock,
-                    SyntaxKind.StructureBlock,
-                    SyntaxKind.InterfaceBlock,
-                    SyntaxKind.ClassBlock,
-                    SyntaxKind.EnumBlock,
-                    SyntaxKind.PropertyBlock,
-                    SyntaxKind.NamespaceBlock,
-                    SyntaxKind.CompilationUnit
+                Case SyntaxKind.ModuleBlock,
+                     SyntaxKind.StructureBlock,
+                     SyntaxKind.InterfaceBlock,
+                     SyntaxKind.ClassBlock,
+                     SyntaxKind.EnumBlock,
+                     SyntaxKind.PropertyBlock,
+                     SyntaxKind.NamespaceBlock
+
                     isFieldDeclaration = True
+
+                Case SyntaxKind.CompilationUnit
+
+                    isFieldDeclaration = False
+
+                    For Each modifier In modifiers
+                        Select Case modifier.Kind
+                            Case SyntaxKind.DimKeyword,
+                                 SyntaxKind.ConstKeyword,
+                                 SyntaxKind.StaticKeyword
+
+                                Continue For
+
+                            Case Else
+
+                                isFieldDeclaration = True
+                                Exit For
+
+                        End Select
+                    Next
+
             End Select
 
             Dim Declarations = ParseVariableDeclaration(Not isFieldDeclaration)

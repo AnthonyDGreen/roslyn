@@ -65,7 +65,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                         Dim method = DirectCast(member, MethodSymbol)
                         ' check if this is an entry point
-                        If Not method.IsSubmissionConstructor AndAlso _entryPointCandidates IsNot Nothing AndAlso Not method.IsImplicitlyDeclared AndAlso method.IsEntryPointCandidate Then
+                        If Not method.IsSubmissionConstructor AndAlso
+                           _entryPointCandidates IsNot Nothing AndAlso
+                           (Not method.IsImplicitlyDeclared OrElse method.IsSynthesizedTopLevelCodeEntryPoint) AndAlso
+                           method.IsEntryPointCandidate _
+                        Then
                             _entryPointCandidates.Add(method)
                         End If
                     End If

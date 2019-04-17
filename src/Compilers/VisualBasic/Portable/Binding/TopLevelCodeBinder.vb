@@ -18,6 +18,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Debug.Assert(scriptInitializer.ContainingType.IsScriptClass)
         End Sub
 
+        Public Sub New(executeMethod As MethodSymbol, root As Syntax.CompilationUnitSyntax, containingBinder As Binder)
+            MyBase.New(executeMethod, root, containingBinder)
+        End Sub
+
         Public Overrides Function GetLocalForFunctionValue() As LocalSymbol
             Return Nothing
         End Function

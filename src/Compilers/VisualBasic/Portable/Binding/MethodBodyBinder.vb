@@ -49,6 +49,13 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                           methodBlock IsNot Nothing))
 
             If methodBlock Is Nothing Then
+
+                If TypeOf methodSymbol Is SynthesizedTopLevelCodeExecuteMethodSymbol Then
+
+                    Return New SynthesizedLocal(methodSymbol, methodSymbol.ReturnType, SynthesizedLocalKind.FunctionReturnValue, root)
+
+                End If
+
                 Return Nothing
             End If
 

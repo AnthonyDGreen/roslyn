@@ -106,6 +106,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             Return directives.ToImmutableAndFree()
         End Function
 
+        ' TODO: This method is for error recovery.
         Private Function CreateImplicitClass(parent As VisualBasicSyntaxNode, memberNames As String(), children As ImmutableArray(Of SingleTypeDeclaration), declFlags As SingleTypeDeclaration.TypeDeclarationFlags) As SingleNamespaceOrTypeDeclaration
             Dim parentReference = _syntaxTree.GetReference(parent)
 
@@ -119,6 +120,29 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 nameLocation:=parentReference.GetLocation(),
                 memberNames:=memberNames,
                 children:=children)
+        End Function
+
+        Private Function CreateImplicitDeclaration(
+                             parent As VisualBasicSyntaxNode,
+                             name As String,
+                             memberNames As String(),
+                             children As ImmutableArray(Of SingleTypeDeclaration),
+                             declFlags As SingleTypeDeclaration.TypeDeclarationFlags
+                         ) As SingleNamespaceOrTypeDeclaration
+
+            Debug.Assert(parent.Kind = SyntaxKind.CompilationUnit)
+
+            Dim parentReference = _syntaxTree.GetReference(parent)
+
+            Return New SingleTypeDeclaration(DeclarationKind.Class,
+                                             name,
+                                             arity:=0,
+                                             modifiers:=DeclarationModifiers.Friend Or DeclarationModifiers.Partial,
+                                             declFlags,
+                                             syntaxReference:=parentReference,
+                                             nameLocation:=parentReference.GetLocation(),
+                                             memberNames,
+                                             children)
         End Function
 
         Private Function CreateScriptClass(parent As VisualBasicSyntaxNode, children As ImmutableArray(Of SingleTypeDeclaration), memberNames As String(), declFlags As SingleTypeDeclaration.TypeDeclarationFlags) As SingleNamespaceOrTypeDeclaration
@@ -186,6 +210,35 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 implicitClass = CreateScriptClass(node, scriptChildren.ToImmutableAndFree(), memberNames, declFlags)
                 children = childrenBuilder.ToImmutableAndFree()
                 referenceDirectives = GetReferenceDirectives(node)
+
+            ElseIf node.HasTopLevelCode Then
+
+                Dim namespaceChildrenBuilder = ArrayBuilder(Of SingleNamespaceOrTypeDeclaration).GetInstance()
+                Dim implicitTypeDeclarationChildrenBuilder = ArrayBuilder(Of SingleTypeDeclaration).GetInstance()
+
+                For Each member In node.Members
+                    Dim decl = Visit(member)
+                    If decl IsNot Nothing Then
+                        ' Unlike in scripts, top-level namespaces are still allowed.
+                        If decl.Kind = DeclarationKind.Namespace Then
+                            namespaceChildrenBuilder.Add(decl)
+                        Else
+                            implicitTypeDeclarationChildrenBuilder.Add(DirectCast(decl, SingleTypeDeclaration))
+                        End If
+                    End If
+                Next
+
+                Dim declFlags As SingleTypeDeclaration.TypeDeclarationFlags = SingleTypeDeclaration.TypeDeclarationFlags.None
+                Dim memberNames = GetNonTypeMemberNames(node.Members, declFlags)
+
+                ' TODO: Namespace inference, nested?
+                Dim implicitTypeName = node.GetImplicitTypeName()
+
+                Dim implicitTypeDeclaration = CreateImplicitDeclaration(node, implicitTypeName, memberNames, implicitTypeDeclarationChildrenBuilder.ToImmutableAndFree(), declFlags)
+                namespaceChildrenBuilder.Add(implicitTypeDeclaration)
+                children = namespaceChildrenBuilder.ToImmutableAndFree()
+                referenceDirectives = ImmutableArray(Of ReferenceDirective).Empty
+
             Else
                 children = VisitNamespaceChildren(node, node.Members, implicitClass).ToImmutableAndFree()
                 referenceDirectives = ImmutableArray(Of ReferenceDirective).Empty

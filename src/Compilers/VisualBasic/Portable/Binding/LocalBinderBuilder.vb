@@ -83,10 +83,17 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ''' Creates binders for top-level executable statements.
         ''' </summary>
         Public Overrides Sub VisitCompilationUnit(node As CompilationUnitSyntax)
-            For Each member In node.Members
-                ' Visit methods for non-executable statements are no-ops:
-                MakeBinder(member, _containingBinder)
-            Next
+
+            _containingBinder = New ExitableStatementBinder(_containingBinder,
+                                                            continueKind:=SyntaxKind.None, exitKind:=SyntaxKind.ExitFunctionStatement)
+            RememberBinder(node, _containingBinder)
+
+            CreateBinderFromStatementList(node.Members, _containingBinder)
+
+            'For Each member In node.Members
+            '    ' Visit methods for non-executable statements are no-ops:
+            '    MakeBinder(member, _containingBinder)
+            'Next
         End Sub
 
         Public Overrides Sub VisitMethodBlock(node As MethodBlockSyntax)

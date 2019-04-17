@@ -393,6 +393,120 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Return New BoundBlock(methodBlock, If(methodBlock IsNot Nothing, methodBlock.Statements, Nothing), locals, statements.ToImmutableAndFree())
         End Function
 
+        ' TODO: HACK, copied and pasted this from above. Unify!
+        Public Function BindCompilationUnitStatements(root As CompilationUnitSyntax, diagnostics As DiagnosticBag) As BoundBlock
+            Dim statements As ArrayBuilder(Of BoundStatement) = ArrayBuilder(Of BoundStatement).GetInstance
+            Dim locals As ImmutableArray(Of LocalSymbol) = ImmutableArray(Of LocalSymbol).Empty
+
+            Dim methodSymbol = DirectCast(ContainingMember, MethodSymbol)
+            Dim localForFunctionValue As LocalSymbol
+
+            If methodSymbol.IsIterator OrElse (methodSymbol.IsAsync AndAlso methodSymbol.ReturnType.Equals(Compilation.GetWellKnownType(WellKnownType.System_Threading_Tasks_Task))) Then
+                ' We are actually not using FunctionValue of such method in Return statements and referencing it explicitly is an error. 
+                localForFunctionValue = Nothing
+            Else
+                localForFunctionValue = Me.GetLocalForFunctionValue()
+            End If
+
+            If localForFunctionValue IsNot Nothing Then
+                ' Declare local variable for function return 
+                statements.Add(New BoundLocalDeclaration(root,
+                                                         localForFunctionValue,
+                                                         Nothing))
+            End If
+
+            Dim blockBinder = Me.GetBinder(root)
+            Dim body = blockBinder.BindBlock(root, root.Members, diagnostics)
+
+            ' Implicit label to branch to for Exit Sub/Exit Function statements.
+            Dim exitLabelStatement = New BoundLabelStatement(root, blockBinder.GetReturnLabel())
+
+            If body IsNot Nothing Then
+                ' See if we have to generate OnError handler
+                Dim containsAwait As Boolean
+                Dim containsOnError As Boolean ' The block contains an [On Error] statement.
+                Dim containsResume As Boolean ' The block contains a [Resume [...]] or an [On Error Resume Next] statement.
+                Dim resumeWithoutLabel As StatementSyntax = Nothing  ' The first [Resume], [Resume Next] or [On Error Resume Next] statement, if any.
+                Dim containsLineNumberLabel As Boolean
+                Dim containsCatch As Boolean
+                Dim reportedAnError As Boolean
+
+                CheckOnErrorAndAwaitWalker.VisitBlock(blockBinder, body, diagnostics,
+                                                      containsAwait, containsOnError, containsResume, resumeWithoutLabel,
+                                                      containsLineNumberLabel, containsCatch,
+                                                      reportedAnError)
+
+                If blockBinder.IsInAsyncContext() AndAlso Not blockBinder.IsInIteratorContext() AndAlso
+                   Not containsAwait AndAlso Not body.HasErrors AndAlso
+                   False Then 'TypeOf methodBlock.BlockStatement Is MethodStatementSyntax Then
+                    ReportDiagnostic(diagnostics, root.EndOfFileToken, ERRID.WRN_AsyncLacksAwaits)
+                End If
+
+                If Not reportedAnError AndAlso
+                   (containsOnError OrElse containsResume OrElse (containsCatch AndAlso containsLineNumberLabel)) Then
+                    ' This method uses Unstructured Exception-Handling or needs to track line number
+
+                    ' The implicit exitLabelStatement should be the last statement inside BoundUnstructuredExceptionHandlingStatement
+                    ' in order to make sure that explicit returns do not bypass a call to Microsoft.VisualBasic.CompilerServices.ProjectData.ClearProjectError.
+                    body = body.Update(body.StatementListSyntax, body.Locals, body.Statements.Add(exitLabelStatement))
+
+                    statements.Add(New BoundUnstructuredExceptionHandlingStatement(root,
+                                                                                   containsOnError,
+                                                                                   containsResume,
+                                                                                   resumeWithoutLabel,
+                                                                                   containsLineNumberLabel,
+                                                                                   body.MakeCompilerGenerated()).MakeCompilerGenerated())
+                Else
+                    locals = body.Locals
+                    statements.AddRange(body.Statements)
+                    statements.Add(exitLabelStatement)
+                End If
+
+                ' Don't allow any further declaration of implicit variables (by speculative binding, say).
+                DisallowFurtherImplicitVariableDeclaration(diagnostics)
+
+                ' Add implicitly declared variables, if any.
+                Dim implicitLocals = Me.ImplicitlyDeclaredVariables
+                If implicitLocals.Length > 0 Then
+                    If locals.IsEmpty Then
+                        locals = implicitLocals
+                    Else
+                        locals = implicitLocals.Concat(locals)
+                    End If
+                End If
+
+                ' Report conflicts between Static variables.
+                ReportNameConfictsBetweenStaticLocals(blockBinder, diagnostics)
+            Else
+                statements.Add(exitLabelStatement)
+            End If
+
+            ' Add a Return statement at the end of the function, with a label to branch to for Exit Sub/Exit Function statements.
+            ' The code rewriter turns all returns inside the method body to a jump to the exit label.  These returns are the only
+            ' ones that will become real returns in the method body.
+
+            ' add indirect return sequence
+            ' and maybe an indirect result local (if this is a function)
+            If localForFunctionValue IsNot Nothing Then
+                If locals.IsEmpty Then
+                    locals = ImmutableArray.Create(localForFunctionValue)
+                Else
+                    Dim localBuilder = ArrayBuilder(Of LocalSymbol).GetInstance()
+                    localBuilder.Add(localForFunctionValue)
+                    localBuilder.AddRange(locals)
+                    locals = localBuilder.ToImmutableAndFree()
+                End If
+
+                statements.Add(New BoundReturnStatement(root,
+                                                        New BoundLocal(root, localForFunctionValue, isLValue:=False, type:=localForFunctionValue.Type).MakeCompilerGenerated(),
+                                                        Nothing, Nothing))
+            Else
+                statements.Add(New BoundReturnStatement(root, Nothing, Nothing, Nothing))
+            End If
+
+            Return New BoundBlock(root, (root?.Members).GetValueOrDefault(), locals, statements.ToImmutableAndFree())
+        End Function
+
         ''' <summary>
         ''' Check presence of [On Error]/[Resume] statements and report diagnostics based on presence of other
         ''' "incompatible" statements.
@@ -2028,6 +2142,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Dim locals As ArrayBuilder(Of LocalSymbol) = Nothing
 
             For i = 0 To boundStatements.Length - 1
+                If TypeOf stmtList(i) IsNot ExecutableStatementSyntax Then
+                    boundStatements(i) = New BoundNoOpStatement(stmtList(i))
+                    Continue For
+                End If
+
                 Dim boundStatement As BoundStatement = stmtListBinder.BindStatement(stmtList(i), diagnostics)
                 boundStatements(i) = boundStatement
 

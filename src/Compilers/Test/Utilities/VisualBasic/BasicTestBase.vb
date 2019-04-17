@@ -125,6 +125,7 @@ Public MustInherit Class BasicTestBase
             verify)
     End Function
 
+    <DebuggerNonUserCode>
     Friend Shadows Function CompileAndVerify(
         source As XElement,
         Optional expectedOutput As String = Nothing,
@@ -163,6 +164,7 @@ Public MustInherit Class BasicTestBase
 
     End Function
 
+    <DebuggerNonUserCode>
     Friend Shadows Function CompileAndVerify(
         source As XElement,
         allReferences As IEnumerable(Of MetadataReference),

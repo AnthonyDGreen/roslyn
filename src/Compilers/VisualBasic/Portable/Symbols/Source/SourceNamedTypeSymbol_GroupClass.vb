@@ -318,8 +318,8 @@ DoneWithBindingAttributes:
                 ' Set up a binder for this part of the type.
                 Dim binder As Binder = BinderBuilder.CreateBinderForType(ContainingSourceModule, syntaxRef.SyntaxTree, Me)
 
-                Dim typeBlock = DirectCast(node, TypeBlockSyntax)
-                For Each memberSyntax In typeBlock.Members
+                For Each memberSyntax In GetMembersForSyntax(node)
+
                     Dim constructorSyntax As SubNewStatementSyntax
 
                     Select Case memberSyntax.Kind
