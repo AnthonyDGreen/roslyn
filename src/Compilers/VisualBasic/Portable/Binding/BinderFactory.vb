@@ -187,7 +187,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                     Debug.Assert(root.HasTopLevelCode)
 
-                    Return New TopLevelCodeBinder(containingBinder.ContainingType.FindTopLevelExecutableStatementContainingMethod(), root, containingBinder)
+                    Return New TopLevelCodeBinder(implicitTypeBinder.ContainingType.FindTopLevelExecutableStatementContainingMethod(), root, implicitTypeBinder)
 
                 Case NodeUsage.CompilationUnitExecutableStatementList
 

@@ -46,11 +46,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Debug.Assert(Not TypeOf methodSymbol Is SourceMethodSymbol OrElse
                          Me.IsSemanticModelBinder OrElse
                          (methodBlock Is DirectCast(methodSymbol, SourceMethodSymbol).BlockSyntax AndAlso
-                          methodBlock IsNot Nothing))
+                          (methodBlock IsNot Nothing OrElse TypeOf methodSymbol Is TopLevelCodeContainerMethodSymbol)))
 
             If methodBlock Is Nothing Then
 
-                If TypeOf methodSymbol Is SynthesizedTopLevelCodeExecuteMethodSymbol Then
+                If TypeOf methodSymbol Is TopLevelCodeContainerMethodSymbol Then
 
                     Return New SynthesizedLocal(methodSymbol, methodSymbol.ReturnType, SynthesizedLocalKind.FunctionReturnValue, root)
 

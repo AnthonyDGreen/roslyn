@@ -120,12 +120,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
 
         ' TODO: Review.
         <Extension>
-        Friend Function FindTopLevelExecutableStatementContainingMethod(container As NamedTypeSymbol) As SynthesizedTopLevelCodeExecuteMethodSymbol
+        Friend Function FindTopLevelExecutableStatementContainingMethod(container As NamedTypeSymbol) As TopLevelCodeContainerMethodSymbol
             Dim asSource = TryCast(container, SourceNamedTypeSymbol)
 
             If asSource Is Nothing Then Return Nothing
 
-            Return DirectCast(asSource.GetMembers("Execute").Single(Function(s) TypeOf s Is SynthesizedTopLevelCodeExecuteMethodSymbol), SynthesizedTopLevelCodeExecuteMethodSymbol)
+            Return DirectCast(asSource.GetMembers("Execute").Single(Function(s) TypeOf s Is TopLevelCodeContainerMethodSymbol), TopLevelCodeContainerMethodSymbol)
         End Function
 
     End Module

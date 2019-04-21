@@ -86,9 +86,14 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             _containingBinder = New ExitableStatementBinder(_containingBinder,
                                                             continueKind:=SyntaxKind.None, exitKind:=SyntaxKind.ExitFunctionStatement)
+
+            Dim blockBinder = New StatementListBinder(_containingBinder, node.Members)
+            _containingBinder = blockBinder
+
             RememberBinder(node, _containingBinder)
 
-            CreateBinderFromStatementList(node.Members, _containingBinder)
+            _listMap = _listMap.SetItem(node.Members, blockBinder)
+            VisitStatementsInList(node.Members, blockBinder)
 
             'For Each member In node.Members
             '    ' Visit methods for non-executable statements are no-ops:

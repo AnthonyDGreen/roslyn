@@ -15,35 +15,18 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
     ''' <summary>
     ''' Represents a compiler generated "Execute" method for top-level code.
     ''' </summary>
-    Friend Class SynthesizedTopLevelCodeExecuteMethodSymbol
-        Inherits SynthesizedRegularMethodBase
+    Friend Class TopLevelCodeContainerMethodSymbol
+        Inherits SourceMethodSymbol
 
+        Public Overrides ReadOnly Property Name As String
         Private ReadOnly Statements As IEnumerable(Of ExecutableStatementSyntax)
 
-        Public Sub New(syntaxNode As VisualBasicSyntaxNode, name As String, container As SourceNamedTypeSymbol, statements As IEnumerable(Of ExecutableStatementSyntax))
-            MyBase.New(syntaxNode, container, name, isShared:=False)
+        Public Sub New(container As SourceNamedTypeSymbol, name As String, syntax As VisualBasicSyntaxNode, binder As Binder, statements As IEnumerable(Of ExecutableStatementSyntax))
+            MyBase.New(container, SourceMemberFlags.AccessibilityPublic Or SourceMemberFlags.Public Or SourceMemberFlags.MethodKindOrdinary, binder.GetSyntaxReference(syntax))
 
+            Me.Name = name
             Me.Statements = statements
         End Sub
-
-        Public Overrides ReadOnly Property DeclaredAccessibility As Accessibility
-            Get
-                ' TODO: This should match the overridden method once overriding is supported.
-                Return Accessibility.Public
-            End Get
-        End Property
-
-        Public Overrides ReadOnly Property IsAsync As Boolean
-            Get
-                Return False
-            End Get
-        End Property
-
-        Public Overrides ReadOnly Property IsSub As Boolean
-            Get
-                Return False
-            End Get
-        End Property
 
         Public Overrides ReadOnly Property ReturnType As TypeSymbol
             Get
@@ -80,18 +63,36 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
 
         End Function
 
-        Friend Overrides Sub AddSynthesizedAttributes(compilationState As ModuleCompilationState, ByRef attributes As ArrayBuilder(Of SynthesizedAttributeData))
-            MyBase.AddSynthesizedAttributes(compilationState, attributes)
-        End Sub
+        Protected Overrides Function GetAttributesBag() As CustomAttributesBag(Of VisualBasicAttributeData)
+            Return CustomAttributesBag(Of VisualBasicAttributeData).Empty
+        End Function
 
-        Friend Overrides ReadOnly Property GenerateDebugInfoImpl As Boolean
+        Protected Overrides Function GetReturnTypeAttributesBag() As CustomAttributesBag(Of VisualBasicAttributeData)
+            Return CustomAttributesBag(Of VisualBasicAttributeData).Empty
+        End Function
+
+        Friend Overrides ReadOnly Property MayBeReducibleExtensionMethod As Boolean
             Get
                 Return False
             End Get
         End Property
 
-        Friend Overrides Function CalculateLocalSyntaxOffset(localPosition As Integer, localTree As SyntaxTree) As Integer
-            Throw ExceptionUtilities.Unreachable
-        End Function
+        Public Overrides ReadOnly Property TypeParameters As ImmutableArray(Of TypeParameterSymbol)
+            Get
+                Return ImmutableArray(Of TypeParameterSymbol).Empty
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property Parameters As ImmutableArray(Of ParameterSymbol)
+            Get
+                Return ImmutableArray(Of ParameterSymbol).Empty
+            End Get
+        End Property
+
+        Friend Overrides ReadOnly Property OverriddenMembers As OverriddenMembersResult(Of MethodSymbol)
+            Get
+                Return OverriddenMembersResult(Of MethodSymbol).Empty
+            End Get
+        End Property
     End Class
 End Namespace

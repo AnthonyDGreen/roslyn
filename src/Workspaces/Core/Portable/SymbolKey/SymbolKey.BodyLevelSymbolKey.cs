@@ -93,7 +93,10 @@ namespace Microsoft.CodeAnalysis
                     }
 
                     var node = declaringLocation.GetSyntax(cancellationToken);
-                    if (node.Language == LanguageNames.VisualBasic)
+                    // This check is in here because VB method method statements are the site of declaration but
+                    // you need the semantic model for the entire method block (including the `End` statement).
+                    // But, as a local could be declared in a top-level statement this would fail.
+                    if (node.Language == LanguageNames.VisualBasic && node.Parent != null)
                     {
                         node = node.Parent;
                     }

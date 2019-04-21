@@ -685,6 +685,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 Case SyntaxKind.ModuleBlock, SyntaxKind.ClassBlock,
                     SyntaxKind.StructureBlock, SyntaxKind.InterfaceBlock
                     modifiers = DirectCast(node, TypeBlockSyntax).BlockStatement.Modifiers
+                Case SyntaxKind.CompilationUnit
+                    modifiers = Nothing
                 Case Else
                     Throw ExceptionUtilities.UnexpectedValue(node.Kind)
             End Select
@@ -2737,7 +2739,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 ' TODO: Should go find an Execute method to override. This will allow reduction in user-code.
 
                 Dim binder As Binder = BinderBuilder.CreateBinderForType(ContainingSourceModule, ref.SyntaxTree, Me)
-                Dim executeMethod As New SynthesizedTopLevelCodeExecuteMethodSymbol(syntax, "Execute", Me, code)
+                Dim executeMethod As New TopLevelCodeContainerMethodSymbol(Me, "Execute", node, binder, code)
                 AddMember(executeMethod, binder, members, omitDiagnostics:=False)
 
                 hasAnyTopLevelExecutableCode = True

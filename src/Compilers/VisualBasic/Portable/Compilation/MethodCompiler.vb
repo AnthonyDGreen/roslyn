@@ -1131,7 +1131,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             If Not method.IsImplicitlyDeclared Then
                 ' Only compile the method if the method has a body.
                 Dim sourceMethod = TryCast(method, SourceMethodSymbol)
-                If sourceMethod Is Nothing OrElse sourceMethod.BlockSyntax Is Nothing Then
+                If sourceMethod Is Nothing OrElse (sourceMethod.BlockSyntax Is Nothing AndAlso TypeOf sourceMethod IsNot TopLevelCodeContainerMethodSymbol) Then
                     Return False
                 End If
             End If
