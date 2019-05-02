@@ -50,7 +50,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             If methodBlock Is Nothing Then
 
-                If TypeOf methodSymbol Is TopLevelCodeContainerMethodSymbol Then
+                If TypeOf methodSymbol Is TopLevelCodeContainerMethodSymbol AndAlso Not methodSymbol.IsSub Then
 
                     Return New SynthesizedLocal(methodSymbol, methodSymbol.ReturnType, SynthesizedLocalKind.FunctionReturnValue, root)
 

@@ -924,6 +924,36 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Function
 
         ''' <summary>
+        ''' Given a CompilationUnit, get either the corresponding type symbol, method symbol, or null.
+        ''' </summary>
+        ''' <param name="declarationSyntax">The syntax node that possibly declares a type or method.</param>
+        ''' <returns>The type symbol that was declared.</returns>
+        Public Overrides Function GetDeclaredSymbol(declarationSyntax As CompilationUnitSyntax, Optional cancellationToken As CancellationToken = Nothing) As ISymbol
+            If declarationSyntax Is Nothing Then Throw New ArgumentNullException(NameOf(declarationSyntax))
+            If Not IsInTree(declarationSyntax) Then Throw New ArgumentException(VBResources.DeclarationSyntaxNotWithinTree)
+
+            ' Don't need to wrap in a SemanticModelBinder, since we're not binding.
+
+            If declarationSyntax.HasTopLevelExecutableStatements Then
+                Dim binder = _binderFactory.GetImplicitMethodBinder(declarationSyntax)
+
+                If binder IsNot Nothing Then
+                    Debug.Assert(binder.ContainingMember.Kind = SymbolKind.Method)
+                    Return binder.ContainingMember
+                End If
+
+            ElseIf declarationSyntax.HasTopLevelCode Then
+                Dim binder = _binderFactory.GetImplicitTypeBinder(declarationSyntax)
+
+                If binder IsNot Nothing Then
+                    Return CheckSymbolLocationsAgainstSyntax(binder.ContainingType, declarationSyntax)
+                End If
+            End If
+
+            Return Nothing
+        End Function
+
+        ''' <summary>
         ''' Given a enum declaration, get the corresponding type symbol.
         ''' </summary>
         ''' <param name="declarationSyntax">The syntax node that declares an enum.</param>

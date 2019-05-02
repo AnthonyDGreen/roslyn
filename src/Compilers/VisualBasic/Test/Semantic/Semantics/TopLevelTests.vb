@@ -12,6 +12,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.UnitTests.Semantics
     Public Class TopLevelTests
         Inherits BasicTestBase
 
+#If TestRegressions Then
+
+
         <Fact>
         Public Sub TopLevelDeclarations()
 
@@ -93,6 +96,149 @@ System.Console.Write("Hello, World!")
         </method>
     </methods>
 </symbols>, options:=PdbValidationOptions.SkipConversionValidation)
+        End Sub
+
+        <Fact>
+        Public Sub GetDeclaredSymbolForCompilationUnitWithNoExecuteMethod()
+            Dim source =
+<compilation>
+    <file name=<%= NameOf(GetDeclaredSymbolForCompilationUnitWithNoExecuteMethod) & ".vb" %>>
+Public Shared Sub Main()
+    System.Console.Write("Hello, World!")    
+End Sub
+    </file>
+</compilation>
+
+            Dim compilation = CompilationUtils.CreateCompilationWithMscorlib40AndVBRuntime(source, TestOptions.DebugExe)
+
+            Dim tree = compilation.SyntaxTrees.Single()
+            Dim model = compilation.GetSemanticModel(tree)
+            Dim symbol = model.GetDeclaredSymbol(tree.GetRoot())
+
+            Assert.Equal(NameOf(GetDeclaredSymbolForCompilationUnitWithNoExecuteMethod), symbol.Name)
+
+        End Sub
+
+        <Fact>
+        Public Sub GetDeclaredSymbolForCompilationUnitWithExecuteMethod()
+            Dim source =
+<compilation>
+    <file name=<%= NameOf(GetDeclaredSymbolForCompilationUnitWithExecuteMethod) & ".vb" %>>
+Public Shared Sub Main()
+    Call New GetDeclaredSymbolForCompilationUnitWithExecuteMethod().Execute()
+End Sub
+
+System.Console.Write("Hello, World!")
+    </file>
+</compilation>
+
+            Dim compilation = CompilationUtils.CreateCompilationWithMscorlib40AndVBRuntime(source, TestOptions.DebugExe)
+
+            Dim tree = compilation.SyntaxTrees.Single()
+            Dim model = compilation.GetSemanticModel(tree)
+            Dim symbol = model.GetDeclaredSymbol(tree.GetRoot())
+
+            Assert.Equal("Execute", symbol.Name)
+
+        End Sub
+
+        <Fact>
+        Public Sub ExecuteOverridesBaseMethod()
+
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <file name="ExecuteOverridesBaseMethod.vb">
+writer.Write("Hello, World!")
+    </file>
+    <file name="ExecuteOverridesBaseMethod_OtherPart.vb">
+Partial Class ExecuteOverridesBaseMethod
+    Inherits JustCallsExecute
+
+    Public Shared Sub Main()
+        JustCallsExecute.Run(New ExecuteOverridesBaseMethod)
+    End Sub
+End Class
+    </file>
+    <file name="JustCallsExecute.vb">
+MustInherit Class JustCallsExecute
+
+    Protected MustOverride Sub Execute(writer As System.IO.TextWriter)
+
+    Public Shared Sub Run(derived As JustCallsExecute)
+        derived.Execute(System.Console.Out)
+    End Sub
+End Class
+    </file>
+</compilation>, expectedOutput:="Hello, World!")
+
+        End Sub
+
+        <Fact>
+        Public Sub DefaultBaseClass()
+
+            Dim parseOptions = New VisualBasicParseOptions(preprocessorSymbols:={New KeyValuePair(Of String, Object)("DefaultTopLevelBaseClass", "JustCallsExecute")})
+
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <file name="DefaultBaseClass.vb">
+writer.Write("Hello, World!")
+    </file>
+    <file name="Program.vb">
+Module Program
+    Public Sub Main()
+        JustCallsExecute.Run(New DefaultBaseClass)
+    End Sub
+End Module
+    </file>
+    <file name="JustCallsExecute.vb">
+MustInherit Class JustCallsExecute
+
+    Protected MustOverride Sub Execute(writer As System.IO.TextWriter)
+
+    Public Shared Sub Run(derived As JustCallsExecute)
+        derived.Execute(System.Console.Out)
+    End Sub
+End Class
+    </file>
+</compilation>, options:=TestOptions.ReleaseDebugExe.WithParseOptions(parseOptions).WithMainTypeName("Program"), expectedOutput:="Hello, World!")
+
+        End Sub
+
+#End If
+
+        <Fact>
+        Public Sub ReturnExpression()
+
+            Dim xmlReferences As MetadataReference() = {MscorlibRef, MsvbRef, SystemRef, SystemCoreRef, SystemXmlRef, SystemXmlLinqRef}
+            Dim parseOptions = New VisualBasicParseOptions(preprocessorSymbols:={New KeyValuePair(Of String, Object)("DefaultTopLevelBaseClass", "JustCallsExecute")})
+
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <file name="ReturnExpression.vb">
+&lt;html/&gt;
+    </file>
+    <file name="Program.vb">
+Module Program
+    Public Sub Main()
+        JustCallsExecute.Run(New ReturnExpression)
+    End Sub
+End Module
+    </file>
+    <file name="JustCallsExecute.vb">
+MustInherit Class JustCallsExecute
+
+    Protected MustOverride Function Execute() As System.Xml.Linq.XElement
+
+    Public Shared Sub Run(derived As JustCallsExecute)
+        System.Console.Write(derived.Execute())
+    End Sub
+End Class
+    </file>
+</compilation>,
+options:=TestOptions.ReleaseDebugExe.WithParseOptions(parseOptions).WithMainTypeName("Program"),
+references:=xmlReferences,
+expectedOutput:="<html />")
+
         End Sub
 
     End Class

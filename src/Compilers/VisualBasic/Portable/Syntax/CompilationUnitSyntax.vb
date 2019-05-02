@@ -79,10 +79,6 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
             Return IO.Path.GetFileName(SyntaxTree.FilePath).Split({"."c}).First()
         End Function
 
-        Friend Function GetTopLevelTypeMembers() As IEnumerable(Of StatementSyntax)
-
-        End Function
-
     End Class
 End Namespace
 

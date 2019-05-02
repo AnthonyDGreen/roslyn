@@ -91,6 +91,14 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Return GetBinderAtOrAbove(node, position)
         End Function
 
+        Public Function GetImplicitTypeBinder(node As CompilationUnitSyntax) As NamedTypeBinder
+            Return DirectCast(GetBinderForNodeAndUsage(node, NodeUsage.CompilationUnitImplicitType), NamedTypeBinder)
+        End Function
+
+        Public Function GetImplicitMethodBinder(node As CompilationUnitSyntax) As TopLevelCodeBinder
+            Return DirectCast(GetBinderForNodeAndUsage(node, NodeUsage.CompilationUnitImplicitMethod), TopLevelCodeBinder)
+        End Function
+
         ' Find the binder for a node or above at a given position
         Private Function GetBinderAtOrAbove(node As SyntaxNode, position As Integer) As Binder
             ' Go up the tree until we find a node that has a corresponding binder.

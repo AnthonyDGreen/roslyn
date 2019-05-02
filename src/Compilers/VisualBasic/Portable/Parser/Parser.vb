@@ -76,7 +76,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
         Friend ReadOnly Property AllowTopLevelExecutableStatementsAndExpressions As Boolean
             Get
-                Return True
+                Return _context.AllowTopLevelExecutableStatementsAndExpressions
             End Get
         End Property
 
@@ -700,7 +700,25 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                         Return SyntaxFactory.AttributesStatement(attributes)
                     End If
 
+                    If AllowTopLevelExecutableStatementsAndExpressions Then
+
+                        ' TODO: Unhack this!!! This is outright WRONG!
+                        Return SyntaxFactory.ExpressionStatement(ParseXmlExpression())
+
+                    End If
+
                     Return ParseSpecifierDeclaration()
+
+                Case SyntaxKind.LessThanQuestionToken
+
+                    If AllowTopLevelExecutableStatementsAndExpressions Then
+
+                        ' TODO: Unhack this!!! This is less WRONG that what's above though!
+                        Return SyntaxFactory.ExpressionStatement(ParseXmlExpression())
+                    Else
+                        ' misplaced statement errors are reported by the context
+                        Return ParseStatementInMethodBodyInternal()
+                    End If
 
                 Case SyntaxKind.LessThanGreaterThanToken
                     Dim attributes = ParseEmptyAttributeLists()
@@ -1053,7 +1071,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
                     Dim attributes As CoreInternalSyntax.SyntaxList(Of AttributeListSyntax) = Nothing
 
-                    If Me.CurrentToken.Kind = Global.Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LessThanToken Then
+                    If Me.CurrentToken.Kind = SyntaxKind.LessThanToken Then
                         attributes = ParseAttributeLists(allowFileLevelAttributes:=False)
                     End If
 

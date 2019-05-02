@@ -152,6 +152,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             End Get
         End Property
 
+        Friend Overridable ReadOnly Property AllowTopLevelExecutableStatementsAndExpressions As Boolean
+            Get
+                Return False
+            End Get
+        End Property
+
         'TODO - Remove dependency on Parser
         '  For errors call error function directly
         '  for parsing, just pass a delegate to the context

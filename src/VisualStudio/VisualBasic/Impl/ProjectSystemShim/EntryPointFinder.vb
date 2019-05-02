@@ -28,6 +28,18 @@ Namespace Microsoft.VisualStudio.LanguageServices.VisualBasic.ProjectSystemShim
         End Function
 
         Public Overrides Sub VisitNamedType(symbol As INamedTypeSymbol)
+            For Each r In symbol.DeclaringSyntaxReferences
+                Dim syntax = CType(r.GetSyntax(), CodeAnalysis.VisualBasic.VisualBasicSyntaxNode)
+
+                If syntax.Kind = CodeAnalysis.VisualBasic.SyntaxKind.CompilationUnit AndAlso
+                   symbol.GetMembers("Execute").Any() _
+                Then
+                    EntryPoints.Add(symbol)
+                    MyBase.VisitNamedType(symbol)
+                    Return
+                End If
+            Next
+
             ' It's a form if it Inherits System.Windows.Forms.Form. 
             Dim baseType = symbol.BaseType
             While baseType IsNot Nothing

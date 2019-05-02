@@ -33,6 +33,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             End Get
         End Property
 
+        Friend Overrides ReadOnly Property AllowTopLevelExecutableStatementsAndExpressions As Boolean
+            Get
+                Return True
+            End Get
+        End Property
+
         Friend Overrides Function ProcessSyntax(node As VisualBasicSyntaxNode) As BlockContext
             Do
                 Select Case _state

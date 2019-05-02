@@ -2538,6 +2538,10 @@ _Default:
         ''' <returns>The type symbol that was declared.</returns>
         Public MustOverride Overloads Function GetDeclaredSymbol(declarationSyntax As TypeStatementSyntax, Optional cancellationToken As CancellationToken = Nothing) As INamedTypeSymbol
 
+        Public Overridable Overloads Function GetDeclaredSymbol(declarationSyntax As CompilationUnitSyntax, Optional cancellationToken As CancellationToken = Nothing) As ISymbol
+            Return Nothing
+        End Function
+
         ''' <summary>
         ''' Given a type block, get the corresponding type symbol.
         ''' </summary>
@@ -3328,6 +3332,10 @@ _Default:
 
                 Case SyntaxKind.AnonymousObjectCreationExpression
                     Return Me.GetDeclaredSymbol(DirectCast(node, AnonymousObjectCreationExpressionSyntax), cancellationToken)
+
+                Case SyntaxKind.CompilationUnit
+                    Return Me.GetDeclaredSymbol(DirectCast(node, CompilationUnitSyntax), cancellationToken)
+
             End Select
 
             Dim td = TryCast(node, TypeStatementSyntax)

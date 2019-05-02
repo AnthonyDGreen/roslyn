@@ -1140,7 +1140,29 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             End If
 
             ' Check to make sure the base class is valid.
-            Dim diagInfo As DiagnosticInfo = Nothing
+            baseClassType = CheckBaseTypeValidOrReportDiagnostic(baseClassType, baseClassSyntax, diagBag)
+            If baseClassType Is Nothing Then
+                Return Nothing
+            End If
+
+            ' The same base class can be declared in multiple partials, but not different ones
+            If baseInOtherPartial IsNot Nothing Then
+                If Not baseClassType.Equals(baseInOtherPartial) Then
+                    Binder.ReportDiagnostic(diagBag, baseClassSyntax, ERRID.ERR_BaseMismatchForPartialClass3,
+                                             baseClassType, Me.Name, baseInOtherPartial)
+                    Return Nothing
+                End If
+
+            ElseIf Not baseClassType.IsErrorType() Then
+
+                ' Verify that we don't have public classes inheriting from private ones, etc.
+                AccessCheck.VerifyAccessExposureOfBaseClassOrInterface(Me, baseClassSyntax, baseClassType, diagBag)
+            End If
+
+            Return DirectCast(baseClassType, NamedTypeSymbol)
+        End Function
+
+        Private Function CheckBaseTypeValidOrReportDiagnostic(baseClassType As TypeSymbol, baseClassSyntax As VisualBasicSyntaxNode, diagBag As DiagnosticBag) As TypeSymbol
             Select Case baseClassType.TypeKind
                 Case TypeKind.TypeParameter
                     Binder.ReportDiagnostic(diagBag, baseClassSyntax, ERRID.ERR_GenericParamBase2, "Class", Me.Name)
@@ -1164,21 +1186,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                     End If
             End Select
 
-            ' The same base class can be declared in multiple partials, but not different ones
-            If baseInOtherPartial IsNot Nothing Then
-                If Not baseClassType.Equals(baseInOtherPartial) Then
-                    Binder.ReportDiagnostic(diagBag, baseClassSyntax, ERRID.ERR_BaseMismatchForPartialClass3,
-                                             baseClassType, Me.Name, baseInOtherPartial)
-                    Return Nothing
-                End If
-
-            ElseIf Not baseClassType.IsErrorType() Then
-
-                ' Verify that we don't have public classes inheriting from private ones, etc.
-                AccessCheck.VerifyAccessExposureOfBaseClassOrInterface(Me, baseClassSyntax, baseClassType, diagBag)
-            End If
-
-            Return DirectCast(baseClassType, NamedTypeSymbol)
+            Return baseClassType
         End Function
 
         Private Sub ValidateInheritedInterfaces(baseSyntax As SyntaxList(Of InheritsStatementSyntax),
@@ -1326,6 +1334,53 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                     Dim syntaxRef = decl.SyntaxReference
                     MakeDeclaredBaseInPart(syntaxRef.SyntaxTree, syntaxRef.GetVisualBasicSyntax(), baseType, basesBeingResolved, diagnostics)
                 End If
+            Next
+
+            If baseType IsNot Nothing Then Return baseType
+
+            For Each decl In Me.TypeDeclaration.Declarations
+                Dim syntax = decl.SyntaxReference.GetVisualBasicSyntax()
+
+                If syntax.Kind <> SyntaxKind.CompilationUnit Then Continue For
+
+                Dim defaultBaseClass = Me.DeclaringCompilation.Options.ParseOptions.PreprocessorSymbols.FirstOrDefault(Function(kvp) kvp.Key = "DefaultTopLevelBaseClass")
+
+                If defaultBaseClass.Key Is Nothing Then Continue For
+
+                Dim defaultBaseClassName = DirectCast(GlobalImport.Parse(defaultBaseClass.Value.ToString()).Clause, SimpleImportsClauseSyntax).Name
+
+                Dim binder As Binder = CreateLocationSpecificBinderForType(decl.SyntaxReference.SyntaxTree, BindingLocation.BaseTypes)
+
+                ' Add myself to the set of classes whose bases are being resolved
+                If basesBeingResolved Is Nothing Then
+                    basesBeingResolved = ConsList(Of Symbol).Empty.Prepend(Me)
+                Else
+                    basesBeingResolved = basesBeingResolved.Prepend(Me)
+                End If
+
+                binder = New BasesBeingResolvedBinder(binder, basesBeingResolved)
+
+                ' Bind the base class.
+                Dim baseClassType = binder.BindTypeSyntax(defaultBaseClassName, diagnostics, suppressUseSiteError:=True, resolvingBaseType:=True)
+                If baseClassType Is Nothing Then Continue For
+
+                ' Check to make sure the base class is valid.
+                baseClassType = CheckBaseTypeValidOrReportDiagnostic(baseClassType, syntax, diagnostics)
+                If baseClassType Is Nothing Then Continue For
+
+                If Not baseClassType.IsErrorType() Then
+                    ' Verify that we don't have public classes inheriting from private ones, etc.
+                    AccessCheck.VerifyAccessExposureOfBaseClassOrInterface(Me, syntax, baseClassType, diagnostics)
+                End If
+
+                ' We don't need to check for conflicts in baseClassType because all default base types will be the same.
+#If DEBUG Then
+                If baseType IsNot Nothing Then
+                    Debug.Assert(baseType.Equals(baseClassType))
+                End If
+#End If
+
+                baseType = DirectCast(baseClassType, NamedTypeSymbol)
             Next
 
             Return baseType
@@ -2616,6 +2671,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
 
             If isFormOrFormDerivedMainType Then
                 isTopLevelMainMethodType = False
+
+            ElseIf mainTypeName IsNot Nothing AndAlso Not isMainType Then
+                isTopLevelMainMethodType = False
+
             Else
                 Dim hasTopLevelCode As Boolean
 
@@ -2633,6 +2692,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 If hasTopLevelCode Then
                     If isMainType Then
                         isTopLevelMainMethodType = True
+
                     Else
                         ' We know (for now) that all top-level code has to be in the same (project root) namespace.
 
@@ -2731,15 +2791,82 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 If Not node.HasTopLevelExecutableStatements Then Continue For
 
                 If hasAnyTopLevelExecutableCode Then
-                    ' TODO: Report error.
+                    ' TODO: Report error for multiple top-level methods.
                 End If
 
                 Dim code = node.GetTopLevelExecutableStatements()
 
+                Dim executeMethod As TopLevelCodeContainerMethodSymbol
                 ' TODO: Should go find an Execute method to override. This will allow reduction in user-code.
 
                 Dim binder As Binder = BinderBuilder.CreateBinderForType(ContainingSourceModule, ref.SyntaxTree, Me)
-                Dim executeMethod As New TopLevelCodeContainerMethodSymbol(Me, "Execute", node, binder, code)
+
+                Dim baseMethod As MethodSymbol = Nothing
+
+                Dim allAttributedMethodsFound = ArrayBuilder(Of MethodSymbol).GetInstance()
+                Dim allExecuteMethodsFound = ArrayBuilder(Of MethodSymbol).GetInstance()
+                Dim anyExecuteMembersFound = False
+
+                ' Not actually the right way to do this. Something, something `Shadows`... different member kind.
+                Dim typeToSearch = Me.BaseTypeNoUseSiteDiagnostics
+                Do
+                    For Each member In typeToSearch.GetMembers()
+                        If member.Kind <> SymbolKind.Method Then
+                            If IdentifierComparison.Equals(member.Name, "Execute") Then
+                                ' Will shadow any `Execute` members in lower types.
+                                anyExecuteMembersFound = True
+                            End If
+
+                            Continue For
+                        End If
+
+                        Dim method = DirectCast(member, MethodSymbol)
+
+                        If Not (method.IsOverridable OrElse method.IsMustOverride) Then Continue For
+
+                        For Each attribute In method.GetAttributes()
+                            If IdentifierComparison.Equals(attribute.AttributeClass.ToDisplayString(SymbolDisplayFormat.QualifiedNameOnlyFormat),
+                                                           "Microsoft.VisualBasic.CompilerServices.DefaultOverrideMethodAttribute") _
+                            Then
+                                allAttributedMethodsFound.Add(method)
+                                Exit For
+                            End If
+                        Next
+
+                        If allAttributedMethodsFound.Count = 0 AndAlso
+                           Not anyExecuteMembersFound AndAlso
+                           IdentifierComparison.Equals(method.Name, "Execute") _
+                        Then
+                            ' All `Execute` methods in this type will be found, to report duplicates.
+                            allExecuteMethodsFound.Add(method)
+                        End If
+                    Next
+
+                    If allAttributedMethodsFound.Count > 0 Then Exit Do
+
+                    If allExecuteMethodsFound.Count > 0 Then
+                        anyExecuteMembersFound = True
+                    End If
+
+                    typeToSearch = typeToSearch.BaseTypeNoUseSiteDiagnostics
+                Loop Until typeToSearch Is Nothing
+
+                Dim methodsToUse = If(allAttributedMethodsFound.Count > 0, allAttributedMethodsFound, allExecuteMethodsFound)
+
+                Select Case methodsToUse.Count
+                    Case 0
+                        executeMethod = New TopLevelCodeContainerMethodSymbol(Me, "Execute", node, binder, code)
+
+                    Case 1
+                        executeMethod = New TopLevelCodeContainerMethodSymbol(Me, node, binder, methodsToUse(0))
+
+                    Case Else
+                        diagnostics.Add(New VBDiagnostic(ErrorFactory.ErrorInfo(ERRID.ERR_AmbiguousOverrides3), node.GetLocation()))
+                        executeMethod = New TopLevelCodeContainerMethodSymbol(Me, node, binder, methodsToUse(0))
+                End Select
+                allAttributedMethodsFound.free()
+                allExecuteMethodsFound.Free()
+
                 AddMember(executeMethod, binder, members, omitDiagnostics:=False)
 
                 hasAnyTopLevelExecutableCode = True
