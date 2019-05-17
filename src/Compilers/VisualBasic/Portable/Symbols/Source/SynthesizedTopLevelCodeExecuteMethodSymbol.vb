@@ -77,38 +77,59 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
 #If DEBUG Then
             methodBodyBinder.EnableSimpleNameBindingOrderChecks(False)
 #End If
-            If Not Me.IsSub Then
-                If boundBlock.Statements.Count > 3 Then
-                    ' Smell: Predicting the shape of the bound statements.
-                    Dim lastStatement = boundBlock.Statements(boundBlock.Statements.Length - 3)
+            ' The binder just ignores any non-executable statements and represents them as no-op statements.
+            ' But these no-ops cause the first offset of user-code to not be at 0 which throws assertions
+            ' later in the emitter. Removing these no-ops here makes the most sense, for now.
+            Dim rewrittenStatements = ArrayBuilder(Of BoundStatement).GetInstance(boundBlock.Statements.Length)
+            For Each statement In boundBlock.Statements
+                If statement.Kind = BoundKind.NoOpStatement AndAlso TypeOf statement.Syntax IsNot ExecutableStatementSyntax Then Continue For
 
-                    If lastStatement.Kind = BoundKind.ExpressionStatement Then
-                        Dim expressionStatement = DirectCast(lastStatement, BoundExpressionStatement)
+                rewrittenStatements.Add(statement)
+            Next
+            boundBlock = boundBlock.Update(boundBlock.StatementListSyntax, boundBlock.Locals, rewrittenStatements.ToImmutableAndFree())
 
-                        Select Case expressionStatement.Expression.Kind
-                            Case BoundKind.XmlElement,
-                                 BoundKind.XmlDocument
+            If Me.IsSub Then Return boundBlock
 
-                                Dim newStatements = ArrayBuilder(Of BoundStatement).GetInstance(boundBlock.Statements.Length)
-                                For Each statement In boundBlock.Statements
-                                    newStatements.Add(statement)
-                                Next
+            ' Find the last expression statement, if any, and try to use that as the return value.
+            ' Can't predict exactly which statement this will be because if the CompilationUnit has
+            ' any member declarations the binder will represent them as no-ops in the BoundBlock.
+            Dim expressionStatement As BoundExpressionStatement = Nothing
 
-                                Dim syntax = expressionStatement.Syntax
-
-                                Dim functionReturnLocal = methodBodyBinder.GetLocalForFunctionValue()
-                                Dim assignment = New BoundAssignmentOperator(syntax,
-                                                                             New BoundLocal(syntax, functionReturnLocal, functionReturnLocal.Type),
-                                                                             expressionStatement.Expression,
-                                                                             suppressObjectClone:=True)
-
-                                newStatements(newStatements.Count - 3) = expressionStatement.Update(assignment)
-
-                                boundBlock = boundBlock.Update(boundBlock.StatementListSyntax, boundBlock.Locals, newStatements.ToImmutableAndFree())
-                        End Select
-                    End If
+            For i = boundBlock.Statements.Count - 1 To 0 Step -1
+                If boundBlock.Statements(i).Kind = BoundKind.ExpressionStatement Then
+                    expressionStatement = DirectCast(boundBlock.Statements(i), BoundExpressionStatement)
+                    Exit For
                 End If
-            End If
+            Next
+
+            If expressionStatement Is Nothing Then Return boundBlock
+
+            Select Case expressionStatement.Expression.Kind
+                Case BoundKind.XmlElement,
+                     BoundKind.XmlDocument
+
+                    Dim newStatements = ArrayBuilder(Of BoundStatement).GetInstance(boundBlock.Statements.Length)
+                    For Each statement In boundBlock.Statements
+                        newStatements.Add(statement)
+                    Next
+
+                    Dim syntax = expressionStatement.Syntax
+
+                    Dim functionReturnLocal = methodBodyBinder.GetLocalForFunctionValue()
+                    Dim assignment = New BoundAssignmentOperator(syntax,
+                                                                 New BoundLocal(syntax, functionReturnLocal, functionReturnLocal.Type),
+                                                                 methodBodyBinder.ApplyImplicitConversion(expressionStatement.Expression.Syntax, functionReturnLocal.Type, expressionStatement.Expression, diagnostics),
+                                                                 suppressObjectClone:=True)
+
+                    For i = newStatements.Count - 1 To 0 Step -1
+                        If newStatements(i) Is expressionStatement Then
+                            newStatements(i) = expressionStatement.Update(assignment)
+                            Exit For
+                        End If
+                    Next
+
+                    boundBlock = boundBlock.Update(boundBlock.StatementListSyntax, boundBlock.Locals, newStatements.ToImmutableAndFree())
+            End Select
 
             Return boundBlock
 

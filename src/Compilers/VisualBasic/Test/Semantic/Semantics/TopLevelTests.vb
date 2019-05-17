@@ -204,30 +204,29 @@ End Class
 
         End Sub
 
-#End If
-
         <Fact>
-        Public Sub ReturnExpression()
+        Public Sub ReturnXmlDocumentExpression()
 
             Dim xmlReferences As MetadataReference() = {MscorlibRef, MsvbRef, SystemRef, SystemCoreRef, SystemXmlRef, SystemXmlLinqRef}
             Dim parseOptions = New VisualBasicParseOptions(preprocessorSymbols:={New KeyValuePair(Of String, Object)("DefaultTopLevelBaseClass", "JustCallsExecute")})
 
             Dim verifier = CompileAndVerify(
 <compilation>
-    <file name="ReturnExpression.vb">
+    <file name="ReturnXmlDocumentExpression.vb">
+&lt;?xml version="1.0"?&gt;
 &lt;html/&gt;
     </file>
     <file name="Program.vb">
 Module Program
     Public Sub Main()
-        JustCallsExecute.Run(New ReturnExpression)
+        JustCallsExecute.Run(New ReturnXmlDocumentExpression)
     End Sub
 End Module
     </file>
     <file name="JustCallsExecute.vb">
 MustInherit Class JustCallsExecute
 
-    Protected MustOverride Function Execute() As System.Xml.Linq.XElement
+    Protected MustOverride Function Execute() As System.Xml.Linq.XDocument
 
     Public Shared Sub Run(derived As JustCallsExecute)
         System.Console.Write(derived.Execute())
@@ -238,6 +237,74 @@ End Class
 options:=TestOptions.ReleaseDebugExe.WithParseOptions(parseOptions).WithMainTypeName("Program"),
 references:=xmlReferences,
 expectedOutput:="<html />")
+
+        End Sub
+
+        <Fact>
+        Public Sub ExplicitInheritsStatement()
+
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <file name="ExplicitInheritsStatement.vb">
+Inherits JustCallsExecute
+
+writer.Write("Hello, World!")
+    </file>
+    <file name="Program.vb">
+Module Program
+    Public Sub Main()
+        JustCallsExecute.Run(New ExplicitInheritsStatement)
+    End Sub
+End Module
+    </file>
+    <file name="JustCallsExecute.vb">
+MustInherit Class JustCallsExecute
+
+    Protected MustOverride Sub Execute(writer As System.IO.TextWriter)
+
+    Public Shared Sub Run(derived As JustCallsExecute)
+        derived.Execute(System.Console.Out)
+    End Sub
+End Class
+    </file>
+</compilation>, options:=TestOptions.ReleaseDebugExe.WithMainTypeName("Program"), expectedOutput:="Hello, World!")
+
+        End Sub
+#End If
+
+        <Fact>
+        Public Sub OutOfOrderDoesNotAssert()
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <file name="OutOfOrderDoesNotAssert.vb">
+Inherits JustCallsExecute
+
+Sub Foo()
+    Dim x As Integer = 3
+End Sub
+
+For i = 1 To 5
+    writer.Write(i)
+Next
+    </file>
+    <file name="Program.vb">
+Module Program
+    Public Sub Main()
+        JustCallsExecute.Run(New OutOfOrderDoesNotAssert)
+    End Sub
+End Module
+    </file>
+    <file name="JustCallsExecute.vb">
+MustInherit Class JustCallsExecute
+
+    Protected MustOverride Sub Execute(writer As System.IO.TextWriter)
+
+    Public Shared Sub Run(derived As JustCallsExecute)
+        derived.Execute(System.Console.Out)
+    End Sub
+End Class
+    </file>
+</compilation>, options:=TestOptions.DebugExe.WithMainTypeName("Program"), expectedOutput:="12345")
 
         End Sub
 

@@ -79,6 +79,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
             Return IO.Path.GetFileName(SyntaxTree.FilePath).Split({"."c}).First()
         End Function
 
+        Friend Function GetInheritsStatement() As InheritsStatementSyntax
+            Return Members.OfType(Of InheritsStatementSyntax).FirstOrDefault()
+        End Function
+
     End Class
 End Namespace
 

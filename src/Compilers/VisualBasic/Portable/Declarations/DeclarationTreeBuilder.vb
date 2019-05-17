@@ -229,6 +229,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 Next
 
                 Dim declFlags As SingleTypeDeclaration.TypeDeclarationFlags = SingleTypeDeclaration.TypeDeclarationFlags.None
+
+                If node.GetInheritsStatement() IsNot Nothing Then
+                    declFlags = declFlags Or SingleTypeDeclaration.TypeDeclarationFlags.HasBaseDeclarations
+                End If
+
                 Dim memberNames = GetNonTypeMemberNames(node.Members, declFlags)
 
                 ' TODO: Namespace inference, nested?

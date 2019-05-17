@@ -125,7 +125,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
 
             If asSource Is Nothing Then Return Nothing
 
-            Return DirectCast(asSource.GetMembers("Execute").Single(Function(s) TypeOf s Is TopLevelCodeContainerMethodSymbol), TopLevelCodeContainerMethodSymbol)
+            Return asSource.GetMembers().OfType(Of TopLevelCodeContainerMethodSymbol).FirstOrDefault()
         End Function
 
     End Module

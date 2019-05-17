@@ -1049,6 +1049,16 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 Case SyntaxKind.ModuleBlock
                     Dim inheritsSyntax = DirectCast(syntaxNode, TypeBlockSyntax).Inherits
                     CheckNoBase(inheritsSyntax, ERRID.ERR_ModuleCantInherit, diagBag)
+
+                Case SyntaxKind.CompilationUnit
+                    Dim inheritsSyntax = DirectCast(syntaxNode, CompilationUnitSyntax).GetInheritsStatement()
+
+                    ' classes may have a base class
+                    Dim thisBase As NamedTypeSymbol = ValidateClassBase(SyntaxFactory.SingletonList(inheritsSyntax), baseType, basesBeingResolved, binder, diagBag)
+                    If baseType Is Nothing Then
+                        baseType = thisBase
+                    End If
+
             End Select
         End Sub
 
@@ -1343,11 +1353,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
 
                 If syntax.Kind <> SyntaxKind.CompilationUnit Then Continue For
 
-                Dim defaultBaseClass = Me.DeclaringCompilation.Options.ParseOptions.PreprocessorSymbols.FirstOrDefault(Function(kvp) kvp.Key = "DefaultTopLevelBaseClass")
+                Dim defaultBaseClass = Me.DeclaringCompilation.Options.ParseOptions?.PreprocessorSymbols.FirstOrDefault(Function(kvp) kvp.Key = "DefaultTopLevelBaseClass")
 
-                If defaultBaseClass.Key Is Nothing Then Continue For
+                If defaultBaseClass Is Nothing OrElse defaultBaseClass.GetValueOrDefault().Key Is Nothing Then Continue For
 
-                Dim defaultBaseClassName = DirectCast(GlobalImport.Parse(defaultBaseClass.Value.ToString()).Clause, SimpleImportsClauseSyntax).Name
+                Dim defaultBaseClassName = DirectCast(GlobalImport.Parse(defaultBaseClass.GetValueOrDefault().Value.ToString()).Clause, SimpleImportsClauseSyntax).Name
 
                 Dim binder As Binder = CreateLocationSpecificBinderForType(decl.SyntaxReference.SyntaxTree, BindingLocation.BaseTypes)
 

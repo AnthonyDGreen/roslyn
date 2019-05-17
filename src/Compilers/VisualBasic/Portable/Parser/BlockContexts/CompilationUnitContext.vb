@@ -67,6 +67,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                         _state = SyntaxKind.None
 
                     Case Else
+
+                        If node.Kind = SyntaxKind.InheritsStatement Then
+                            Add(node)
+                            Return Me
+                        End If
+
                         ' only allow executable statements in top-level script code
                         If _parser.IsScript OrElse _parser.AllowTopLevelExecutableStatementsAndExpressions Then
                             Dim newContext = TryProcessExecutableStatement(node)

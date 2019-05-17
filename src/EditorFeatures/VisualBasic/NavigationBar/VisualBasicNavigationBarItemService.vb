@@ -444,7 +444,7 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.NavigationBar
                         member.ContainingType.GetSymbolKey(),
                         member.GetSymbolKey()))
                     End If
-                ElseIf method IsNot Nothing AndAlso method.DeclaringSyntaxReferences().First().GetSyntax(cancellationToken).IsKind(SyntaxKind.CompilationUnit) Then
+                ElseIf method IsNot Nothing AndAlso method.DeclaringSyntaxReferences().FirstOrDefault()?.GetSyntax(cancellationToken).IsKind(SyntaxKind.CompilationUnit) Then
                     items.Add(New NavigationBarSymbolItem(
                                 member.ToDisplayString(_memberFormat.WithParameterOptions(SymbolDisplayParameterOptions.IncludeType Or SymbolDisplayParameterOptions.IncludeName Or SymbolDisplayParameterOptions.IncludeParamsRefOut)),
                                 member.GetGlyph(),

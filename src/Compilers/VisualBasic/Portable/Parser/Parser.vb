@@ -76,7 +76,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
         Friend ReadOnly Property AllowTopLevelExecutableStatementsAndExpressions As Boolean
             Get
-                Return _context.AllowTopLevelExecutableStatementsAndExpressions
+                Return True
             End Get
         End Property
 
@@ -700,12 +700,13 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                         Return SyntaxFactory.AttributesStatement(attributes)
                     End If
 
-                    If AllowTopLevelExecutableStatementsAndExpressions Then
+                    'Need to come up with a solution to this.
+                    'If AllowTopLevelExecutableStatementsAndExpressions Then
 
-                        ' TODO: Unhack this!!! This is outright WRONG!
-                        Return SyntaxFactory.ExpressionStatement(ParseXmlExpression())
+                    '    ' TODO: Unhack this!!! This is outright WRONG!
+                    '    Return SyntaxFactory.ExpressionStatement(ParseXmlExpression())
 
-                    End If
+                    'End If
 
                     Return ParseSpecifierDeclaration()
 
@@ -713,7 +714,6 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
                     If AllowTopLevelExecutableStatementsAndExpressions Then
 
-                        ' TODO: Unhack this!!! This is less WRONG that what's above though!
                         Return SyntaxFactory.ExpressionStatement(ParseXmlExpression())
                     Else
                         ' misplaced statement errors are reported by the context
