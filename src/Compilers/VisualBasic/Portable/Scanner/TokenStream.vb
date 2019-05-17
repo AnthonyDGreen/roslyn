@@ -114,6 +114,11 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
         ''' </summary>
         InterpolatedStringFormatString
 
+        ''' <summary>
+        ''' Scan JSON.
+        ''' </summary>
+        Json
+
     End Enum
 
     Partial Friend Class Scanner
@@ -624,6 +629,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
                 Case ScannerState.InterpolatedStringFormatString
                     token = Me.ScanInterpolatedStringFormatString()
+
+                Case ScannerState.Json
+                    token = Me.ScanJson()
 
                 Case Else
                     Throw ExceptionUtilities.UnexpectedValue(state)

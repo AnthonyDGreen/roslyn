@@ -5072,6 +5072,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to Hexadecimal digit (1-9, A-F) expected..
+        '''</summary>
+        Friend ReadOnly Property ERR_HexDigitExpected() As String
+            Get
+                Return ResourceManager.GetString("ERR_HexDigitExpected", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to cannot specify both /win32icon and /win32resource.
         '''</summary>
         Friend ReadOnly Property ERR_IconFileAndWin32ResFile() As String
@@ -6072,6 +6081,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to Invalid JSON string escape sequence; &quot; &apos;\&apos;, &apos;/&apos;, &apos;b&apos;, &apos;f&apos;, &apos;n&apos;, &apos;r&apos;, &apos;t&apos;, or &apos;u&apos; expected..
+        '''</summary>
+        Friend ReadOnly Property ERR_InvalidEscapeSequenceInJsonString() As String
+            Get
+                Return ResourceManager.GetString("ERR_InvalidEscapeSequenceInJsonString", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to Invalid file section alignment &apos;{0}&apos;.
         '''</summary>
         Friend ReadOnly Property ERR_InvalidFileAlignment() As String
@@ -6618,6 +6636,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         Friend ReadOnly Property ERR_IterationVariableShadowLocal2() As String
             Get
                 Return ResourceManager.GetString("ERR_IterationVariableShadowLocal2", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to JSON literals are not available. Add a references to Newtonsoft.Json or other assemblies declaring Newtonsoft.Json.Linq.JObject, Newtonsoft.Json.Linq.JProperty, and Newtonsoft.Json.Linq.JArray types..
+        '''</summary>
+        Friend ReadOnly Property ERR_JsonFeaturesNotAvailable() As String
+            Get
+                Return ResourceManager.GetString("ERR_JsonFeaturesNotAvailable", resourceCulture)
             End Get
         End Property
         

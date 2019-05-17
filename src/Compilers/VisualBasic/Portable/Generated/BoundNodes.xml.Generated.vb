@@ -193,6 +193,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         TypeAsValueExpression
         InterpolatedStringExpression
         Interpolation
+        JsonObject
+        JsonArray
+        JsonNameValuePair
+        JsonConstant
     End Enum
 
 
@@ -9743,6 +9747,222 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Function
     End Class
 
+    Friend NotInheritable Partial Class BoundJsonObject
+        Inherits BoundExpression
+
+        Public Sub New(syntax As SyntaxNode, members As ImmutableArray(Of BoundNode), binder As Binder, type As TypeSymbol, Optional hasErrors As Boolean = False)
+            MyBase.New(BoundKind.JsonObject, syntax, type, hasErrors OrElse members.NonNullAndHasErrors())
+
+            Debug.Assert(Not (members.IsDefault), "Field 'members' cannot be null (use Null=""allow"" in BoundNodes.xml to remove this check)")
+            Debug.Assert(binder IsNot Nothing, "Field 'binder' cannot be null (use Null=""allow"" in BoundNodes.xml to remove this check)")
+            Debug.Assert(type IsNot Nothing, "Field 'type' cannot be null (use Null=""allow"" in BoundNodes.xml to remove this check)")
+
+            Me._Members = members
+            Me._Binder = binder
+
+            Validate()
+        End Sub
+
+        Private Partial Sub Validate()
+        End Sub
+
+
+        Private ReadOnly _Members As ImmutableArray(Of BoundNode)
+        Public ReadOnly Property Members As ImmutableArray(Of BoundNode)
+            Get
+                Return _Members
+            End Get
+        End Property
+
+        Private ReadOnly _Binder As Binder
+        Public ReadOnly Property Binder As Binder
+            Get
+                Return _Binder
+            End Get
+        End Property
+
+        Public Overrides Function Accept(visitor as BoundTreeVisitor) As BoundNode
+            Return visitor.VisitJsonObject(Me)
+        End Function
+
+        Public Function Update(members As ImmutableArray(Of BoundNode), binder As Binder, type As TypeSymbol) As BoundJsonObject
+            If members <> Me.Members OrElse binder IsNot Me.Binder OrElse type IsNot Me.Type Then
+                Dim result = New BoundJsonObject(Me.Syntax, members, binder, type, Me.HasErrors)
+                
+                If Me.WasCompilerGenerated Then
+                    result.SetWasCompilerGenerated()
+                End If
+                
+                Return result
+            End If
+            Return Me
+        End Function
+    End Class
+
+    Friend NotInheritable Partial Class BoundJsonArray
+        Inherits BoundExpression
+
+        Public Sub New(syntax As SyntaxNode, elements As ImmutableArray(Of BoundNode), binder As Binder, type As TypeSymbol, Optional hasErrors As Boolean = False)
+            MyBase.New(BoundKind.JsonArray, syntax, type, hasErrors OrElse elements.NonNullAndHasErrors())
+
+            Debug.Assert(Not (elements.IsDefault), "Field 'elements' cannot be null (use Null=""allow"" in BoundNodes.xml to remove this check)")
+            Debug.Assert(binder IsNot Nothing, "Field 'binder' cannot be null (use Null=""allow"" in BoundNodes.xml to remove this check)")
+            Debug.Assert(type IsNot Nothing, "Field 'type' cannot be null (use Null=""allow"" in BoundNodes.xml to remove this check)")
+
+            Me._Elements = elements
+            Me._Binder = binder
+
+            Validate()
+        End Sub
+
+        Private Partial Sub Validate()
+        End Sub
+
+
+        Private ReadOnly _Elements As ImmutableArray(Of BoundNode)
+        Public ReadOnly Property Elements As ImmutableArray(Of BoundNode)
+            Get
+                Return _Elements
+            End Get
+        End Property
+
+        Private ReadOnly _Binder As Binder
+        Public ReadOnly Property Binder As Binder
+            Get
+                Return _Binder
+            End Get
+        End Property
+
+        Public Overrides Function Accept(visitor as BoundTreeVisitor) As BoundNode
+            Return visitor.VisitJsonArray(Me)
+        End Function
+
+        Public Function Update(elements As ImmutableArray(Of BoundNode), binder As Binder, type As TypeSymbol) As BoundJsonArray
+            If elements <> Me.Elements OrElse binder IsNot Me.Binder OrElse type IsNot Me.Type Then
+                Dim result = New BoundJsonArray(Me.Syntax, elements, binder, type, Me.HasErrors)
+                
+                If Me.WasCompilerGenerated Then
+                    result.SetWasCompilerGenerated()
+                End If
+                
+                Return result
+            End If
+            Return Me
+        End Function
+    End Class
+
+    Friend NotInheritable Partial Class BoundJsonNameValuePair
+        Inherits BoundExpression
+
+        Public Sub New(syntax As SyntaxNode, name As BoundExpression, value As BoundExpression, binder As Binder, type As TypeSymbol, Optional hasErrors As Boolean = False)
+            MyBase.New(BoundKind.JsonNameValuePair, syntax, type, hasErrors OrElse name.NonNullAndHasErrors() OrElse value.NonNullAndHasErrors())
+
+            Debug.Assert(name IsNot Nothing, "Field 'name' cannot be null (use Null=""allow"" in BoundNodes.xml to remove this check)")
+            Debug.Assert(value IsNot Nothing, "Field 'value' cannot be null (use Null=""allow"" in BoundNodes.xml to remove this check)")
+            Debug.Assert(binder IsNot Nothing, "Field 'binder' cannot be null (use Null=""allow"" in BoundNodes.xml to remove this check)")
+            Debug.Assert(type IsNot Nothing, "Field 'type' cannot be null (use Null=""allow"" in BoundNodes.xml to remove this check)")
+
+            Me._Name = name
+            Me._Value = value
+            Me._Binder = binder
+
+            Validate()
+        End Sub
+
+        Private Partial Sub Validate()
+        End Sub
+
+
+        Private ReadOnly _Name As BoundExpression
+        Public ReadOnly Property Name As BoundExpression
+            Get
+                Return _Name
+            End Get
+        End Property
+
+        Private ReadOnly _Value As BoundExpression
+        Public ReadOnly Property Value As BoundExpression
+            Get
+                Return _Value
+            End Get
+        End Property
+
+        Private ReadOnly _Binder As Binder
+        Public ReadOnly Property Binder As Binder
+            Get
+                Return _Binder
+            End Get
+        End Property
+
+        Public Overrides Function Accept(visitor as BoundTreeVisitor) As BoundNode
+            Return visitor.VisitJsonNameValuePair(Me)
+        End Function
+
+        Public Function Update(name As BoundExpression, value As BoundExpression, binder As Binder, type As TypeSymbol) As BoundJsonNameValuePair
+            If name IsNot Me.Name OrElse value IsNot Me.Value OrElse binder IsNot Me.Binder OrElse type IsNot Me.Type Then
+                Dim result = New BoundJsonNameValuePair(Me.Syntax, name, value, binder, type, Me.HasErrors)
+                
+                If Me.WasCompilerGenerated Then
+                    result.SetWasCompilerGenerated()
+                End If
+                
+                Return result
+            End If
+            Return Me
+        End Function
+    End Class
+
+    Friend NotInheritable Partial Class BoundJsonConstant
+        Inherits BoundExpression
+
+        Public Sub New(syntax As SyntaxNode, value As BoundExpression, binder As Binder, type As TypeSymbol, Optional hasErrors As Boolean = False)
+            MyBase.New(BoundKind.JsonConstant, syntax, type, hasErrors OrElse value.NonNullAndHasErrors())
+
+            Debug.Assert(value IsNot Nothing, "Field 'value' cannot be null (use Null=""allow"" in BoundNodes.xml to remove this check)")
+            Debug.Assert(binder IsNot Nothing, "Field 'binder' cannot be null (use Null=""allow"" in BoundNodes.xml to remove this check)")
+
+            Me._Value = value
+            Me._Binder = binder
+
+            Validate()
+        End Sub
+
+        Private Partial Sub Validate()
+        End Sub
+
+
+        Private ReadOnly _Value As BoundExpression
+        Public ReadOnly Property Value As BoundExpression
+            Get
+                Return _Value
+            End Get
+        End Property
+
+        Private ReadOnly _Binder As Binder
+        Public ReadOnly Property Binder As Binder
+            Get
+                Return _Binder
+            End Get
+        End Property
+
+        Public Overrides Function Accept(visitor as BoundTreeVisitor) As BoundNode
+            Return visitor.VisitJsonConstant(Me)
+        End Function
+
+        Public Function Update(value As BoundExpression, binder As Binder, type As TypeSymbol) As BoundJsonConstant
+            If value IsNot Me.Value OrElse binder IsNot Me.Binder OrElse type IsNot Me.Type Then
+                Dim result = New BoundJsonConstant(Me.Syntax, value, binder, type, Me.HasErrors)
+                
+                If Me.WasCompilerGenerated Then
+                    result.SetWasCompilerGenerated()
+                End If
+                
+                Return result
+            End If
+            Return Me
+        End Function
+    End Class
+
     Friend MustInherit Partial Class BoundTreeVisitor(Of A,R)
 
         <MethodImpl(MethodImplOptions.NoInlining)>
@@ -10098,6 +10318,14 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     Return VisitInterpolatedStringExpression(CType(node, BoundInterpolatedStringExpression), arg)
                 Case BoundKind.Interpolation: 
                     Return VisitInterpolation(CType(node, BoundInterpolation), arg)
+                Case BoundKind.JsonObject: 
+                    Return VisitJsonObject(CType(node, BoundJsonObject), arg)
+                Case BoundKind.JsonArray: 
+                    Return VisitJsonArray(CType(node, BoundJsonArray), arg)
+                Case BoundKind.JsonNameValuePair: 
+                    Return VisitJsonNameValuePair(CType(node, BoundJsonNameValuePair), arg)
+                Case BoundKind.JsonConstant: 
+                    Return VisitJsonConstant(CType(node, BoundJsonConstant), arg)
             End Select
             Return DefaultVisit(node, arg)
         End Function
@@ -10805,6 +11033,22 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Return Me.DefaultVisit(node, arg)
         End Function
 
+        Public Overridable Function VisitJsonObject(node As BoundJsonObject, arg As A) As R
+            Return Me.DefaultVisit(node, arg)
+        End Function
+
+        Public Overridable Function VisitJsonArray(node As BoundJsonArray, arg As A) As R
+            Return Me.DefaultVisit(node, arg)
+        End Function
+
+        Public Overridable Function VisitJsonNameValuePair(node As BoundJsonNameValuePair, arg As A) As R
+            Return Me.DefaultVisit(node, arg)
+        End Function
+
+        Public Overridable Function VisitJsonConstant(node As BoundJsonConstant, arg As A) As R
+            Return Me.DefaultVisit(node, arg)
+        End Function
+
     End Class
 
     Friend MustInherit Partial Class BoundTreeVisitor
@@ -11505,6 +11749,22 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Function
 
         Public Overridable Function VisitInterpolation(node As BoundInterpolation) As BoundNode
+            Return Me.DefaultVisit(node)
+        End Function
+
+        Public Overridable Function VisitJsonObject(node As BoundJsonObject) As BoundNode
+            Return Me.DefaultVisit(node)
+        End Function
+
+        Public Overridable Function VisitJsonArray(node As BoundJsonArray) As BoundNode
+            Return Me.DefaultVisit(node)
+        End Function
+
+        Public Overridable Function VisitJsonNameValuePair(node As BoundJsonNameValuePair) As BoundNode
+            Return Me.DefaultVisit(node)
+        End Function
+
+        Public Overridable Function VisitJsonConstant(node As BoundJsonConstant) As BoundNode
             Return Me.DefaultVisit(node)
         End Function
 
@@ -12453,6 +12713,27 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Me.Visit(node.Expression)
             Me.Visit(node.AlignmentOpt)
             Me.Visit(node.FormatStringOpt)
+            Return Nothing
+        End Function
+
+        Public Overrides Function VisitJsonObject(node as BoundJsonObject) As BoundNode
+            Me.VisitList(node.Members)
+            Return Nothing
+        End Function
+
+        Public Overrides Function VisitJsonArray(node as BoundJsonArray) As BoundNode
+            Me.VisitList(node.Elements)
+            Return Nothing
+        End Function
+
+        Public Overrides Function VisitJsonNameValuePair(node as BoundJsonNameValuePair) As BoundNode
+            Me.Visit(node.Name)
+            Me.Visit(node.Value)
+            Return Nothing
+        End Function
+
+        Public Overrides Function VisitJsonConstant(node as BoundJsonConstant) As BoundNode
+            Me.Visit(node.Value)
             Return Nothing
         End Function
 
@@ -13543,6 +13824,31 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Dim alignmentOpt As BoundExpression = DirectCast(Me.Visit(node.AlignmentOpt), BoundExpression)
             Dim formatStringOpt As BoundLiteral = DirectCast(Me.Visit(node.FormatStringOpt), BoundLiteral)
             Return node.Update(expression, alignmentOpt, formatStringOpt)
+        End Function
+
+        Public Overrides Function VisitJsonObject(node As BoundJsonObject) As BoundNode
+            Dim members As ImmutableArray(Of BoundNode) = Me.VisitList(node.Members)
+            Dim type as TypeSymbol = Me.VisitType(node.Type)
+            Return node.Update(members, node.Binder, type)
+        End Function
+
+        Public Overrides Function VisitJsonArray(node As BoundJsonArray) As BoundNode
+            Dim elements As ImmutableArray(Of BoundNode) = Me.VisitList(node.Elements)
+            Dim type as TypeSymbol = Me.VisitType(node.Type)
+            Return node.Update(elements, node.Binder, type)
+        End Function
+
+        Public Overrides Function VisitJsonNameValuePair(node As BoundJsonNameValuePair) As BoundNode
+            Dim name As BoundExpression = DirectCast(Me.Visit(node.Name), BoundExpression)
+            Dim value As BoundExpression = DirectCast(Me.Visit(node.Value), BoundExpression)
+            Dim type as TypeSymbol = Me.VisitType(node.Type)
+            Return node.Update(name, value, node.Binder, type)
+        End Function
+
+        Public Overrides Function VisitJsonConstant(node As BoundJsonConstant) As BoundNode
+            Dim value As BoundExpression = DirectCast(Me.Visit(node.Value), BoundExpression)
+            Dim type as TypeSymbol = Me.VisitType(node.Type)
+            Return node.Update(value, node.Binder, type)
         End Function
 
     End Class
@@ -14996,6 +15302,39 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 New TreeDumperNode("expression", Nothing, new TreeDumperNode() { Visit(node.Expression, Nothing) }),
                 New TreeDumperNode("alignmentOpt", Nothing, new TreeDumperNode() { Visit(node.AlignmentOpt, Nothing) }),
                 New TreeDumperNode("formatStringOpt", Nothing, new TreeDumperNode() { Visit(node.FormatStringOpt, Nothing) })
+            })
+        End Function
+
+        Public Overrides Function VisitJsonObject(node As BoundJsonObject, arg As Object) As TreeDumperNode
+            Return New TreeDumperNode("jsonObject", Nothing, New TreeDumperNode() {
+                New TreeDumperNode("members", Nothing, From x In node.Members Select Visit(x, Nothing)),
+                New TreeDumperNode("binder", node.Binder, Nothing),
+                New TreeDumperNode("type", node.Type, Nothing)
+            })
+        End Function
+
+        Public Overrides Function VisitJsonArray(node As BoundJsonArray, arg As Object) As TreeDumperNode
+            Return New TreeDumperNode("jsonArray", Nothing, New TreeDumperNode() {
+                New TreeDumperNode("elements", Nothing, From x In node.Elements Select Visit(x, Nothing)),
+                New TreeDumperNode("binder", node.Binder, Nothing),
+                New TreeDumperNode("type", node.Type, Nothing)
+            })
+        End Function
+
+        Public Overrides Function VisitJsonNameValuePair(node As BoundJsonNameValuePair, arg As Object) As TreeDumperNode
+            Return New TreeDumperNode("jsonNameValuePair", Nothing, New TreeDumperNode() {
+                New TreeDumperNode("name", Nothing, new TreeDumperNode() { Visit(node.Name, Nothing) }),
+                New TreeDumperNode("value", Nothing, new TreeDumperNode() { Visit(node.Value, Nothing) }),
+                New TreeDumperNode("binder", node.Binder, Nothing),
+                New TreeDumperNode("type", node.Type, Nothing)
+            })
+        End Function
+
+        Public Overrides Function VisitJsonConstant(node As BoundJsonConstant, arg As Object) As TreeDumperNode
+            Return New TreeDumperNode("jsonConstant", Nothing, New TreeDumperNode() {
+                New TreeDumperNode("value", Nothing, new TreeDumperNode() { Visit(node.Value, Nothing) }),
+                New TreeDumperNode("binder", node.Binder, Nothing),
+                New TreeDumperNode("type", node.Type, Nothing)
             })
         End Function
 

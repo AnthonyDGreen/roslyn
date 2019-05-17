@@ -1742,6 +1742,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
         ERR_ValueTupleResolutionAmbiguous3 = 37305
 
+        ERR_JsonFeaturesNotAvailable
+        ERR_InvalidEscapeSequenceInJsonString
+        ERR_HexDigitExpected
+
         '// WARNINGS BEGIN HERE
         WRN_UseOfObsoleteSymbol2 = 40000
         WRN_InvalidOverrideDueToTupleNames2 = 40001

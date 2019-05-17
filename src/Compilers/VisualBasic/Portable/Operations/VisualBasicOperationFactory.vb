@@ -515,7 +515,7 @@ Namespace Microsoft.CodeAnalysis.Operations
         Private Function CreateBoundConversionOperation(boundConversion As BoundConversion) As IOperation
             Dim syntax As SyntaxNode = boundConversion.Syntax
 
-            If syntax.IsMissing Then
+            If syntax.IsMissing AndAlso boundConversion.Operand.Kind = BoundKind.BadExpression Then
                 ' If the underlying syntax IsMissing, then that means we're in case where the compiler generated a piece of syntax to fill in for
                 ' an error, such as this case:
                 '
@@ -524,7 +524,6 @@ Namespace Microsoft.CodeAnalysis.Operations
                 ' Semantic model has a special case here that we match: if the underlying syntax is missing, don't create a conversion expression,
                 ' and instead directly return the operand, which will be a BoundBadExpression. When we generate a node for the BoundBadExpression,
                 ' the resulting IOperation will also have a null Type.
-                Debug.Assert(boundConversion.Operand.Kind = BoundKind.BadExpression)
                 Return Create(boundConversion.Operand)
             End If
 

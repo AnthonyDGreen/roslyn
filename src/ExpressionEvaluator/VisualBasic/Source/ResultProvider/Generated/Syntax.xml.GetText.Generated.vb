@@ -488,6 +488,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Return """"
         Case SyntaxKind.DollarSignDoubleQuoteToken
             Return "$"""
+        Case SyntaxKind.OpenBracketToken
+            Return "["
+        Case SyntaxKind.CloseBracketToken
+            Return "]"
         Case SyntaxKind.StatementTerminatorToken
             Return vbCrLf
         Case SyntaxKind.SlashGreaterThanToken

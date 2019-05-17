@@ -8760,6 +8760,8 @@ Unify Enum declarations with other block type declarations.
       </node-kind>
       <node-kind name="DollarSignDoubleQuoteToken" token-text="$&quot;"/>
       <node-kind name="EndOfInterpolatedStringToken" token-text=""/>
+      <node-kind name="OpenBracketToken" token-text="["/>
+      <node-kind name="CloseBracketToken" token-text="]"/>
       <node-kind name="StatementTerminatorToken" token-text="vbCrLf">
         <lm-equiv name="" />
         <native-equiv name="tokens.tkEOL" />
@@ -9360,6 +9362,82 @@ Unify Enum declarations with other block type declarations.
 
       <child name="FormatStringToken" kind="InterpolatedStringTextToken">
         <description>The format string.</description>
+      </child>
+    </node-structure>
+
+    <!--****************
+      -  JsonObject
+      ******************-->
+    <node-structure name="JsonObjectExpressionSyntax" parent="ExpressionSyntax">
+      <description>Represents a JSON object expression.</description>
+
+      <node-kind name="JsonObjectExpression" />
+
+      <child name="OpenBraceToken" kind="OpenBraceToken">
+        <description>The opening '{' token.</description>
+      </child>
+
+      <child name="Members" optional="true" list="true" separator-kind="CommaToken" separator-name="CommaTokens" kind="@ExpressionSyntax">
+        <description>The members of the JSON object.</description>
+      </child>
+
+      <child name="CloseBraceToken" kind="CloseBraceToken">
+        <description>The closing '}' token.</description>
+      </child>
+    </node-structure>
+
+    <!--****************
+      -  JsonNameValuePairExpression
+      ******************-->
+    <node-structure name="JsonNameValuePairExpressionSyntax" parent="ExpressionSyntax">
+      <description>Represents a JSON name-value pair.</description>
+
+      <node-kind name="JsonNameValuePairExpression" />
+
+      <child name="NameExpression" kind="@ExpressionSyntax">
+        <description>The name expression.</description>
+      </child>
+
+      <child name="ColonToken" kind="ColonToken">
+        <description>The colon ':' token.</description>
+      </child>
+
+      <child name="ValueExpression" kind="@ExpressionSyntax">
+        <description>The value expression.</description>
+      </child>
+    </node-structure>
+
+    <!--****************
+      -  JsonArrayExpression
+      ******************-->
+    <node-structure name="JsonArrayExpressionSyntax" parent="ExpressionSyntax">
+      <description>Represents a JSON array expression.</description>
+
+      <node-kind name="JsonArrayExpression" />
+
+      <child name="OpenBracketToken" kind="OpenBracketToken">
+        <description>The opening '[' token.</description>
+      </child>
+
+      <child name="Elements" optional="true" list="true" separator-kind="CommaToken" separator-name="CommaTokens" kind="@ExpressionSyntax">
+        <description>The elements of the JSON array.</description>
+      </child>
+
+      <child name="CloseBracketToken" kind="CloseBracketToken">
+        <description>The closing ']' token.</description>
+      </child>
+    </node-structure>
+
+    <!--****************
+      -  JsonConstantExpression
+      ******************-->
+    <node-structure name="JsonConstantExpressionSyntax" parent="ExpressionSyntax">
+      <description>Represents a JSON 'true', 'false', or 'null' expression.</description>
+
+      <node-kind name="JsonConstantExpression" />
+
+      <child name="ValueToken" kind="IdentifierToken">
+        <description>The 'true', 'false', or 'null' token.</description>
       </child>
     </node-structure>
 

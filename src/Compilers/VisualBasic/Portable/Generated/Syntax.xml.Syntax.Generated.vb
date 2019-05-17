@@ -33432,6 +33432,488 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
     End Class
 
     ''' <summary>
+    ''' Represents a JSON object expression.
+    ''' </summary>
+    Public NotInheritable Class JsonObjectExpressionSyntax
+        Inherits ExpressionSyntax
+
+        Friend _members as SyntaxNode
+
+        Friend Sub New(ByVal green As GreenNode, ByVal parent as SyntaxNode, ByVal startLocation As Integer)
+            MyBase.New(green, parent, startLocation)
+            Debug.Assert(green IsNot Nothing)
+            Debug.Assert(startLocation >= 0)
+        End Sub
+
+        Friend Sub New(ByVal kind As SyntaxKind, ByVal errors as DiagnosticInfo(), ByVal annotations as SyntaxAnnotation(), openBraceToken As InternalSyntax.PunctuationSyntax, members As SyntaxNode, closeBraceToken As InternalSyntax.PunctuationSyntax)
+            Me.New(New Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.JsonObjectExpressionSyntax(kind, errors, annotations, openBraceToken, if(members IsNot Nothing, members.Green, Nothing), closeBraceToken), Nothing, 0)
+        End Sub
+
+        ''' <summary>
+        ''' The opening '{' token.
+        ''' </summary>
+        Public  ReadOnly Property OpenBraceToken As SyntaxToken
+            Get
+                return new SyntaxToken(Me, DirectCast(Me.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.JsonObjectExpressionSyntax)._openBraceToken, Me.Position, 0)
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the OpenBraceToken property changed to the
+        ''' specified value. Returns this instance if the specified value is the same as
+        ''' the current value.
+        ''' </summary>
+        Public Shadows Function WithOpenBraceToken(openBraceToken as SyntaxToken) As JsonObjectExpressionSyntax
+            return Update(openBraceToken, Me.Members, Me.CloseBraceToken)
+        End Function
+
+        ''' <summary>
+        ''' The members of the JSON object.
+        ''' </summary>
+        ''' <remarks>
+        ''' If nothing is present, an empty list is returned.
+        ''' </remarks>
+        Public  ReadOnly Property Members As SeparatedSyntaxList(Of ExpressionSyntax)
+            Get
+                Dim listNode = GetRed(_members, 1)
+                If listNode IsNot Nothing
+                    Return new SeparatedSyntaxList(Of ExpressionSyntax)(listNode, Me.GetChildIndex(1))
+                End If
+                Return Nothing
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the Members property changed to the specified
+        ''' value. Returns this instance if the specified value is the same as the current
+        ''' value.
+        ''' </summary>
+        Public Shadows Function WithMembers(members as SeparatedSyntaxList(Of ExpressionSyntax)) As JsonObjectExpressionSyntax
+            return Update(Me.OpenBraceToken, members, Me.CloseBraceToken)
+        End Function
+
+        Public Shadows Function AddMembers(ParamArray items As ExpressionSyntax()) As JsonObjectExpressionSyntax
+            Return Me.WithMembers(Me.Members.AddRange(items))
+        End Function
+
+        ''' <summary>
+        ''' The closing '}' token.
+        ''' </summary>
+        Public  ReadOnly Property CloseBraceToken As SyntaxToken
+            Get
+                return new SyntaxToken(Me, DirectCast(Me.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.JsonObjectExpressionSyntax)._closeBraceToken, Me.GetChildPosition(2), Me.GetChildIndex(2))
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the CloseBraceToken property changed to the
+        ''' specified value. Returns this instance if the specified value is the same as
+        ''' the current value.
+        ''' </summary>
+        Public Shadows Function WithCloseBraceToken(closeBraceToken as SyntaxToken) As JsonObjectExpressionSyntax
+            return Update(Me.OpenBraceToken, Me.Members, closeBraceToken)
+        End Function
+
+        Friend Overrides Function GetCachedSlot(i as Integer) as SyntaxNode
+            Select case i
+                Case 1
+                    Return Me._members
+                Case Else
+                     Return Nothing
+            End Select
+        End Function
+
+        Friend Overrides Function GetNodeSlot(i as Integer) as SyntaxNode
+            Select case i
+                Case 1
+                    Return GetRed(_members, 1)
+                Case Else
+                     Return Nothing
+            End Select
+        End Function
+
+        Public Overrides Function Accept(Of TResult)(ByVal visitor As VisualBasicSyntaxVisitor(Of TResult)) As TResult
+            Return visitor.VisitJsonObjectExpression(Me)
+        End Function
+
+        Public Overrides Sub Accept(ByVal visitor As VisualBasicSyntaxVisitor)
+            visitor.VisitJsonObjectExpression(Me)
+        End Sub
+
+
+        ''' <summary>
+        ''' Returns a copy of this with the specified changes. Returns this instance if
+        ''' there are no actual changes.
+        ''' </summary>
+        ''' <param name="openBraceToken">
+        ''' The value for the OpenBraceToken property.
+        ''' </param>
+        ''' <param name="members">
+        ''' The value for the Members property.
+        ''' </param>
+        ''' <param name="closeBraceToken">
+        ''' The value for the CloseBraceToken property.
+        ''' </param>
+        Public Function Update(openBraceToken As SyntaxToken, members As SeparatedSyntaxList(Of ExpressionSyntax), closeBraceToken As SyntaxToken) As JsonObjectExpressionSyntax
+            If openBraceToken <> Me.OpenBraceToken OrElse members <> Me.Members OrElse closeBraceToken <> Me.CloseBraceToken Then
+                Dim newNode = SyntaxFactory.JsonObjectExpression(openBraceToken, members, closeBraceToken)
+                Dim annotations = Me.GetAnnotations()
+                If annotations IsNot Nothing AndAlso annotations.Length > 0
+                    return newNode.WithAnnotations(annotations)
+                End If
+                Return newNode
+            End If
+            Return Me
+        End Function
+
+    End Class
+
+    ''' <summary>
+    ''' Represents a JSON name-value pair.
+    ''' </summary>
+    Public NotInheritable Class JsonNameValuePairExpressionSyntax
+        Inherits ExpressionSyntax
+
+        Friend _nameExpression as ExpressionSyntax
+        Friend _valueExpression as ExpressionSyntax
+
+        Friend Sub New(ByVal green As GreenNode, ByVal parent as SyntaxNode, ByVal startLocation As Integer)
+            MyBase.New(green, parent, startLocation)
+            Debug.Assert(green IsNot Nothing)
+            Debug.Assert(startLocation >= 0)
+        End Sub
+
+        Friend Sub New(ByVal kind As SyntaxKind, ByVal errors as DiagnosticInfo(), ByVal annotations as SyntaxAnnotation(), nameExpression As ExpressionSyntax, colonToken As InternalSyntax.PunctuationSyntax, valueExpression As ExpressionSyntax)
+            Me.New(New Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.JsonNameValuePairExpressionSyntax(kind, errors, annotations, DirectCast(nameExpression.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.ExpressionSyntax), colonToken, DirectCast(valueExpression.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.ExpressionSyntax)), Nothing, 0)
+        End Sub
+
+        ''' <summary>
+        ''' The name expression.
+        ''' </summary>
+        Public  ReadOnly Property NameExpression As ExpressionSyntax
+            Get
+                Return GetRedAtZero(_nameExpression)
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the NameExpression property changed to the
+        ''' specified value. Returns this instance if the specified value is the same as
+        ''' the current value.
+        ''' </summary>
+        Public Shadows Function WithNameExpression(nameExpression as ExpressionSyntax) As JsonNameValuePairExpressionSyntax
+            return Update(nameExpression, Me.ColonToken, Me.ValueExpression)
+        End Function
+
+        ''' <summary>
+        ''' The colon ':' token.
+        ''' </summary>
+        Public  ReadOnly Property ColonToken As SyntaxToken
+            Get
+                return new SyntaxToken(Me, DirectCast(Me.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.JsonNameValuePairExpressionSyntax)._colonToken, Me.GetChildPosition(1), Me.GetChildIndex(1))
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the ColonToken property changed to the specified
+        ''' value. Returns this instance if the specified value is the same as the current
+        ''' value.
+        ''' </summary>
+        Public Shadows Function WithColonToken(colonToken as SyntaxToken) As JsonNameValuePairExpressionSyntax
+            return Update(Me.NameExpression, colonToken, Me.ValueExpression)
+        End Function
+
+        ''' <summary>
+        ''' The value expression.
+        ''' </summary>
+        Public  ReadOnly Property ValueExpression As ExpressionSyntax
+            Get
+                Return GetRed(_valueExpression, 2)
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the ValueExpression property changed to the
+        ''' specified value. Returns this instance if the specified value is the same as
+        ''' the current value.
+        ''' </summary>
+        Public Shadows Function WithValueExpression(valueExpression as ExpressionSyntax) As JsonNameValuePairExpressionSyntax
+            return Update(Me.NameExpression, Me.ColonToken, valueExpression)
+        End Function
+
+        Friend Overrides Function GetCachedSlot(i as Integer) as SyntaxNode
+            Select case i
+                Case 0
+                    Return Me._nameExpression
+                Case 2
+                    Return Me._valueExpression
+                Case Else
+                     Return Nothing
+            End Select
+        End Function
+
+        Friend Overrides Function GetNodeSlot(i as Integer) as SyntaxNode
+            Select case i
+                Case 0
+                    Return Me.NameExpression
+                Case 2
+                    Return Me.ValueExpression
+                Case Else
+                     Return Nothing
+            End Select
+        End Function
+
+        Public Overrides Function Accept(Of TResult)(ByVal visitor As VisualBasicSyntaxVisitor(Of TResult)) As TResult
+            Return visitor.VisitJsonNameValuePairExpression(Me)
+        End Function
+
+        Public Overrides Sub Accept(ByVal visitor As VisualBasicSyntaxVisitor)
+            visitor.VisitJsonNameValuePairExpression(Me)
+        End Sub
+
+
+        ''' <summary>
+        ''' Returns a copy of this with the specified changes. Returns this instance if
+        ''' there are no actual changes.
+        ''' </summary>
+        ''' <param name="nameExpression">
+        ''' The value for the NameExpression property.
+        ''' </param>
+        ''' <param name="colonToken">
+        ''' The value for the ColonToken property.
+        ''' </param>
+        ''' <param name="valueExpression">
+        ''' The value for the ValueExpression property.
+        ''' </param>
+        Public Function Update(nameExpression As ExpressionSyntax, colonToken As SyntaxToken, valueExpression As ExpressionSyntax) As JsonNameValuePairExpressionSyntax
+            If nameExpression IsNot Me.NameExpression OrElse colonToken <> Me.ColonToken OrElse valueExpression IsNot Me.ValueExpression Then
+                Dim newNode = SyntaxFactory.JsonNameValuePairExpression(nameExpression, colonToken, valueExpression)
+                Dim annotations = Me.GetAnnotations()
+                If annotations IsNot Nothing AndAlso annotations.Length > 0
+                    return newNode.WithAnnotations(annotations)
+                End If
+                Return newNode
+            End If
+            Return Me
+        End Function
+
+    End Class
+
+    ''' <summary>
+    ''' Represents a JSON array expression.
+    ''' </summary>
+    Public NotInheritable Class JsonArrayExpressionSyntax
+        Inherits ExpressionSyntax
+
+        Friend _elements as SyntaxNode
+
+        Friend Sub New(ByVal green As GreenNode, ByVal parent as SyntaxNode, ByVal startLocation As Integer)
+            MyBase.New(green, parent, startLocation)
+            Debug.Assert(green IsNot Nothing)
+            Debug.Assert(startLocation >= 0)
+        End Sub
+
+        Friend Sub New(ByVal kind As SyntaxKind, ByVal errors as DiagnosticInfo(), ByVal annotations as SyntaxAnnotation(), openBracketToken As InternalSyntax.PunctuationSyntax, elements As SyntaxNode, closeBracketToken As InternalSyntax.PunctuationSyntax)
+            Me.New(New Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.JsonArrayExpressionSyntax(kind, errors, annotations, openBracketToken, if(elements IsNot Nothing, elements.Green, Nothing), closeBracketToken), Nothing, 0)
+        End Sub
+
+        ''' <summary>
+        ''' The opening '[' token.
+        ''' </summary>
+        Public  ReadOnly Property OpenBracketToken As SyntaxToken
+            Get
+                return new SyntaxToken(Me, DirectCast(Me.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.JsonArrayExpressionSyntax)._openBracketToken, Me.Position, 0)
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the OpenBracketToken property changed to the
+        ''' specified value. Returns this instance if the specified value is the same as
+        ''' the current value.
+        ''' </summary>
+        Public Shadows Function WithOpenBracketToken(openBracketToken as SyntaxToken) As JsonArrayExpressionSyntax
+            return Update(openBracketToken, Me.Elements, Me.CloseBracketToken)
+        End Function
+
+        ''' <summary>
+        ''' The elements of the JSON array.
+        ''' </summary>
+        ''' <remarks>
+        ''' If nothing is present, an empty list is returned.
+        ''' </remarks>
+        Public  ReadOnly Property Elements As SeparatedSyntaxList(Of ExpressionSyntax)
+            Get
+                Dim listNode = GetRed(_elements, 1)
+                If listNode IsNot Nothing
+                    Return new SeparatedSyntaxList(Of ExpressionSyntax)(listNode, Me.GetChildIndex(1))
+                End If
+                Return Nothing
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the Elements property changed to the specified
+        ''' value. Returns this instance if the specified value is the same as the current
+        ''' value.
+        ''' </summary>
+        Public Shadows Function WithElements(elements as SeparatedSyntaxList(Of ExpressionSyntax)) As JsonArrayExpressionSyntax
+            return Update(Me.OpenBracketToken, elements, Me.CloseBracketToken)
+        End Function
+
+        Public Shadows Function AddElements(ParamArray items As ExpressionSyntax()) As JsonArrayExpressionSyntax
+            Return Me.WithElements(Me.Elements.AddRange(items))
+        End Function
+
+        ''' <summary>
+        ''' The closing ']' token.
+        ''' </summary>
+        Public  ReadOnly Property CloseBracketToken As SyntaxToken
+            Get
+                return new SyntaxToken(Me, DirectCast(Me.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.JsonArrayExpressionSyntax)._closeBracketToken, Me.GetChildPosition(2), Me.GetChildIndex(2))
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the CloseBracketToken property changed to the
+        ''' specified value. Returns this instance if the specified value is the same as
+        ''' the current value.
+        ''' </summary>
+        Public Shadows Function WithCloseBracketToken(closeBracketToken as SyntaxToken) As JsonArrayExpressionSyntax
+            return Update(Me.OpenBracketToken, Me.Elements, closeBracketToken)
+        End Function
+
+        Friend Overrides Function GetCachedSlot(i as Integer) as SyntaxNode
+            Select case i
+                Case 1
+                    Return Me._elements
+                Case Else
+                     Return Nothing
+            End Select
+        End Function
+
+        Friend Overrides Function GetNodeSlot(i as Integer) as SyntaxNode
+            Select case i
+                Case 1
+                    Return GetRed(_elements, 1)
+                Case Else
+                     Return Nothing
+            End Select
+        End Function
+
+        Public Overrides Function Accept(Of TResult)(ByVal visitor As VisualBasicSyntaxVisitor(Of TResult)) As TResult
+            Return visitor.VisitJsonArrayExpression(Me)
+        End Function
+
+        Public Overrides Sub Accept(ByVal visitor As VisualBasicSyntaxVisitor)
+            visitor.VisitJsonArrayExpression(Me)
+        End Sub
+
+
+        ''' <summary>
+        ''' Returns a copy of this with the specified changes. Returns this instance if
+        ''' there are no actual changes.
+        ''' </summary>
+        ''' <param name="openBracketToken">
+        ''' The value for the OpenBracketToken property.
+        ''' </param>
+        ''' <param name="elements">
+        ''' The value for the Elements property.
+        ''' </param>
+        ''' <param name="closeBracketToken">
+        ''' The value for the CloseBracketToken property.
+        ''' </param>
+        Public Function Update(openBracketToken As SyntaxToken, elements As SeparatedSyntaxList(Of ExpressionSyntax), closeBracketToken As SyntaxToken) As JsonArrayExpressionSyntax
+            If openBracketToken <> Me.OpenBracketToken OrElse elements <> Me.Elements OrElse closeBracketToken <> Me.CloseBracketToken Then
+                Dim newNode = SyntaxFactory.JsonArrayExpression(openBracketToken, elements, closeBracketToken)
+                Dim annotations = Me.GetAnnotations()
+                If annotations IsNot Nothing AndAlso annotations.Length > 0
+                    return newNode.WithAnnotations(annotations)
+                End If
+                Return newNode
+            End If
+            Return Me
+        End Function
+
+    End Class
+
+    ''' <summary>
+    ''' Represents a JSON 'true', 'false', or 'null' expression.
+    ''' </summary>
+    Public NotInheritable Class JsonConstantExpressionSyntax
+        Inherits ExpressionSyntax
+
+
+        Friend Sub New(ByVal green As GreenNode, ByVal parent as SyntaxNode, ByVal startLocation As Integer)
+            MyBase.New(green, parent, startLocation)
+            Debug.Assert(green IsNot Nothing)
+            Debug.Assert(startLocation >= 0)
+        End Sub
+
+        Friend Sub New(ByVal kind As SyntaxKind, ByVal errors as DiagnosticInfo(), ByVal annotations as SyntaxAnnotation(), valueToken As InternalSyntax.IdentifierTokenSyntax)
+            Me.New(New Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.JsonConstantExpressionSyntax(kind, errors, annotations, valueToken), Nothing, 0)
+        End Sub
+
+        ''' <summary>
+        ''' The 'true', 'false', or 'null' token.
+        ''' </summary>
+        Public  ReadOnly Property ValueToken As SyntaxToken
+            Get
+                return new SyntaxToken(Me, DirectCast(Me.Green, Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.JsonConstantExpressionSyntax)._valueToken, Me.Position, 0)
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns a copy of this with the ValueToken property changed to the specified
+        ''' value. Returns this instance if the specified value is the same as the current
+        ''' value.
+        ''' </summary>
+        Public Shadows Function WithValueToken(valueToken as SyntaxToken) As JsonConstantExpressionSyntax
+            return Update(valueToken)
+        End Function
+
+        Friend Overrides Function GetCachedSlot(i as Integer) as SyntaxNode
+            If i = 0 Then
+                Return Nothing
+            Else
+                Return Nothing
+            End If
+        End Function
+
+        Friend Overrides Function GetNodeSlot(i as Integer) as SyntaxNode
+                Return Nothing
+        End Function
+
+        Public Overrides Function Accept(Of TResult)(ByVal visitor As VisualBasicSyntaxVisitor(Of TResult)) As TResult
+            Return visitor.VisitJsonConstantExpression(Me)
+        End Function
+
+        Public Overrides Sub Accept(ByVal visitor As VisualBasicSyntaxVisitor)
+            visitor.VisitJsonConstantExpression(Me)
+        End Sub
+
+
+        ''' <summary>
+        ''' Returns a copy of this with the specified changes. Returns this instance if
+        ''' there are no actual changes.
+        ''' </summary>
+        ''' <param name="valueToken">
+        ''' The value for the ValueToken property.
+        ''' </param>
+        Public Function Update(valueToken As SyntaxToken) As JsonConstantExpressionSyntax
+            If valueToken <> Me.ValueToken Then
+                Dim newNode = SyntaxFactory.JsonConstantExpression(valueToken)
+                Dim annotations = Me.GetAnnotations()
+                If annotations IsNot Nothing AndAlso annotations.Length > 0
+                    return newNode.WithAnnotations(annotations)
+                End If
+                Return newNode
+            End If
+            Return Me
+        End Function
+
+    End Class
+
+    ''' <summary>
     ''' Represents a pre-processing directive (such as #If, #Const or #Region)
     ''' appearing in source.
     ''' </summary>

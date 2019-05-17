@@ -274,6 +274,10 @@ namespace Microsoft.CodeAnalysis
         System_Runtime_InteropServices_UnmanagedType,
         System_Runtime_CompilerServices_IsUnmanagedAttribute,
 
+        Newtonsoft_Json_Linq_JObject,
+        Newtonsoft_Json_Linq_JProperty,
+        Newtonsoft_Json_Linq_JArray,
+
         NextAvailable,
     }
 
@@ -541,6 +545,10 @@ namespace Microsoft.CodeAnalysis
             "System.ReadOnlySpan`1",
             "System.Runtime.InteropServices.UnmanagedType",
             "System.Runtime.CompilerServices.IsUnmanagedAttribute",
+
+            "Newtonsoft.Json.Linq.JObject",
+            "Newtonsoft.Json.Linq.JProperty",
+            "Newtonsoft.Json.Linq.JArray"
         };
 
         private readonly static Dictionary<string, WellKnownType> s_nameToTypeIdMap = new Dictionary<string, WellKnownType>((int)Count);

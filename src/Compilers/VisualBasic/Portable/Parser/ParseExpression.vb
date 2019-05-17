@@ -401,7 +401,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                 Case SyntaxKind.OpenBraceToken
                     ' A CollectionInitializer is an AnonymousArrayCreationExpression. AnonymousArrayCreationExpression type
                     ' is no longer part of the object model.
-                    term = ParseCollectionInitializer()
+                    term = ParseCollectionInitializerOrJsonObject()
 
                 Case SyntaxKind.SubKeyword,
                      SyntaxKind.FunctionKeyword
@@ -410,6 +410,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                 Case SyntaxKind.DollarSignDoubleQuoteToken
 
                     term = ParseInterpolatedStringExpression()
+
+                Case SyntaxKind.OpenBracketToken
+
+                    term = ParseJsonArray(isTopLevel:=True)
 
                 Case Else
 
