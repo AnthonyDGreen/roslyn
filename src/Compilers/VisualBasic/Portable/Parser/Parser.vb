@@ -724,6 +724,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                     Dim attributes = ParseEmptyAttributeLists()
                     Return ParseSpecifierDeclaration(attributes)
 
+                Case SyntaxKind.OpenBraceToken
+                    Return SyntaxFactory.ExpressionStatement(ParseJsonObject())
+
+                Case SyntaxKind.OpenBracketToken
+                    Return SyntaxFactory.ExpressionStatement(ParseJsonArray(isTopLevel:=True))
+
                 Case SyntaxKind.PrivateKeyword,
                     SyntaxKind.ProtectedKeyword,
                     SyntaxKind.PublicKeyword,
