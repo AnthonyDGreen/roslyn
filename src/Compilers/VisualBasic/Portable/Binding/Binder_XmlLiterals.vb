@@ -105,6 +105,18 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                        content As SyntaxList(Of XmlNodeSyntax),
                                        rootInfoOpt As XmlElementRootInfo,
                                        diagnostics As DiagnosticBag) As BoundExpression
+            Dim elementNamespaceRaw As String = Nothing,
+                isFromImports = False
+
+            If nameSyntax.Kind = SyntaxKind.XmlName AndAlso
+               LookupXmlNamespace(If(DirectCast(nameSyntax, XmlNameSyntax).Prefix?.Name.ValueText, ""), ignoreXmlNodes:=True, elementNamespaceRaw, isFromImports) AndAlso
+               elementNamespaceRaw.Trim().StartsWith("clr-namespace:") _
+            Then
+                Debug.Assert(isFromImports)
+
+                Return BindXmlPatternElement(DirectCast(syntax, XmlElementSyntax), rootInfoOpt, elementNamespaceRaw, diagnostics)
+            End If
+
             If rootInfoOpt Is Nothing Then
                 diagnostics = CheckXmlFeaturesAllowed(syntax, diagnostics)
 
