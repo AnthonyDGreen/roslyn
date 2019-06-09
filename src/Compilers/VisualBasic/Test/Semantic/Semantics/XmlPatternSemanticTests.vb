@@ -52,14 +52,56 @@ Namespace Global.System.Windows
 
         Public Class Grid
             Inherits Panel
+
+            ReadOnly Property RowDefinitions As New RowDefinitionCollection
+
         End Class
+
+        Public Class RowDefinitionCollection
+            Inherits Collection(Of RowDefinition)
+
+        End Class
+
+        Public Class RowDefinition
+            Property Height As New GridLength(1.0, GridUnitType.Star)
+        End Class
+
+        Public Structure GridLength
+
+            Shared ReadOnly Auto As New GridLength(1.0, GridUnitType.Auto)
+
+            ReadOnly Property Value As Double
+            ReadOnly Property GridUnitType As GridUnitType
+
+            Sub New(value As Double, gridUnitType As GridUnitType)
+                Me.Value = value
+                Me.GridUnitType = gridUnitType
+            End Sub
+
+            Overrides Function ToString() As String
+                Select Case GridUnitType
+                    Case GridUnitType.Auto
+                        Return "auto"
+                    Case GridUnitType.Star
+                        Return If(Value = 1.0, "*", Value &amp; "*")
+                    Case Else
+                        Return Value.ToString()
+                End Select
+            End Function
+        End Structure
+
+        Public Enum GridUnitType
+            Auto
+            Pixel
+            Star
+        End Enum
 
     End Namespace
 End Namespace
 </file>
 
         Private ReadOnly TestTypeExtensions As Xml.Linq.XElement =
-<file name="WpfExtensions.vb">
+<file name="WpfExtensions.vb"><![CDATA[
 Imports System
 Imports System.Collections.Generic
 Imports System.Windows,
@@ -69,24 +111,112 @@ Namespace Global.XmlPatternHelpers
 
     Public Module WpfExtensions
        
-        &lt;Runtime.CompilerServices.Extension&gt;
+        <Runtime.CompilerServices.Extension>
         Sub SetChildContent(instance As Window, content As Object)
             instance.Content = content
         End Sub
        
-        &lt;Runtime.CompilerServices.Extension&gt;
+        <Runtime.CompilerServices.Extension>
         Sub SetChildContent(instance As Button, content As Object)
             instance.Content = content
         End Sub
         
-        &lt;Runtime.CompilerServices.Extension&gt;
+        <Runtime.CompilerServices.Extension>
         Sub AddChildContent(instance As Panel, content As Object)
             instance.Children.Add(content)
+        End Sub
+        
+        <Runtime.CompilerServices.Extension>
+        Sub AddChildContent(instance As RowDefinitionCollection, content As RowDefinition)
+            instance.Add(content)
+        End Sub
+       
+        <Runtime.CompilerServices.Extension>
+        Sub SetHeight(instance As RowDefinition, value As GridLength, valueText As String, otherValue As Object)
+
+            If value.Value <> 0.0 OrElse value.GridUnitType <> GridUnitType.Auto Then
+                instance.Height = value
+                Return
+            End If
+
+            valueText = If(valueText?.Trim().ToLower(), "")
+            Dim result As Double = Nothing
+
+            If otherValue IsNot Nothing Then
+                If TypeOf otherValue Is GridLength Then
+                    instance.Height = CType(otherValue, GridLength)
+                Else
+                    Throw New NotSupportedException()
+                End If
+
+            ElseIf valueText.StartsWith("{") Then
+                Throw New NotSupportedException()
+
+            ElseIf valueText = "auto" Then
+                instance.Height = GridLength.Auto
+
+            ElseIf valueText = "*" Then
+                instance.Height = New GridLength(1.0, GridUnitType.Star)
+
+            ElseIf valueText.EndsWith("*") Then
+                valueText = valueText.SubString(0, valueText.Length - 1).Trim()
+
+                If Double.TryParse(valueText, result) Then
+                    instance.Height = New GridLength(result, GridUnitType.Star)
+                Else
+                    Throw New FormatException()
+                End If
+
+            ElseIf valueText.EndsWith("px") Then
+                valueText = valueText.SubString(0, valueText.Length - 2).Trim()
+
+                If Double.TryParse(valueText, result) Then
+                    instance.Height = New GridLength(result, GridUnitType.Pixel)
+                Else
+                    Throw New FormatException()
+                End If
+
+            ElseIf valueText.EndsWith("in") Then
+                valueText = valueText.SubString(0, valueText.Length - 2).Trim()
+
+                If Double.TryParse(valueText, result) Then
+                    instance.Height = New GridLength(result * 96.0, GridUnitType.Pixel)
+                Else
+                    Throw New FormatException()
+                End If
+
+            ElseIf valueText.EndsWith("cm") Then
+                valueText = valueText.SubString(0, valueText.Length - 2).Trim()
+
+                If Double.TryParse(valueText, result) Then
+                    instance.Height = New GridLength(result * 96.0 / 2.54, GridUnitType.Pixel)
+                Else
+                    Throw New FormatException()
+                End If
+
+            ElseIf valueText.EndsWith("pt") Then
+                valueText = valueText.SubString(0, valueText.Length - 2).Trim()
+
+                If Double.TryParse(valueText, result) Then
+                    instance.Height = New GridLength(result * 96.0 / 72.0, GridUnitType.Pixel)
+                Else
+                    Throw New FormatException()
+                End If
+
+            Else
+                If Double.TryParse(valueText, result) Then
+                    instance.Height = New GridLength(result, GridUnitType.Pixel)
+                Else
+                    Throw New FormatException()
+                End If
+
+            End If
         End Sub
 
     End Module
 
 End Namespace
+]]>
 </file>
 
 #Const TEST_REGRESSIONS = True
@@ -370,6 +500,46 @@ End Module
 ]]>
     </file>
 </compilation>, references:=XmlReferences, expectedOutput:="TrueButton")
+
+        End Sub
+
+        <Fact>
+        Public Sub ComplexCollectionSetter()
+
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <%= TestTypeDefinitions %>
+    <%= TestTypeExtensions %>
+    <file name=<%= GenerateFilename() %>><![CDATA[
+Imports System
+Imports System.Console
+Imports <xmlns="clr-namespace:System.Windows">
+Imports System.Windows,
+        System.Windows.Controls
+Imports XmlPatternHelpers
+
+Module Program
+    Sub Main()
+        Dim obj As Window = <Window>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="auto" />
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="5*" />
+                                        <RowDefinition Height="1in" />
+                                        <RowDefinition Height="75" />
+                                    </Grid.RowDefinitions>
+                                </Grid>
+                            </Window>
+
+        For Each rd In CType(obj.Content, Grid).RowDefinitions
+            Write(rd.Height.ToString())
+        Next
+    End Sub
+End Module
+]]>
+    </file>
+</compilation>, references:=XmlReferences, expectedOutput:="auto*5*9675")
 
         End Sub
 

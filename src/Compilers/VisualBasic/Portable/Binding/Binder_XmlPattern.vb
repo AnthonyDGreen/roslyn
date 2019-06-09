@@ -418,7 +418,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                 If cv IsNot Nothing Then
                                     value = New BoundLiteral(node, cv, binder.GetSpecialType(targetType.SpecialType, node, diagnostics))
                                 Else
-                                    value = New BoundLiteral(node, ConstantValue.Nothing, targetType)
+                                    value = New BoundLiteral(node, ConstantValue.Nothing, type:=Nothing)
                                 End If
 
                         End Select
@@ -641,6 +641,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                    (TryGetMethodGroup("Set" & typeName & memberName, subject, name, binder, diagnostics, methodGroup) OrElse
                     TryGetMethodGroup("Set" & memberName, subject, name, binder, diagnostics, methodGroup)) _
                 Then
+                    boundAccess = Nothing
                     supportsMultiContent = False
                 End If
 
@@ -1177,7 +1178,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             ''' Returns true if <paramref name="enumerator"/> was entirely consumed.
             ''' </summary>
             Private Shared Function GetMemberElements(
-                                        enumerator As SyntaxList(Of XmlNodeSyntax).Enumerator,
+                                        ByRef enumerator As SyntaxList(Of XmlNodeSyntax).Enumerator,
                                         builder As ArrayBuilder(Of XmlNodeSyntax),
                                         diagnostics As DiagnosticBag
                                     ) As Boolean
@@ -1234,7 +1235,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             ''' Returns true if <paramref name="enumerator"/> was entirely consumed.
             ''' </summary>
             Private Shared Function GetChildElements(
-                                        enumerator As SyntaxList(Of XmlNodeSyntax).Enumerator,
+                                        ByRef enumerator As SyntaxList(Of XmlNodeSyntax).Enumerator,
                                         builder As ArrayBuilder(Of XmlNodeSyntax),
                                         diagnostics As DiagnosticBag
                                     ) As Boolean
