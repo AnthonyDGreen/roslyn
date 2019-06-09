@@ -66,6 +66,12 @@ Namespace Global.System.Windows
 
         End Class
 
+        Public Class Label
+            Inherits Control
+
+            Property Text As String
+        End Class
+
         Public Class RowDefinitionCollection
             Inherits Collection(Of RowDefinition)
 
@@ -128,6 +134,11 @@ Namespace Global.XmlPatternHelpers
         <Runtime.CompilerServices.Extension>
         Sub SetChildContent(instance As Button, content As Object)
             instance.Content = content
+        End Sub
+       
+        <Runtime.CompilerServices.Extension>
+        Sub SetChildContent(instance As Label, content As String)
+            instance.Text = content
         End Sub
         
         <Runtime.CompilerServices.Extension>
@@ -556,6 +567,37 @@ End Module
         End Sub
 
 #End If
+
+        <Fact>
+        Public Sub ChildTextContent()
+
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <%= TestTypeDefinitions %>
+    <%= TestTypeExtensions %>
+    <file name=<%= GenerateFilename() %>><![CDATA[
+Imports System
+Imports System.Console
+Imports <xmlns="clr-namespace:System.Windows">
+Imports System.Windows,
+        System.Windows.Controls
+Imports XmlPatternHelpers
+
+Module Program
+    WithEvents Button1 As Button
+
+    Sub Main()
+        Dim obj As Window = <Window>
+                                <Label>+</Label>
+                            </Window>
+        Write(CType(obj.Content, Label).Text)
+    End Sub
+End Module
+]]>
+    </file>
+</compilation>, references:=XmlReferences, expectedOutput:="+")
+
+        End Sub
 
         <Fact>
         Public Sub AttributeWithByRefValue()

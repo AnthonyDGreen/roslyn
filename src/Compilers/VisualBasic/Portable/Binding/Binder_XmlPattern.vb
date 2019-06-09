@@ -50,6 +50,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
             Dim type = XmlPatternHelpers.BindXmlNameAsType(name, Me, diagnostics)
 
+            If type Is Nothing Then
+                Return BadExpression(syntax, ErrorTypeSymbol.UnknownResultType)
+            End If
+
             ' Some of this should happen in lowering.
             Dim temp = New SynthesizedLocal(ContainingMember, type, SynthesizedLocalKind.LoweringTemp)
             Dim boundTemp = New BoundLocal(syntax, temp, type)
@@ -153,6 +157,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Then
                     ' TODO: Report correct error.
                     ReportDiagnostic(diagnostics, name, ERRID.ERR_NameNotMember2, memberName, subjectType)
+                    Return BadExpression(attribute, ErrorTypeSymbol.UnknownResultType)
                 End If
 
                 Dim value As BoundExpression = Nothing,
@@ -435,7 +440,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                         diagnostics.Add(node, useSiteDiagnostics)
 
                                         If result.HasSymbol Then
-                                            Dim boundOperand = binder.BindSimpleName(result, node, options, typeArguments:=Nothing, diagnostics)
+                                            Dim boundOperand = binder.MakeValue(binder.BindSimpleName(result, node, options, typeArguments:=Nothing, diagnostics), diagnostics)
 
                                             ' TODO: Likely not the right way to ask but IsLValue isn't correct either.
                                             If boundOperand.Kind = BoundKind.PropertyAccess OrElse boundOperand.Kind = BoundKind.FieldAccess Then
@@ -1249,7 +1254,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                         Case SyntaxKind.XmlText
 
-                            Dim content = DirectCast(enumerator.Current, XmlStringSyntax)
+                            Dim content = DirectCast(enumerator.Current, XmlTextSyntax)
 
                             Dim text = GetXmlString(content.TextTokens)
 
@@ -1311,12 +1316,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                         Case SyntaxKind.XmlText
 
-                            Dim content = DirectCast(enumerator.Current, XmlStringSyntax)
+                            Dim content = DirectCast(enumerator.Current, XmlTextSyntax)
 
                             Dim text = GetXmlString(content.TextTokens)
 
                             If Not String.IsNullOrWhiteSpace(text) Then
-                                Return False
+                                builder.Add(enumerator.Current)
                             End If
 
                         Case SyntaxKind.XmlComment,
