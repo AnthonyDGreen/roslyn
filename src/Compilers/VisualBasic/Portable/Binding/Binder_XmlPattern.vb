@@ -138,6 +138,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Dim methodGroup As BoundMethodGroup = Nothing
                 Dim boundAccess As BoundExpression = Nothing
                 Dim targetType As TypeSymbol = Nothing
+                Dim targetIsLValue As Boolean
 
                 If Not TryBindXmlMemberNameToPattern(name,
                                                      searchForChildContentMethods:=False,
@@ -145,6 +146,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                                      binder,
                                                      diagnostics,
                                                      targetType,
+                                                     targetIsLValue,
                                                      methodGroup,
                                                      boundAccess,
                                                      supportsMultiContent:=Nothing) _
@@ -157,7 +159,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     valueString As String = Nothing,
                     otherValue As BoundExpression = Nothing
 
-                BindXmlAttributeValue(attribute.Value, targetType, binder, diagnostics, value, valueString, otherValue)
+                BindXmlAttributeValue(attribute.Value, targetType, targetIsLValue, binder, diagnostics, value, valueString, otherValue)
 
                 If boundAccess IsNot Nothing Then
                     If otherValue IsNot Nothing Then
@@ -214,6 +216,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Public Shared Sub BindXmlAttributeValue(
                                   node As XmlNodeSyntax,
                                   targetType As TypeSymbol,
+                                  targetIsLValue As Boolean,
                                   binder As Binder,
                                   diagnostics As DiagnosticBag,
                                   ByRef value As BoundExpression,
@@ -419,6 +422,29 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                     value = New BoundLiteral(node, cv, binder.GetSpecialType(targetType.SpecialType, node, diagnostics))
                                 Else
                                     value = New BoundLiteral(node, ConstantValue.Nothing, type:=Nothing)
+
+                                    If targetIsLValue Then
+
+                                        Dim options As LookupOptions = LookupOptions.AllMethodsOfAnyArity ' overload resolution filters methods by arity.
+                                        options = options Or LookupOptions.MustNotBeReturnValueVariable
+
+                                        Dim result As LookupResult = LookupResult.GetInstance()
+
+                                        Dim useSiteDiagnostics As HashSet(Of DiagnosticInfo) = Nothing
+                                        binder.Lookup(result, valueString, arity:=0, options, useSiteDiagnostics)
+                                        diagnostics.Add(node, useSiteDiagnostics)
+
+                                        If result.HasSymbol Then
+                                            Dim boundOperand = binder.BindSimpleName(result, node, options, typeArguments:=Nothing, diagnostics)
+
+                                            ' TODO: Likely not the right way to ask but IsLValue isn't correct either.
+                                            If boundOperand.Kind = BoundKind.PropertyAccess OrElse boundOperand.Kind = BoundKind.FieldAccess Then
+                                                value = boundOperand
+                                            End If
+                                        End If
+
+                                        result.Free()
+                                    End If
                                 End If
 
                         End Select
@@ -440,7 +466,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Dim conversionInfo = Conversions.ClassifyConversion(value, targetType, binder, conversionSiteDiagnostics)
 
                 If Conversions.ConversionExists(conversionInfo.Key) Then
-                    value = binder.ApplyConversion(valueSyntax, targetType, value, isExplicit:=False, diagnostics)
+                    If Not targetIsLValue Then
+                        value = binder.ApplyConversion(valueSyntax, targetType, value, isExplicit:=False, diagnostics)
+                    End If
+
                     otherValue = Nothing
                 Else
                     otherValue = value
@@ -506,7 +535,17 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Dim supportsMultiContent As Boolean = False
                 Dim targetType As TypeSymbol = Nothing
 
-                If Not TryBindXmlMemberNameToPattern(name, searchForChildContentMethods:=True, subject, binder, diagnostics, targetType, methodGroup, boundAccess, supportsMultiContent) Then
+                If Not TryBindXmlMemberNameToPattern(name,
+                                                     searchForChildContentMethods:=True,
+                                                     subject,
+                                                     binder,
+                                                     diagnostics,
+                                                     targetType,
+                                                     targetIsLValue:=Nothing,
+                                                     methodGroup,
+                                                     boundAccess,
+                                                     supportsMultiContent) _
+                Then
                     ' TODO: Report correct error.
                     ReportDiagnostic(diagnostics, name, ERRID.ERR_NameNotMember2, memberName, subjectType)
                 End If
@@ -562,6 +601,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                         binder As Binder,
                                         diagnostics As DiagnosticBag,
                                         ByRef targetType As TypeSymbol,
+                                        ByRef targetIsLValue As Boolean,
                                         ByRef methodGroup As BoundMethodGroup,
                                         ByRef boundAccess As BoundExpression,
                                         ByRef supportsMultiContent As Boolean
@@ -680,6 +720,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 If methodGroup IsNot Nothing Then
                     ' TODO: Ensure all methods have same first parameter type?
                     targetType = methodGroup.Methods(0).Parameters(0).Type
+                    targetIsLValue = methodGroup.Methods(0).Parameters(0).IsByRef
                     Return True
 
                 ElseIf boundAccess IsNot Nothing Then

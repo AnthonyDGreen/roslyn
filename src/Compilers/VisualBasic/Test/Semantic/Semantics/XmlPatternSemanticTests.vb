@@ -42,12 +42,21 @@ Namespace Global.System.Windows
 
     Namespace Controls
 
+        Public Class Control
+
+        End Class
+
         Public Class Button
+            Inherits Control
+
             Property Content As Object
         End Class
 
         Public Class Panel
+            Inherits Control
+
             Property Children As New Collection(Of Object)
+
         End Class
 
         Public Class Grid
@@ -129,6 +138,11 @@ Namespace Global.XmlPatternHelpers
         <Runtime.CompilerServices.Extension>
         Sub AddChildContent(instance As RowDefinitionCollection, content As RowDefinition)
             instance.Add(content)
+        End Sub
+                       
+        <Runtime.CompilerServices.Extension>
+        Sub SetName(Of T As Control)(instance As T, ByRef value As T, valueText As String, otherValue As Object)
+            value = instance
         End Sub
        
         <Runtime.CompilerServices.Extension>
@@ -219,7 +233,7 @@ End Namespace
 ]]>
 </file>
 
-#Const TEST_REGRESSIONS = True
+#Const TEST_REGRESSIONS = False
 
 #If TEST_REGRESSIONS Then
 
@@ -469,8 +483,6 @@ End Module
 
         End Sub
 
-#End If
-
         <Fact>
         Public Sub ComplexScalarSetter()
 
@@ -542,6 +554,42 @@ End Module
 </compilation>, references:=XmlReferences, expectedOutput:="auto*5*9675")
 
         End Sub
+
+#End If
+
+        <Fact>
+        Public Sub AttributeWithByRefValue()
+
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <%= TestTypeDefinitions %>
+    <%= TestTypeExtensions %>
+    <file name=<%= GenerateFilename() %>><![CDATA[
+Imports System
+Imports System.Console
+Imports <xmlns="clr-namespace:System.Windows">
+Imports System.Windows,
+        System.Windows.Controls
+Imports XmlPatternHelpers
+
+Module Program
+    WithEvents Button1 As Button
+
+    Sub Main()
+        Dim obj As Window = <Window>
+                                <Grid>
+                                    <Button Name="Button1" />
+                                </Grid>
+                            </Window>
+        Write(Button1 Is Nothing)
+    End Sub
+End Module
+]]>
+    </file>
+</compilation>, references:=XmlReferences, expectedOutput:="False")
+
+        End Sub
+
 
         Shared Function GenerateFilename(<System.Runtime.CompilerServices.CallerMemberName> Optional memberName As String = "") As String
             Return memberName & ".vb"
