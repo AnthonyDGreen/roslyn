@@ -2495,6 +2495,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             ' to not add this to the member list in this case.
             AddDefaultConstructorIfNeeded(membersBuilder, True, membersBuilder.StaticInitializers, diagnostics)
 
+            AddTopLevelExecuteMethodIfNeeded(membersBuilder, diagnostics)
+
             ' If there are any "Handles" methods, optimistically create methods/ctors that would be hosting
             ' hookup code.
             AddWithEventsHookupConstructorsIfNeeded(membersBuilder, diagnostics)
@@ -2790,6 +2792,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             Dim binder As Binder = BinderBuilder.CreateBinderForType(m_containingModule, syntaxRef.SyntaxTree, Me)
             Dim constructor As New SynthesizedConstructorSymbol(syntaxRef, Me, isShared, isDebuggable, binder, diagBag)
             AddMember(constructor, binder, members, omitDiagnostics:=False)
+        End Sub
+
+        ''' <summary>
+        ''' If there's top-level code, add an "Execute" method.
+        ''' </summary>
+        Protected Overridable Sub AddTopLevelExecuteMethodIfNeeded(members As MembersAndInitializersBuilder, diagnostics As DiagnosticBag)
         End Sub
 
         Private Sub AddWithEventsHookupConstructorsIfNeeded(members As MembersAndInitializersBuilder, diagBag As DiagnosticBag)

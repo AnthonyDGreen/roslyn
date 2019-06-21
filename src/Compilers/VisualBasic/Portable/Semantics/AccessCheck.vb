@@ -993,7 +993,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ''' </summary>
         Public Shared Function VerifyAccessExposureOfBaseClassOrInterface(
             classOrInterface As NamedTypeSymbol,
-            baseClassSyntax As TypeSyntax,
+            baseClassSyntax As VisualBasicSyntaxNode,
             base As TypeSymbol,
             diagBag As DiagnosticBag
         ) As Boolean

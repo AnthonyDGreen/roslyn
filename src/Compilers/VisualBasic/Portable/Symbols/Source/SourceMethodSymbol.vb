@@ -784,7 +784,7 @@ lReportErrorOnTwoTokens:
 
         Friend ReadOnly Property DeclarationSyntax As MethodBaseSyntax
             Get
-                Return If(m_syntaxReferenceOpt IsNot Nothing, DirectCast(m_syntaxReferenceOpt.GetSyntax(), MethodBaseSyntax), Nothing)
+                Return If(m_syntaxReferenceOpt IsNot Nothing, TryCast(m_syntaxReferenceOpt.GetSyntax(), MethodBaseSyntax), Nothing)
             End Get
         End Property
 
@@ -879,6 +879,9 @@ lReportErrorOnTwoTokens:
 
                 Case SyntaxKind.OperatorStatement
                     Return DirectCast(node, OperatorStatementSyntax).OperatorToken.Span
+
+                Case SyntaxKind.CompilationUnit
+                    Return DirectCast(node, CompilationUnitSyntax).GetTopLevelExecutableStatements().First().GetFirstToken().Span
 
                 Case Else
                     Throw ExceptionUtilities.UnexpectedValue(node.Kind)
@@ -1219,6 +1222,20 @@ lReportErrorOnTwoTokens:
                 If span.Contains(localPosition) Then
                     Return localPosition - span.Start
                 End If
+            ElseIf block Is Nothing And TypeOf Me Is TopLevelCodeContainerMethodSymbol Then
+                Dim root = DirectCast(Me.Syntax, CompilationUnitSyntax)
+
+                ' No reason to think this will work.
+                If localPosition < root.Members.Span.Start Then
+                    Return -1
+                End If
+
+                span = root.Members.Span
+
+                ' Should we check each statement to filter out top-level declarations?
+                If span.Contains(localPosition) Then
+                    Return localPosition - span.Start
+                End If
             End If
 
             ' Calculates a syntax offset of a syntax position which must be either a property or field initializer.
@@ -1383,11 +1400,11 @@ lReportErrorOnTwoTokens:
             End Get
         End Property
 
-        Private Function GetAttributesBag() As CustomAttributesBag(Of VisualBasicAttributeData)
+        Protected Overridable Function GetAttributesBag() As CustomAttributesBag(Of VisualBasicAttributeData)
             Return GetAttributesBag(m_lazyCustomAttributesBag, forReturnType:=False)
         End Function
 
-        Private Function GetReturnTypeAttributesBag() As CustomAttributesBag(Of VisualBasicAttributeData)
+        Protected Overridable Function GetReturnTypeAttributesBag() As CustomAttributesBag(Of VisualBasicAttributeData)
             Return GetAttributesBag(m_lazyReturnTypeCustomAttributesBag, forReturnType:=True)
         End Function
 

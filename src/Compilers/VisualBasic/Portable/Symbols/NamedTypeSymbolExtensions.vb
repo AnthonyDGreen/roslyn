@@ -118,5 +118,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             Return container.TypeKind = TypeKind.Module OrElse container.IsScriptClass
         End Function
 
+        ' TODO: Review.
+        <Extension>
+        Friend Function FindTopLevelExecutableStatementContainingMethod(container As NamedTypeSymbol) As TopLevelCodeContainerMethodSymbol
+            Dim asSource = TryCast(container, SourceNamedTypeSymbol)
+
+            If asSource Is Nothing Then Return Nothing
+
+            Return asSource.GetMembers().OfType(Of TopLevelCodeContainerMethodSymbol).FirstOrDefault()
+        End Function
+
     End Module
 End Namespace

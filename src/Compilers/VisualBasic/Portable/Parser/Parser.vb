@@ -74,6 +74,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
             End Get
         End Property
 
+        Friend ReadOnly Property AllowTopLevelExecutableStatementsAndExpressions As Boolean
+            Get
+                Return True
+            End Get
+        End Property
+
         Private Function ParseSimpleName(
                                      allowGenericArguments As Boolean,
                                      allowGenericsWithoutOf As Boolean,
@@ -694,7 +700,25 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
                         Return SyntaxFactory.AttributesStatement(attributes)
                     End If
 
+                    'Need to come up with a solution to this.
+                    'If AllowTopLevelExecutableStatementsAndExpressions Then
+
+                    '    ' TODO: Unhack this!!! This is outright WRONG!
+                    '    Return SyntaxFactory.ExpressionStatement(ParseXmlExpression())
+
+                    'End If
+
                     Return ParseSpecifierDeclaration()
+
+                Case SyntaxKind.LessThanQuestionToken
+
+                    If AllowTopLevelExecutableStatementsAndExpressions Then
+
+                        Return SyntaxFactory.ExpressionStatement(ParseXmlExpression())
+                    Else
+                        ' misplaced statement errors are reported by the context
+                        Return ParseStatementInMethodBodyInternal()
+                    End If
 
                 Case SyntaxKind.LessThanGreaterThanToken
                     Dim attributes = ParseEmptyAttributeLists()
@@ -1047,7 +1071,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
                     Dim attributes As CoreInternalSyntax.SyntaxList(Of AttributeListSyntax) = Nothing
 
-                    If Me.CurrentToken.Kind = Global.Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LessThanToken Then
+                    If Me.CurrentToken.Kind = SyntaxKind.LessThanToken Then
                         attributes = ParseAttributeLists(allowFileLevelAttributes:=False)
                     End If
 
@@ -2099,16 +2123,36 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax
 
             Dim isFieldDeclaration As Boolean = False
             Select Case Context.BlockKind
-                Case _
-                    SyntaxKind.ModuleBlock,
-                    SyntaxKind.StructureBlock,
-                    SyntaxKind.InterfaceBlock,
-                    SyntaxKind.ClassBlock,
-                    SyntaxKind.EnumBlock,
-                    SyntaxKind.PropertyBlock,
-                    SyntaxKind.NamespaceBlock,
-                    SyntaxKind.CompilationUnit
+                Case SyntaxKind.ModuleBlock,
+                     SyntaxKind.StructureBlock,
+                     SyntaxKind.InterfaceBlock,
+                     SyntaxKind.ClassBlock,
+                     SyntaxKind.EnumBlock,
+                     SyntaxKind.PropertyBlock,
+                     SyntaxKind.NamespaceBlock
+
                     isFieldDeclaration = True
+
+                Case SyntaxKind.CompilationUnit
+
+                    isFieldDeclaration = False
+
+                    For Each modifier In modifiers
+                        Select Case modifier.Kind
+                            Case SyntaxKind.DimKeyword,
+                                 SyntaxKind.ConstKeyword,
+                                 SyntaxKind.StaticKeyword
+
+                                Continue For
+
+                            Case Else
+
+                                isFieldDeclaration = True
+                                Exit For
+
+                        End Select
+                    Next
+
             End Select
 
             Dim Declarations = ParseVariableDeclaration(Not isFieldDeclaration)

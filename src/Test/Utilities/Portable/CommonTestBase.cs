@@ -112,6 +112,7 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
                 verify);
         }
 
+        [System.Diagnostics.DebuggerNonUserCode]
         internal CompilationVerifier CompileAndVerifyCommon(
             Compilation compilation,
             IEnumerable<ResourceDescription> manifestResources = null,
@@ -211,6 +212,7 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
             }
         }
 
+        [System.Diagnostics.DebuggerNonUserCode]
         internal CompilationVerifier Emit(
             Compilation compilation,
             IEnumerable<ModuleData> dependencies,

@@ -80,10 +80,14 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.NavigationBar
                     End If
 
                     Dim node = nodesToVisit.Pop()
-                    Dim type = TryCast(semanticModel.GetDeclaredSymbol(node, cancellationToken), INamedTypeSymbol)
+
+                    Dim symbol = semanticModel.GetDeclaredSymbol(node, cancellationToken)
+                    Dim type = TryCast(symbol, INamedTypeSymbol)
 
                     If type IsNot Nothing Then
                         typesAndDeclarations(type) = node
+                    ElseIf symbol IsNot Nothing AndAlso node.Kind = SyntaxKind.CompilationUnit Then
+                        typesAndDeclarations(symbol.ContainingType) = node
                     End If
 
                     If TypeOf node Is MethodBlockBaseSyntax OrElse
@@ -440,6 +444,15 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.NavigationBar
                         member.ContainingType.GetSymbolKey(),
                         member.GetSymbolKey()))
                     End If
+                ElseIf method IsNot Nothing AndAlso method.DeclaringSyntaxReferences().FirstOrDefault()?.GetSyntax(cancellationToken).IsKind(SyntaxKind.CompilationUnit) Then
+                    items.Add(New NavigationBarSymbolItem(
+                                member.ToDisplayString(_memberFormat.WithParameterOptions(SymbolDisplayParameterOptions.IncludeType Or SymbolDisplayParameterOptions.IncludeName Or SymbolDisplayParameterOptions.IncludeParamsRefOut)),
+                                member.GetGlyph(),
+                                spans,
+                                member.GetSymbolKey(),
+                                symbolIdIndexProvider.GetIndexForSymbolId(member.GetSymbolKey()),
+                                bolded:=spans.Count > 0,
+                                grayed:=spans.Count = 0))
                 Else
                     items.Add(New NavigationBarSymbolItem(
                     member.ToDisplayString(displayFormat),

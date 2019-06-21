@@ -1302,7 +1302,16 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                     If warning <> Nothing Then
                         Debug.Assert(localName IsNot Nothing)
-                        Me.diagnostics.Add(warning, node.GetLocation(), localName)
+
+                        ' TODO: This is a hack. Unhack this.
+                        ' (1) Need to figure location for reporting errors.
+                        ' (2) Whether this method is a Sub or Function (and as such whether it reports this error) should
+                        ' be determined by the method being overridden by this symbol, if any.
+                        If TypeOf method Is TopLevelCodeContainerMethodSymbol Then
+                            'Me.diagnostics.Add(warning, DirectCast(node, CompilationUnitSyntax).EndOfFileToken.GetLocation(), localName)
+                        Else
+                            Me.diagnostics.Add(warning, node.GetLocation(), localName)
+                        End If
                     End If
 
                 End If

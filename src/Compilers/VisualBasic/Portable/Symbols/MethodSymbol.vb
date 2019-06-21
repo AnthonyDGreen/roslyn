@@ -441,6 +441,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             End Get
         End Property
 
+        Friend ReadOnly Property IsSynthesizedTopLevelCodeEntryPoint As Boolean
+            Get
+                Return TypeOf Me Is SynthesizedTopLevelCodeExecuteEntryPoint
+            End Get
+        End Property
+
         ''' <summary> 
         ''' Determines whether this method is a candidate for a default 
         ''' assembly entry point. Any method called "Main" is.

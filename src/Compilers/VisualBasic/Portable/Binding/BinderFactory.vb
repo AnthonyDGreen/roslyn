@@ -91,6 +91,14 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Return GetBinderAtOrAbove(node, position)
         End Function
 
+        Public Function GetImplicitTypeBinder(node As CompilationUnitSyntax) As NamedTypeBinder
+            Return DirectCast(GetBinderForNodeAndUsage(node, NodeUsage.CompilationUnitImplicitType), NamedTypeBinder)
+        End Function
+
+        Public Function GetImplicitMethodBinder(node As CompilationUnitSyntax) As TopLevelCodeBinder
+            Return DirectCast(GetBinderForNodeAndUsage(node, NodeUsage.CompilationUnitImplicitMethod), TopLevelCodeBinder)
+        End Function
+
         ' Find the binder for a node or above at a given position
         Private Function GetBinderAtOrAbove(node As SyntaxNode, position As Integer) As Binder
             ' Go up the tree until we find a node that has a corresponding binder.
@@ -169,6 +177,29 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Case NodeUsage.TopLevelExecutableStatement
                     Debug.Assert(TypeOf containingBinder Is NamedTypeBinder AndAlso containingBinder.ContainingType.IsScriptClass)
                     Return New TopLevelCodeBinder(containingBinder.ContainingType.InstanceConstructors.Single(), containingBinder)
+
+                Case NodeUsage.CompilationUnitImplicitType
+
+                    Dim rootNamespaceBinder = DirectCast(GetBinderForNodeAndUsage(node, NodeUsage.CompilationUnit, containingBinder:=containingBinder), NamespaceBinder)
+                    Dim root = DirectCast(node, CompilationUnitSyntax)
+
+                    Debug.Assert(root.HasTopLevelCode)
+
+                    ' TODO: Test this for collisions if multiple types share the same name; does it merge as partial for error recovery or should we use First() instead?
+                    Return New NamedTypeBinder(rootNamespaceBinder, DirectCast(rootNamespaceBinder.NamespaceSymbol.GetMembers(root.GetImplicitTypeName()).Single(), NamedTypeSymbol))
+
+                Case NodeUsage.CompilationUnitImplicitMethod
+
+                    Dim implicitTypeBinder = DirectCast(GetBinderForNodeAndUsage(node, NodeUsage.CompilationUnitImplicitType, containingBinder:=containingBinder), NamedTypeBinder)
+                    Dim root = DirectCast(node, CompilationUnitSyntax)
+
+                    Debug.Assert(root.HasTopLevelCode)
+
+                    Return New TopLevelCodeBinder(implicitTypeBinder.ContainingType.FindTopLevelExecutableStatementContainingMethod(), root, implicitTypeBinder)
+
+                Case NodeUsage.CompilationUnitExecutableStatementList
+
+                    Return GetBinderForNodeAndUsage(node, NodeUsage.CompilationUnitImplicitMethod, containingBinder:=containingBinder)
 
                 Case NodeUsage.ImportsStatement
                     Return BinderBuilder.CreateBinderForSourceFileImports(_sourceModule, _tree)
@@ -557,9 +588,24 @@ lAgain:
 
             ' member declared on top-level or in a namespace is enclosed in an implicit type:
             If node IsNot Nothing AndAlso (node.Kind = SyntaxKind.NamespaceBlock OrElse node.Kind = SyntaxKind.CompilationUnit) Then
-                Return DirectCast(
-                    GetBinderForNodeAndUsage(node, NodeUsage.ImplicitClass,
-                                             containingBinder:=containingBinder), NamedTypeBinder)
+
+                If node.Kind = SyntaxKind.NamespaceBlock Then
+                    Return DirectCast(
+                        GetBinderForNodeAndUsage(node, NodeUsage.ImplicitClass,
+                                                 containingBinder:=containingBinder), NamedTypeBinder)
+
+                ElseIf node.Kind = SyntaxKind.CompilationUnit Then
+
+                    If node.SyntaxTree.Options.Kind = SourceCodeKind.Script Then
+                        Return DirectCast(
+                            GetBinderForNodeAndUsage(node, NodeUsage.ImplicitClass,
+                                                     containingBinder:=containingBinder), NamedTypeBinder)
+                    Else
+                        Return DirectCast(
+                            GetBinderForNodeAndUsage(node, NodeUsage.CompilationUnitImplicitType,
+                                                     containingBinder:=containingBinder), NamedTypeBinder)
+                    End If
+                End If
             End If
 
             Return Nothing

@@ -78,6 +78,7 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
             }
         }
 
+        [System.Diagnostics.DebuggerNonUserCode]
         public void Emit(string expectedOutput, int? expectedReturnCode, string[] args, IEnumerable<ResourceDescription> manifestResources, EmitOptions emitOptions, Verification peVerify, SignatureDescription[] expectedSignatures)
         {
             using (var testEnvironment = RuntimeEnvironmentFactory.Create(_dependencies))
@@ -115,6 +116,7 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
             }
         }
 
+        [System.Diagnostics.DebuggerNonUserCode]
         private string Emit(IRuntimeEnvironment testEnvironment, IEnumerable<ResourceDescription> manifestResources, EmitOptions emitOptions)
         {
             testEnvironment.Emit(_compilation, manifestResources, emitOptions);

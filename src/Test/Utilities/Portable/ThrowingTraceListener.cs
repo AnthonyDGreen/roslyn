@@ -19,6 +19,7 @@ namespace Microsoft.CodeAnalysis
     //</configuration>
     public sealed class ThrowingTraceListener : TraceListener
     {
+        [DebuggerNonUserCode]
         public override void Fail(string message, string detailMessage)
         {
             throw new InvalidOperationException(message + Environment.NewLine + detailMessage);

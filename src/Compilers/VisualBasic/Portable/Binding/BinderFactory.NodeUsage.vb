@@ -65,6 +65,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             ' For the full part of the property, similar to MethodFull
             PropertyFull
 
+            ' For the type containing type-members declared at top-level
+            CompilationUnitImplicitType
+
+            ' For the method containing executable statements at top-level
+            CompilationUnitImplicitMethod
+
+            ' For the statement block containing executable statements (e.g. local declarations) at top-level
+            CompilationUnitExecutableStatementList
+
             ' Add more usages here if necessary. 
         End Enum
     End Class

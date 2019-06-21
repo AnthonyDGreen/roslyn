@@ -25,6 +25,64 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Syntax
             Return firstToken.GetDirectives(Of ReferenceDirectiveTriviaSyntax)(filter)
         End Function
 
+        ''' <summary>
+        ''' Returns true if this compilation unit contains top-level executable statements, expressions, or type-member declarations (e.g. methods, fields, properties). 
+        ''' </summary>
+        Friend ReadOnly Property HasTopLevelCode As Boolean
+            Get
+                For Each node In Me.Members
+                    Select Case node.Kind
+                        Case SyntaxKind.NamespaceBlock,
+                             SyntaxKind.ClassBlock,
+                             SyntaxKind.StructureBlock,
+                             SyntaxKind.EnumBlock,
+                             SyntaxKind.DelegateSubStatement,
+                             SyntaxKind.DelegateFunctionStatement,
+                             SyntaxKind.InterfaceBlock,
+                             SyntaxKind.ModuleBlock
+
+                            Continue For
+
+                        Case Else
+
+                            ' TODO: This should also return true if the file contains a file-level attribute with a `<Type:` or `<Method:` target, or
+                            ' an `Inherits` or `Implements` clause.
+
+                            Return True
+
+                    End Select
+                Next
+
+                Return False
+            End Get
+        End Property
+
+        Friend ReadOnly Property HasTopLevelExecutableStatements As Boolean
+            Get
+                For Each node In Members
+                    If TypeOf node Is ExecutableStatementSyntax Then
+                        Return True
+                    End If
+                Next
+
+                Return False
+            End Get
+        End Property
+
+        Friend Function GetTopLevelExecutableStatements() As IEnumerable(Of ExecutableStatementSyntax)
+            Return Members.OfType(Of ExecutableStatementSyntax)
+        End Function
+
+        Friend Function GetImplicitTypeName() As String
+            If Not HasTopLevelCode Then Return String.Empty
+
+            Return IO.Path.GetFileName(SyntaxTree.FilePath).Split({"."c}).First()
+        End Function
+
+        Friend Function GetInheritsStatement() As InheritsStatementSyntax
+            Return Members.OfType(Of InheritsStatementSyntax).FirstOrDefault()
+        End Function
+
     End Class
 End Namespace
 

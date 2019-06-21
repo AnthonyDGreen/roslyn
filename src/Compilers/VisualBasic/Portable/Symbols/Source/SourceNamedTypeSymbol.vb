@@ -132,6 +132,14 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 Case SyntaxKind.DelegateFunctionStatement, SyntaxKind.DelegateSubStatement
                     Return DirectCast(node, DelegateStatementSyntax).Identifier
 
+                Case SyntaxKind.CompilationUnit
+                    Dim unit = DirectCast(node, CompilationUnitSyntax)
+                    If unit.HasTopLevelCode Then
+                        Return SyntaxFactory.MissingIdentifier()
+                    Else
+                        Throw ExceptionUtilities.UnexpectedValue(node.Kind)
+                    End If
+
                 Case Else
                     Throw ExceptionUtilities.UnexpectedValue(node.Kind)
             End Select
@@ -218,6 +226,24 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             End If
         End Sub
 
+        ''' <summary>
+        ''' Returns the members of this type declaration correctly whether the type declaration is explicit or implicit (i.e. top-level).
+        ''' </summary>
+        Private Shared Function GetMembersForSyntax(node As SyntaxNode) As SyntaxList(Of StatementSyntax)
+            If node.Kind = SyntaxKind.CompilationUnit Then
+                Debug.Assert(DirectCast(node, CompilationUnitSyntax).HasTopLevelCode)
+                Return DirectCast(node, CompilationUnitSyntax).Members
+            Else
+                Dim typeBlock = TryCast(node, TypeBlockSyntax)
+
+                If typeBlock IsNot Nothing Then
+                    Return typeBlock.Members
+                Else
+                    Throw ExceptionUtilities.UnexpectedValue(node.Kind)
+                End If
+            End If
+        End Function
+
         ' Declare all the non-type members in a single part of this type, and add them to the member list.
         Private Function AddMembersInPart(binder As Binder,
                                           node As VisualBasicSyntaxNode,
@@ -265,8 +291,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 Dim enumBlock = DirectCast(node, EnumBlockSyntax)
                 AddEnumMembers(enumBlock, binder, diagBag, members)
             Else
-                Dim typeBlock = DirectCast(node, TypeBlockSyntax)
-                For Each memberSyntax In typeBlock.Members
+                For Each memberSyntax In GetMembersForSyntax(node)
                     AddMember(memberSyntax, binder, diagBag, members, staticInitializers, instanceInitializers, reportAsInvalid:=False)
                 Next
             End If
@@ -443,6 +468,14 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                     err = ERRID.ERR_BadDelegateFlags1
                     modifiers = DirectCast(node, DelegateStatementSyntax).Modifiers
                     id = DirectCast(node, DelegateStatementSyntax).Identifier
+
+                Case SyntaxKind.CompilationUnit
+                    Debug.Assert(DirectCast(node, CompilationUnitSyntax).HasTopLevelCode)
+
+                    err = Nothing
+                    modifiers = Nothing
+                    id = SyntaxFactory.MissingIdentifier
+                    Return Nothing
 
                 Case Else
                     Throw ExceptionUtilities.UnexpectedValue(node.Kind)
@@ -652,6 +685,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 Case SyntaxKind.ModuleBlock, SyntaxKind.ClassBlock,
                     SyntaxKind.StructureBlock, SyntaxKind.InterfaceBlock
                     modifiers = DirectCast(node, TypeBlockSyntax).BlockStatement.Modifiers
+                Case SyntaxKind.CompilationUnit
+                    modifiers = Nothing
                 Case Else
                     Throw ExceptionUtilities.UnexpectedValue(node.Kind)
             End Select
@@ -1014,6 +1049,16 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 Case SyntaxKind.ModuleBlock
                     Dim inheritsSyntax = DirectCast(syntaxNode, TypeBlockSyntax).Inherits
                     CheckNoBase(inheritsSyntax, ERRID.ERR_ModuleCantInherit, diagBag)
+
+                Case SyntaxKind.CompilationUnit
+                    Dim inheritsSyntax = DirectCast(syntaxNode, CompilationUnitSyntax).GetInheritsStatement()
+
+                    ' classes may have a base class
+                    Dim thisBase As NamedTypeSymbol = ValidateClassBase(SyntaxFactory.SingletonList(inheritsSyntax), baseType, basesBeingResolved, binder, diagBag)
+                    If baseType Is Nothing Then
+                        baseType = thisBase
+                    End If
+
             End Select
         End Sub
 
@@ -1105,7 +1150,29 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             End If
 
             ' Check to make sure the base class is valid.
-            Dim diagInfo As DiagnosticInfo = Nothing
+            baseClassType = CheckBaseTypeValidOrReportDiagnostic(baseClassType, baseClassSyntax, diagBag)
+            If baseClassType Is Nothing Then
+                Return Nothing
+            End If
+
+            ' The same base class can be declared in multiple partials, but not different ones
+            If baseInOtherPartial IsNot Nothing Then
+                If Not baseClassType.Equals(baseInOtherPartial) Then
+                    Binder.ReportDiagnostic(diagBag, baseClassSyntax, ERRID.ERR_BaseMismatchForPartialClass3,
+                                             baseClassType, Me.Name, baseInOtherPartial)
+                    Return Nothing
+                End If
+
+            ElseIf Not baseClassType.IsErrorType() Then
+
+                ' Verify that we don't have public classes inheriting from private ones, etc.
+                AccessCheck.VerifyAccessExposureOfBaseClassOrInterface(Me, baseClassSyntax, baseClassType, diagBag)
+            End If
+
+            Return DirectCast(baseClassType, NamedTypeSymbol)
+        End Function
+
+        Private Function CheckBaseTypeValidOrReportDiagnostic(baseClassType As TypeSymbol, baseClassSyntax As VisualBasicSyntaxNode, diagBag As DiagnosticBag) As TypeSymbol
             Select Case baseClassType.TypeKind
                 Case TypeKind.TypeParameter
                     Binder.ReportDiagnostic(diagBag, baseClassSyntax, ERRID.ERR_GenericParamBase2, "Class", Me.Name)
@@ -1129,21 +1196,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                     End If
             End Select
 
-            ' The same base class can be declared in multiple partials, but not different ones
-            If baseInOtherPartial IsNot Nothing Then
-                If Not baseClassType.Equals(baseInOtherPartial) Then
-                    Binder.ReportDiagnostic(diagBag, baseClassSyntax, ERRID.ERR_BaseMismatchForPartialClass3,
-                                             baseClassType, Me.Name, baseInOtherPartial)
-                    Return Nothing
-                End If
-
-            ElseIf Not baseClassType.IsErrorType() Then
-
-                ' Verify that we don't have public classes inheriting from private ones, etc.
-                AccessCheck.VerifyAccessExposureOfBaseClassOrInterface(Me, baseClassSyntax, baseClassType, diagBag)
-            End If
-
-            Return DirectCast(baseClassType, NamedTypeSymbol)
+            Return baseClassType
         End Function
 
         Private Sub ValidateInheritedInterfaces(baseSyntax As SyntaxList(Of InheritsStatementSyntax),
@@ -1291,6 +1344,53 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                     Dim syntaxRef = decl.SyntaxReference
                     MakeDeclaredBaseInPart(syntaxRef.SyntaxTree, syntaxRef.GetVisualBasicSyntax(), baseType, basesBeingResolved, diagnostics)
                 End If
+            Next
+
+            If baseType IsNot Nothing Then Return baseType
+
+            For Each decl In Me.TypeDeclaration.Declarations
+                Dim syntax = decl.SyntaxReference.GetVisualBasicSyntax()
+
+                If syntax.Kind <> SyntaxKind.CompilationUnit Then Continue For
+
+                Dim defaultBaseClass = Me.DeclaringCompilation.Options.ParseOptions?.PreprocessorSymbols.FirstOrDefault(Function(kvp) kvp.Key = "DefaultTopLevelBaseClass")
+
+                If defaultBaseClass Is Nothing OrElse defaultBaseClass.GetValueOrDefault().Key Is Nothing Then Continue For
+
+                Dim defaultBaseClassName = DirectCast(GlobalImport.Parse(defaultBaseClass.GetValueOrDefault().Value.ToString()).Clause, SimpleImportsClauseSyntax).Name
+
+                Dim binder As Binder = CreateLocationSpecificBinderForType(decl.SyntaxReference.SyntaxTree, BindingLocation.BaseTypes)
+
+                ' Add myself to the set of classes whose bases are being resolved
+                If basesBeingResolved Is Nothing Then
+                    basesBeingResolved = ConsList(Of Symbol).Empty.Prepend(Me)
+                Else
+                    basesBeingResolved = basesBeingResolved.Prepend(Me)
+                End If
+
+                binder = New BasesBeingResolvedBinder(binder, basesBeingResolved)
+
+                ' Bind the base class.
+                Dim baseClassType = binder.BindTypeSyntax(defaultBaseClassName, diagnostics, suppressUseSiteError:=True, resolvingBaseType:=True)
+                If baseClassType Is Nothing Then Continue For
+
+                ' Check to make sure the base class is valid.
+                baseClassType = CheckBaseTypeValidOrReportDiagnostic(baseClassType, syntax, diagnostics)
+                If baseClassType Is Nothing Then Continue For
+
+                If Not baseClassType.IsErrorType() Then
+                    ' Verify that we don't have public classes inheriting from private ones, etc.
+                    AccessCheck.VerifyAccessExposureOfBaseClassOrInterface(Me, syntax, baseClassType, diagnostics)
+                End If
+
+                ' We don't need to check for conflicts in baseClassType because all default base types will be the same.
+#If DEBUG Then
+                If baseType IsNot Nothing Then
+                    Debug.Assert(baseType.Equals(baseClassType))
+                End If
+#End If
+
+                baseType = DirectCast(baseClassType, NamedTypeSymbol)
             Next
 
             Return baseType
@@ -2563,63 +2663,225 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
         End Sub
 
         Protected Overrides Sub AddEntryPointIfNeeded(membersBuilder As MembersAndInitializersBuilder)
-            If Me.TypeKind = TypeKind.Class AndAlso Not Me.IsGenericType Then
-                Dim mainTypeName As String = DeclaringCompilation.Options.MainTypeName
 
-                If mainTypeName IsNot Nothing AndAlso
-                   IdentifierComparison.EndsWith(mainTypeName, Me.Name) AndAlso
-                   IdentifierComparison.Equals(mainTypeName, Me.ToDisplayString(SymbolDisplayFormat.QualifiedNameOnlyFormat)) Then
+            If Me.TypeKind <> TypeKind.Class OrElse Me.IsGenericType Then Return
 
-                    ' Must derive from Windows.Forms.Form
-                    Dim formClass As NamedTypeSymbol = DeclaringCompilation.GetWellKnownType(WellKnownType.System_Windows_Forms_Form)
+            Dim mainTypeName As String = DeclaringCompilation.Options.MainTypeName
+            Dim isMainType = (mainTypeName IsNot Nothing AndAlso
+                              IdentifierComparison.EndsWith(mainTypeName, Me.Name) AndAlso
+                              IdentifierComparison.Equals(mainTypeName, Me.ToDisplayString(SymbolDisplayFormat.QualifiedNameOnlyFormat)))
 
-                    If formClass.IsErrorType() OrElse Not Me.IsOrDerivedFrom(formClass, useSiteDiagnostics:=Nothing) Then
-                        Return
+            ' Must derive from Windows.Forms.Form
+            Dim formClass As NamedTypeSymbol = DeclaringCompilation.GetWellKnownType(WellKnownType.System_Windows_Forms_Form)
+            Dim isFormOrFormDerivedMainType = (isMainType AndAlso
+                                               Not formClass.IsErrorType() AndAlso
+                                               Me.IsOrDerivedFrom(formClass, useSiteDiagnostics:=Nothing))
+
+            Dim isTopLevelMainMethodType As Boolean
+
+            If isFormOrFormDerivedMainType Then
+                isTopLevelMainMethodType = False
+
+            ElseIf mainTypeName IsNot Nothing AndAlso Not isMainType Then
+                isTopLevelMainMethodType = False
+
+            Else
+                Dim hasTopLevelCode As Boolean
+
+                For Each ref In Me.SyntaxReferences
+                    Dim syntax = TryCast(ref.GetSyntax(), CompilationUnitSyntax)
+
+                    If syntax Is Nothing Then Continue For
+
+                    If syntax.HasTopLevelExecutableStatements Then
+                        hasTopLevelCode = True
+                        Exit For
+                    End If
+                Next
+
+                If hasTopLevelCode Then
+                    If isMainType Then
+                        isTopLevelMainMethodType = True
+
+                    Else
+                        ' We know (for now) that all top-level code has to be in the same (project root) namespace.
+
+                        Dim otherTypesWithTopLevelMethods = False
+                        For Each t As SourceNamedTypeSymbol In Me.ContainingNamespace.GetTypeMembersUnordered()
+                            ' Should this be .Equals or .IsSame?
+                            If t Is Me Then Continue For
+                            If otherTypesWithTopLevelMethods Then Exit For
+
+                            For Each ref In t.SyntaxReferences
+                                Dim syntax = TryCast(ref.GetSyntax(), CompilationUnitSyntax)
+
+                                If syntax Is Nothing Then Continue For
+
+                                If syntax.HasTopLevelExecutableStatements Then
+                                    ' TODO: Report error, multiple files with top-level code; cannot infer entry-point type.
+                                    otherTypesWithTopLevelMethods = True
+                                    Exit For
+                                End If
+                            Next
+                        Next
+
+                        isTopLevelMainMethodType = Not otherTypesWithTopLevelMethods
                     End If
 
-                    Dim entryPointMethodName As String = WellKnownMemberNames.EntryPointMethodName
+                ElseIf isMainType Then
+                    ' TODO: Report error, main type without top-level code and does not inherit System.Windows.Forms.Form.
+                End If
+            End If
 
-                    ' If we already have a child named 'Main', do not add a synthetic one.
-                    If membersBuilder.Members.ContainsKey(entryPointMethodName) Then
-                        Return
+            If Not isFormOrFormDerivedMainType AndAlso Not isTopLevelMainMethodType Then Return
+
+            Dim entryPointMethodName As String = WellKnownMemberNames.EntryPointMethodName
+
+            ' If we already have a child named 'Main', do not add a synthetic one.
+            If membersBuilder.Members.ContainsKey(entryPointMethodName) Then
+                Return
+            End If
+
+            If GetTypeMembersDictionary().ContainsKey(entryPointMethodName) Then
+                Return
+            End If
+
+            ' We need to have a constructor that can be called without arguments.
+            Dim symbols As ArrayBuilder(Of Symbol) = Nothing
+            Dim haveSuitableConstructor As Boolean = False
+
+            If membersBuilder.Members.TryGetValue(WellKnownMemberNames.InstanceConstructorName, symbols) Then
+                For Each method As MethodSymbol In symbols
+                    If method.MethodKind = MethodKind.Constructor AndAlso method.ParameterCount = 0 Then
+                        haveSuitableConstructor = True
+                        Exit For
                     End If
+                Next
 
-                    If GetTypeMembersDictionary().ContainsKey(entryPointMethodName) Then
-                        Return
-                    End If
+                If Not haveSuitableConstructor Then
+                    ' Do the second pass to check for optional parameters, etc., it will require binding parameter modifiers and probably types.
+                    For Each method As MethodSymbol In symbols
+                        If method.MethodKind = MethodKind.Constructor AndAlso method.CanBeCalledWithNoParameters() Then
+                            haveSuitableConstructor = True
+                            Exit For
+                        End If
+                    Next
+                End If
+            End If
 
-                    ' We need to have a constructor that can be called without arguments.
-                    Dim symbols As ArrayBuilder(Of Symbol) = Nothing
-                    Dim haveSuitableConstructor As Boolean = False
+            ' TODO: Consider reporting warning here that type is invalid.
+            If Not haveSuitableConstructor Then Return
 
-                    If membersBuilder.Members.TryGetValue(WellKnownMemberNames.InstanceConstructorName, symbols) Then
-                        For Each method As MethodSymbol In symbols
-                            If method.MethodKind = MethodKind.Constructor AndAlso method.ParameterCount = 0 Then
-                                haveSuitableConstructor = True
+            Dim syntaxRef = SyntaxReferences.First() ' use arbitrary part
+
+            Dim binder As Binder = BinderBuilder.CreateBinderForType(ContainingSourceModule, syntaxRef.SyntaxTree, Me)
+
+            If isFormOrFormDerivedMainType Then
+                AddMember(New SynthesizedMainTypeEntryPoint(syntaxRef.GetVisualBasicSyntax(), Me), binder, membersBuilder, omitDiagnostics:=True)
+            Else
+                Debug.Assert(isTopLevelMainMethodType)
+                AddMember(New SynthesizedTopLevelCodeExecuteEntryPoint(syntaxRef.GetVisualBasicSyntax(), Me), binder, membersBuilder, omitDiagnostics:=True)
+            End If
+        End Sub
+
+        Protected Overrides Sub AddTopLevelExecuteMethodIfNeeded(members As MembersAndInitializersBuilder, diagnostics As DiagnosticBag)
+            If TypeKind <> TypeKind.Class Then Return
+
+            Dim hasAnyTopLevelExecutableCode = False
+
+            Dim node As CompilationUnitSyntax = Nothing
+
+            For Each ref In SyntaxReferences
+                Dim syntax = ref.GetVisualBasicSyntax()
+
+                If syntax.Kind <> SyntaxKind.CompilationUnit Then Continue For
+
+                node = DirectCast(syntax, CompilationUnitSyntax)
+
+                If Not node.HasTopLevelExecutableStatements Then Continue For
+
+                If hasAnyTopLevelExecutableCode Then
+                    ' TODO: Report error for multiple top-level methods.
+                End If
+
+                Dim code = node.GetTopLevelExecutableStatements()
+
+                Dim executeMethod As TopLevelCodeContainerMethodSymbol
+                ' TODO: Should go find an Execute method to override. This will allow reduction in user-code.
+
+                Dim binder As Binder = BinderBuilder.CreateBinderForType(ContainingSourceModule, ref.SyntaxTree, Me)
+
+                Dim baseMethod As MethodSymbol = Nothing
+
+                Dim allAttributedMethodsFound = ArrayBuilder(Of MethodSymbol).GetInstance()
+                Dim allExecuteMethodsFound = ArrayBuilder(Of MethodSymbol).GetInstance()
+                Dim anyExecuteMembersFound = False
+
+                ' Not actually the right way to do this. Something, something `Shadows`... different member kind.
+                Dim typeToSearch = Me.BaseTypeNoUseSiteDiagnostics
+                Do
+                    For Each member In typeToSearch.GetMembers()
+                        If member.Kind <> SymbolKind.Method Then
+                            If IdentifierComparison.Equals(member.Name, "Execute") Then
+                                ' Will shadow any `Execute` members in lower types.
+                                anyExecuteMembersFound = True
+                            End If
+
+                            Continue For
+                        End If
+
+                        Dim method = DirectCast(member, MethodSymbol)
+
+                        If Not (method.IsOverridable OrElse method.IsMustOverride) Then Continue For
+
+                        For Each attribute In method.GetAttributes()
+                            If IdentifierComparison.Equals(attribute.AttributeClass.ToDisplayString(SymbolDisplayFormat.QualifiedNameOnlyFormat),
+                                                           "Microsoft.VisualBasic.CompilerServices.DefaultOverrideMethodAttribute") _
+                            Then
+                                allAttributedMethodsFound.Add(method)
                                 Exit For
                             End If
                         Next
 
-                        If Not haveSuitableConstructor Then
-                            ' Do the second pass to check for optional parameters, etc., it will require binding parameter modifiers and probably types.
-                            For Each method As MethodSymbol In symbols
-                                If method.MethodKind = MethodKind.Constructor AndAlso method.CanBeCalledWithNoParameters() Then
-                                    haveSuitableConstructor = True
-                                    Exit For
-                                End If
-                            Next
+                        If allAttributedMethodsFound.Count = 0 AndAlso
+                           Not anyExecuteMembersFound AndAlso
+                           IdentifierComparison.Equals(method.Name, "Execute") _
+                        Then
+                            ' All `Execute` methods in this type will be found, to report duplicates.
+                            allExecuteMethodsFound.Add(method)
                         End If
+                    Next
+
+                    If allAttributedMethodsFound.Count > 0 Then Exit Do
+
+                    If allExecuteMethodsFound.Count > 0 Then
+                        anyExecuteMembersFound = True
                     End If
 
-                    If haveSuitableConstructor Then
-                        Dim syntaxRef = SyntaxReferences.First() ' use arbitrary part
+                    typeToSearch = typeToSearch.BaseTypeNoUseSiteDiagnostics
+                Loop Until typeToSearch Is Nothing
 
-                        Dim binder As Binder = BinderBuilder.CreateBinderForType(ContainingSourceModule, syntaxRef.SyntaxTree, Me)
-                        Dim entryPoint As New SynthesizedMainTypeEntryPoint(syntaxRef.GetVisualBasicSyntax(), Me)
-                        AddMember(entryPoint, binder, membersBuilder, omitDiagnostics:=True)
-                    End If
-                End If
-            End If
+                Dim methodsToUse = If(allAttributedMethodsFound.Count > 0, allAttributedMethodsFound, allExecuteMethodsFound)
+
+                Select Case methodsToUse.Count
+                    Case 0
+                        executeMethod = New TopLevelCodeContainerMethodSymbol(Me, "Execute", node, binder, code)
+
+                    Case 1
+                        executeMethod = New TopLevelCodeContainerMethodSymbol(Me, node, binder, methodsToUse(0))
+
+                    Case Else
+                        diagnostics.Add(New VBDiagnostic(ErrorFactory.ErrorInfo(ERRID.ERR_AmbiguousOverrides3), node.GetLocation()))
+                        executeMethod = New TopLevelCodeContainerMethodSymbol(Me, node, binder, methodsToUse(0))
+                End Select
+                allAttributedMethodsFound.free()
+                allExecuteMethodsFound.Free()
+
+                AddMember(executeMethod, binder, members, omitDiagnostics:=False)
+
+                hasAnyTopLevelExecutableCode = True
+            Next
+
         End Sub
 
     End Class
