@@ -11,7 +11,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.UnitTests.Semantics
 
         Private ReadOnly XmlReferences As MetadataReference() = {SystemRef, SystemCoreRef, SystemXmlRef, SystemXmlLinqRef}
         Private ReadOnly TestTypeDefinitions As Xml.Linq.XElement =
-<file name="MockWpf.vb">
+<file name="MockWpf.vb"><![CDATA[
 Imports System
 Imports System.Collections.Generic,
         System.Collections.ObjectModel
@@ -98,7 +98,7 @@ Namespace Global.System.Windows
                     Case GridUnitType.Auto
                         Return "auto"
                     Case GridUnitType.Star
-                        Return If(Value = 1.0, "*", Value &amp; "*")
+                        Return If(Value = 1.0, "*", Value & "*")
                     Case Else
                         Return Value.ToString()
                 End Select
@@ -113,6 +113,7 @@ Namespace Global.System.Windows
 
     End Namespace
 End Namespace
+]]>
 </file>
 
         Private ReadOnly TestTypeExtensions As Xml.Linq.XElement =
@@ -244,7 +245,7 @@ End Namespace
 ]]>
 </file>
 
-#Const TEST_REGRESSIONS = False
+#Const TEST_REGRESSIONS = True
 
 #If TEST_REGRESSIONS Then
 
@@ -629,6 +630,40 @@ End Module
 ]]>
     </file>
 </compilation>, references:=XmlReferences, expectedOutput:="False")
+
+        End Sub
+
+        <Fact>
+        Public Sub XmlDocument()
+
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <%= TestTypeDefinitions %>
+    <%= TestTypeExtensions %>
+    <file name=<%= GenerateFilename() %>><![CDATA[
+Imports System
+Imports System.Console
+Imports <xmlns="clr-namespace:System.Windows">
+Imports System.Windows,
+        System.Windows.Controls
+Imports XmlPatternHelpers
+
+Module Program
+    WithEvents Button1 As Button
+
+    Sub Main()
+        Dim obj As Window = <?xml version="1.0" encoding="UTF-8"?>
+                            <Window>
+                                <Grid>
+                                    <Button Name="Button1" />
+                                </Grid>
+                            </Window>
+        Write((Button1 Is Nothing) & obj.GetType().Name)
+    End Sub
+End Module
+]]>
+    </file>
+</compilation>, references:=XmlReferences, expectedOutput:="FalseWindow")
 
         End Sub
 

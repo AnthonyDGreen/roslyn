@@ -38,6 +38,24 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             End If
         End Function
 
+        Private Function TryBindXmlPatternDocument(syntax As XmlDocumentSyntax, diagnostics As DiagnosticBag) As BoundExpression
+
+            Select Case syntax.Root.Kind
+                Case SyntaxKind.XmlElement
+                    Dim element = DirectCast(syntax.Root, XmlElementSyntax)
+
+                    Return TryBindXmlPatternElement(element, element.StartTag.Name, element.StartTag.Attributes, element.Content, rootInfoOpt:=Nothing, diagnostics)
+
+                Case SyntaxKind.XmlEmptyElement
+                    Dim element = DirectCast(syntax.Root, XmlEmptyElementSyntax)
+
+                    Return TryBindXmlPatternElement(element, element.Name, element.Attributes, content:=Nothing, rootInfoOpt:=Nothing, diagnostics)
+
+                Case Else
+                    Return Nothing
+            End Select
+        End Function
+
         Private Function BindXmlPatternElement(
                              syntax As XmlNodeSyntax,
                              name As XmlNodeSyntax,
@@ -51,6 +69,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Dim type = XmlPatternHelpers.BindXmlNameAsType(name, Me, diagnostics)
 
             If type Is Nothing Then
+
                 Return BadExpression(syntax, ErrorTypeSymbol.UnknownResultType)
             End If
 
@@ -131,18 +150,21 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     memberName As String = Nothing
 
                 If Not TryGetXmlMemberNameParts(name, diagnostics, prefix, typeName, memberName) Then
-                    Return Nothing
+                    ReportDiagnostic(diagnostics, name, ERRID.ERR_ExpectedIdentifier)
+                    Return BadExpression(attribute, ErrorTypeSymbol.UnknownResultType)
                 End If
 
                 If Not SyntaxFacts.IsValidIdentifier(memberName) OrElse (typeName IsNot Nothing AndAlso Not SyntaxFacts.IsValidIdentifier(typeName)) Then
                     ' TODO: Report error.
-                    Return Nothing
+                    ReportDiagnostic(diagnostics, name, ERRID.ERR_ExpectedIdentifier)
+                    Return BadExpression(attribute, ErrorTypeSymbol.UnknownResultType)
                 End If
 
                 Dim methodGroup As BoundMethodGroup = Nothing
                 Dim boundAccess As BoundExpression = Nothing
                 Dim targetType As TypeSymbol = Nothing
                 Dim targetIsLValue As Boolean
+                Dim supportsExtendedConversions As Boolean = False
 
                 If Not TryBindXmlMemberNameToPattern(name,
                                                      searchForChildContentMethods:=False,
@@ -153,7 +175,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                                      targetIsLValue,
                                                      methodGroup,
                                                      boundAccess,
-                                                     supportsMultiContent:=Nothing) _
+                                                     supportsMultiContent:=Nothing,
+                                                     supportsExtendedConversions) _
                 Then
                     ' TODO: Report correct error.
                     ReportDiagnostic(diagnostics, name, ERRID.ERR_NameNotMember2, memberName, subjectType)
@@ -162,9 +185,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                 Dim value As BoundExpression = Nothing,
                     valueString As String = Nothing,
-                    otherValue As BoundExpression = Nothing
+                    otherValue As BoundExpression = Nothing,
+                    requiresExtendedConversion As Boolean = False
 
-                BindXmlAttributeValue(attribute.Value, targetType, targetIsLValue, binder, diagnostics, value, valueString, otherValue)
+                BindXmlAttributeValue(attribute.Value, targetType, targetIsLValue, binder, diagnostics, value, valueString, otherValue, requiresExtendedConversion)
 
                 If boundAccess IsNot Nothing Then
                     If otherValue IsNot Nothing Then
@@ -190,7 +214,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                 arguments.Add(value)
 
-                If theMethod.ParameterCount > arguments.Count Then
+                If (theMethod.ParameterCount > arguments.Count) OrElse requiresExtendedConversion Then
                     arguments.Add(binder.CreateStringLiteral(attribute.Value, valueString, compilerGenerated:=True, diagnostics))
                 End If
 
@@ -226,7 +250,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                   diagnostics As DiagnosticBag,
                                   ByRef value As BoundExpression,
                                   ByRef valueString As String,
-                                  ByRef otherValue As BoundExpression
+                                  ByRef otherValue As BoundExpression,
+                                  ByRef requiresExtendedConversion As Boolean
                               )
 
                 ' TODO: This is probably the wrong place for this.
@@ -427,6 +452,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                     value = New BoundLiteral(node, cv, binder.GetSpecialType(targetType.SpecialType, node, diagnostics))
                                 Else
                                     value = New BoundLiteral(node, ConstantValue.Nothing, type:=Nothing)
+                                    requiresExtendedConversion = True
 
                                     If targetIsLValue Then
 
@@ -445,6 +471,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                             ' TODO: Likely not the right way to ask but IsLValue isn't correct either.
                                             If boundOperand.Kind = BoundKind.PropertyAccess OrElse boundOperand.Kind = BoundKind.FieldAccess Then
                                                 value = boundOperand
+                                                requiresExtendedConversion = False
                                             End If
                                         End If
 
@@ -466,10 +493,14 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                         Throw ExceptionUtilities.UnexpectedValue(node.Kind)
                 End Select
 
+                If targetType.IsErrorType() Then
+                    Return
+                End If
+
                 ' TODO: VB supports conversions that might be inappropriate to apply here; the set must be defined.
                 Dim conversionSiteDiagnostics As HashSet(Of DiagnosticInfo) = Nothing
                 Dim conversionInfo = Conversions.ClassifyConversion(value, targetType, binder, conversionSiteDiagnostics)
-
+                
                 If Conversions.ConversionExists(conversionInfo.Key) Then
                     If Not targetIsLValue Then
                         value = binder.ApplyConversion(valueSyntax, targetType, value, isExplicit:=False, diagnostics)
@@ -478,7 +509,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     otherValue = Nothing
                 Else
                     otherValue = value
-                    value = New BoundLiteral(node, ConstantValue.Nothing, targetType)
+                    value = binder.ApplyConversion(node, targetType, New BoundLiteral(node, ConstantValue.Nothing, type:=Nothing), isExplicit:=False, diagnostics)
+                    requiresExtendedConversion = True
                 End If
             End Sub
 
@@ -549,7 +581,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                                      targetIsLValue:=Nothing,
                                                      methodGroup,
                                                      boundAccess,
-                                                     supportsMultiContent) _
+                                                     supportsMultiContent,
+                                                     supportsExtendedConversions:=False) _
                 Then
                     ' TODO: Report correct error.
                     ReportDiagnostic(diagnostics, name, ERRID.ERR_NameNotMember2, memberName, subjectType)
@@ -609,13 +642,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                         ByRef targetIsLValue As Boolean,
                                         ByRef methodGroup As BoundMethodGroup,
                                         ByRef boundAccess As BoundExpression,
-                                        ByRef supportsMultiContent As Boolean
+                                        ByRef supportsMultiContent As Boolean,
+                                        ByRef supportsExtendedConversions As Boolean
                                     ) As Boolean
 
                 targetType = Nothing
                 methodGroup = Nothing
                 boundAccess = Nothing
                 supportsMultiContent = False
+                supportsExtendedConversions = False
 
                 ' TODO: Report error if `name` specifies an XML namespace.
 
@@ -665,6 +700,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Then
                     ' It's an event so technically it's true.
                     supportsMultiContent = True
+                    supportsExtendedConversions = True
 
                 ElseIf TryGetPropertyOrFieldOrEventAccess(memberName, subject, name, binder, diagnostics, boundAccess) Then
 
@@ -688,6 +724,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 Then
                     boundAccess = Nothing
                     supportsMultiContent = False
+                    supportsExtendedConversions = True
                 End If
 
                 If methodGroup Is Nothing AndAlso eventSymbol IsNot Nothing Then
@@ -706,9 +743,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 If methodGroup Is Nothing AndAlso typeName IsNot Nothing Then
 
                     Dim type = TryGetType(typeName, name, binder, diagnostics)
-                    Dim boundType = New BoundTypeExpression(name, type)
 
                     If type IsNot Nothing Then
+                        Dim boundType = New BoundTypeExpression(name, type)
 
                         If TryGetMethodGroup("Add" & memberName, boundType, name, binder, diagnostics, methodGroup) Then
                             supportsMultiContent = True
@@ -723,9 +760,13 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 End If
 
                 If methodGroup IsNot Nothing Then
+
+                    Dim theMethod = methodGroup.Methods(0)
+                    Dim theParameter = If(theMethod.IsShared, theMethod.Parameters(1), theMethod.Parameters(0))
+
                     ' TODO: Ensure all methods have same first parameter type?
-                    targetType = methodGroup.Methods(0).Parameters(0).Type
-                    targetIsLValue = methodGroup.Methods(0).Parameters(0).IsByRef
+                    targetType = theParameter.Type
+                    targetIsLValue = theParameter.IsByRef
                     Return True
 
                 ElseIf boundAccess IsNot Nothing Then
@@ -853,7 +894,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                                          diagnostics) _
                 Then
                     Debug.Assert(result.IsGood)
-                    Debug.Assert(Not result.Symbols(0).IsShared)
+                    Debug.Assert(Not result.Symbols(0).IsShared OrElse receiver.Kind = BoundKind.TypeExpression)
 
                     ' TODO: This method should handle setting shared members through declarative syntax.
                     methodGroup = binder.CreateBoundMethodGroup(syntax,
@@ -861,7 +902,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                                                 LookupOptions.AllMethodsOfAnyArity,
                                                                 receiver,
                                                                 Nothing,
-                                                                QualificationKind.QualifiedViaValue).MakeCompilerGenerated()
+                                                                If(receiver.Kind = BoundKind.TypeExpression,
+                                                                   QualificationKind.QualifiedViaTypeName,
+                                                                   QualificationKind.QualifiedViaValue)).MakeCompilerGenerated()
                     result.Free()
                     Return True
                 Else
@@ -1050,6 +1093,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                 If Not SyntaxFacts.IsValidIdentifier(typeName) Then
                     ' TODO: Report error.
+                    ReportDiagnostic(diagnostics, name, ERRID.ERR_ExpectedIdentifier)
                     Return Nothing
                 End If
 
@@ -1058,6 +1102,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                 If Not (lookupResult.IsGood AndAlso lookupResult.HasSingleSymbol AndAlso lookupResult.SingleSymbol.Kind = SymbolKind.NamedType) Then
                     ' TODO: Report error.
+                    ReportDiagnostic(diagnostics, name, ERRID.ERR_UndefinedType1, typeName)
                     lookupResult.Free()
                     Return Nothing
                 End If

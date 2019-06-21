@@ -28,6 +28,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         End Function
 
         Private Function BindXmlDocument(syntax As XmlDocumentSyntax, diagnostics As DiagnosticBag) As BoundExpression
+            Dim patternResult = TryBindXmlPatternDocument(syntax, diagnostics)
+            If patternResult IsNot Nothing Then Return patternResult
+
             diagnostics = CheckXmlFeaturesAllowed(syntax, diagnostics)
 
             Dim declaration = BindXmlDeclaration(syntax.Declaration, diagnostics)

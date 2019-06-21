@@ -475,6 +475,35 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.EndConstructGeneration
             End Using
         End Function
 
+        Friend Function TryDoXmlStringEndConstruct(textView As ITextView, subjectBuffer As ITextBuffer, cancellationToken As CancellationToken) As Boolean
+            ' Wrong FunctionId
+            Using Logger.LogBlock(FunctionId.EndConstruct_XmlCData, cancellationToken)
+                Dim state = GetEndConstructState(textView, subjectBuffer, cancellationToken)
+                If state Is Nothing Then
+                    Return False
+                End If
+
+                ' TODO: Support single-quote token.
+                Dim xmlString = GetNodeFromToken(Of XmlStringSyntax)(state.SyntaxTree, state.TokenToLeft, expectedKind:=SyntaxKind.DoubleQuoteToken)
+                If xmlString Is Nothing Then
+                    Return False
+                End If
+
+                Dim errors = state.SyntaxTree.GetDiagnostics(xmlString)
+
+                ' Exactly one error is expected: BC31164
+                If errors.Count <> 1 Then
+                    Return False
+                End If
+                If errors(0).Id <> "BC31164" Then
+                    Return False
+                End If
+
+                Dim endText = """"
+                Return InsertEndTextAndUpdateCaretPosition(textView, subjectBuffer, state.CaretPosition, state.TokenToLeft.Span.End, endText, cancellationToken)
+            End Using
+        End Function
+
         Public Function TryDo(textView As ITextView, subjectBuffer As ITextBuffer, typedChar As Char, cancellationToken As CancellationToken) As Boolean Implements IEndConstructGenerationService.TryDo
             Select Case typedChar
                 Case vbLf(0)
@@ -489,6 +518,8 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.EndConstructGeneration
                     Return Me.TryDoXmlCDataEndConstruct(textView, subjectBuffer, cancellationToken)
                 Case "?"c
                     Return Me.TryDoXmlProcessingInstructionEndConstruct(textView, subjectBuffer, cancellationToken)
+                Case """"c
+                    Return Me.TryDoXmlStringEndConstruct(textView, subjectBuffer, cancellationToken)
             End Select
 
             Return False
