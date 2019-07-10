@@ -567,7 +567,6 @@ End Module
 
         End Sub
 
-#End If
 
         <Fact>
         Public Sub ChildTextContent()
@@ -666,7 +665,169 @@ End Module
 </compilation>, references:=XmlReferences, expectedOutput:="FalseWindow")
 
         End Sub
+#End If
 
+        Private WebElementLibrary As IEnumerable(Of Xml.Linq.XElement) =
+            From filename In IO.Directory.GetFiles("C:\Users\adgreen\Desktop\Projects\Pattern-Based XML Literals\WebViews", "*.vb")
+            Select <file name=<%= filename %>>
+                       <%= IO.File.ReadAllText(filename) %>
+                   </file>
+
+        Private WebElementLibraryOptions As VisualBasicCompilationOptions =
+            TestOptions.ReleaseExe.WithGlobalImports(GlobalImport.Parse({"System",
+                                                                         "System.Collections",
+                                                                         "System.Collections.Generic",
+                                                                         "System.Diagnostics",
+                                                                         "System.Linq"})) _
+                                  .WithSpecificDiagnosticOptions({New KeyValuePair(Of String, ReportDiagnostic)("BC42030", ReportDiagnostic.Suppress)})
+
+        Private WebElementLibraryReference As MetadataReference = MetadataReference.CreateFromFile("C:\Users\adgreen\Desktop\Projects\Pattern-Based XML Literals\WebViewsNetFx\bin\Debug\WebViewsNetFx.dll")
+
+        <Fact>
+        Public Sub TestWeb()
+
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <%= WebElementLibrary %>
+    <file name=<%= GenerateFilename() %>><![CDATA[
+Imports System
+Imports System.Console
+Imports <xmlns="clr-namespace:WebViews">
+
+Module Program
+    Sub Main()
+        Dim obj As WebElement =
+            <?xml version="1.0" encoding="UTF-8"?>
+            <html>
+
+            </html>
+
+        Write(obj.GetType().Name)
+    End Sub
+End Module
+]]>
+    </file>
+</compilation>, options:=WebElementLibraryOptions, references:=XmlReferences, expectedOutput:="Html")
+
+        End Sub
+
+        <Fact>
+        Public Sub TestWebReferencedDll()
+
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <file name=<%= GenerateFilename() %>><![CDATA[
+Imports System
+Imports System.Console
+Imports <xmlns="clr-namespace:WebViews">
+Imports WebViews
+
+Module Program
+    Sub Main()
+        Dim obj As WebElement =
+            <?xml version="1.0" encoding="UTF-8"?>
+            <html>
+                <head>
+                </head>
+                <body>
+                    <menu>
+                        <menuItem header="I.">
+                            <menuItem header="I.A." url="/ia" />
+                        </menuItem>
+                        <menuItem header="II.">
+                            <menuItem header="II.A." url="/iia" />
+                            <menuItem header="II.B">
+                                <menuItem header="II.B.1." url="/iib1" />
+                                <menuItem header="II.B.2." url="/iib2" />
+                                <menuItem header="II.B.3." url="/iib3" />
+                            </menuItem>
+                        </menuItem>
+                        <menuItem header="III." url="/ii" />
+                    </menu>
+                    <expander header="Section 1">
+                        <p>Lorem ipsum.</p>
+                    </expander>
+                    <expander>
+                        <expander.header>
+                            <h1>Section 2</h1>
+                        </expander.header>
+                        <p>Lorem ipsum.</p>
+                    </expander>
+                    <expander header="Section 3">
+                        <carousel itemsSource=<%= {1, 2, 3, 4} %>>
+                            <carousel.itemTemplate>
+                                <p content="{binding}" />
+                            </carousel.itemTemplate>
+                        </carousel>
+                    </expander>
+                </body>
+            </html>
+
+        Write(obj.ToString().Length > 4096)
+    End Sub
+End Module
+]]>
+    </file>
+</compilation>, options:=WebElementLibraryOptions, references:=XmlReferences.Union({WebElementLibraryReference}).ToArray(), expectedOutput:="True")
+
+        End Sub
+
+        <Fact>
+        Public Sub TestWebReferencedDllMisc()
+
+
+            Dim expected =
+"<html>
+  <head>
+    <title>Welcome to my site!</title>
+
+  </head>
+  <body>
+    <h1>This is a test.</h1>
+    <h2>This is a header.</h2>
+    <p>Today is Jun 27, 2019.</p>
+  </body>
+</html>
+"
+
+            Dim verifier = CompileAndVerify(
+<compilation>
+    <file name=<%= GenerateFilename() %>><![CDATA[
+Imports System
+Imports System.Console
+Imports <xmlns="clr-namespace:WebViews">
+Imports WebViews
+
+Module Program
+
+    Private ViewData As New Dictionary(Of String, Object)
+
+    Sub Main()
+        ViewData!Message = "This is a test."
+
+        Dim obj As WebElement =
+<?xml version="1.0" encoding="UTF-8"?>
+<html>
+    <head>
+        <title>Welcome to my site!</title>
+    </head>
+    <body>
+        <h1><%= ViewData!Message %></h1>
+        <h2>This is a header.</h2>
+        <p>Today is <%= Date.Now.ToString("MMM d, yyyy") %>.</p>
+
+
+    </body>
+</html>
+
+        Write(obj.ToString())
+    End Sub
+End Module
+]]>
+    </file>
+</compilation>, options:=WebElementLibraryOptions, references:=XmlReferences.Union({WebElementLibraryReference}).ToArray(), expectedOutput:=expected)
+
+        End Sub
 
         Shared Function GenerateFilename(<System.Runtime.CompilerServices.CallerMemberName> Optional memberName As String = "") As String
             Return memberName & ".vb"

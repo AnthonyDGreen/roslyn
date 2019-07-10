@@ -106,7 +106,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
 
             Select Case expressionStatement.Expression.Kind
                 Case BoundKind.XmlElement,
-                     BoundKind.XmlDocument
+                     BoundKind.XmlDocument,
+                     BoundKind.Sequence
 
                     Dim newStatements = ArrayBuilder(Of BoundStatement).GetInstance(boundBlock.Statements.Length)
                     For Each statement In boundBlock.Statements

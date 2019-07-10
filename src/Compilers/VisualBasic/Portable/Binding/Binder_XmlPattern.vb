@@ -231,14 +231,23 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     arguments.Add(otherValue)
                 End If
 
-                Return binder.BindInvocationExpression(attribute,
-                                                       attribute.Name,
-                                                       TypeCharacter.None,
-                                                       methodGroup,
-                                                       arguments.ToImmutableAndFree(),
-                                                       argumentNames:=Nothing,
-                                                       diagnostics,
-                                                       callerInfoOpt:=attribute)
+                Dim invocation = binder.BindInvocationExpression(attribute,
+                                                                 attribute.Name,
+                                                                 TypeCharacter.None,
+                                                                 methodGroup,
+                                                                 arguments.ToImmutableAndFree(),
+                                                                 argumentNames:=Nothing,
+                                                                 diagnostics,
+                                                                 callerInfoOpt:=attribute)
+
+                If invocation.Kind = BoundKind.LateInvocation AndAlso
+                   invocation.GetLateBoundAccessKind() = LateBoundAccessKind.Unknown _
+                Then
+
+                    invocation = invocation.SetLateBoundAccessKind(LateBoundAccessKind.Call)
+                End If
+
+                Return invocation
 
             End Function
 
@@ -449,7 +458,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                                 End Select
 
                                 If cv IsNot Nothing Then
-                                    value = New BoundLiteral(node, cv, binder.GetSpecialType(targetType.SpecialType, node, diagnostics))
+                                    value = New BoundLiteral(node, cv, binder.GetSpecialType(cv.SpecialType, node, diagnostics))
                                 Else
                                     value = New BoundLiteral(node, ConstantValue.Nothing, type:=Nothing)
                                     requiresExtendedConversion = True
@@ -820,14 +829,23 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     Dim boundChild = BindXmlChildContent(child, naturalType, subject, subject.Type, binder, diagnostics)
 
                     If methodGroup IsNot Nothing Then
-                        sideEffectsBuilder.Add(binder.BindInvocationExpression(child,
-                                                                               syntax,
-                                                                               TypeCharacter.None,
-                                                                               methodGroup,
-                                                                               ImmutableArray.Create(boundChild),
-                                                                               Nothing,
-                                                                               diagnostics,
-                                                                               callerInfoOpt:=child))
+
+                        Dim invocation = binder.BindInvocationExpression(child,
+                                                                         syntax,
+                                                                         TypeCharacter.None,
+                                                                         methodGroup,
+                                                                         ImmutableArray.Create(boundChild),
+                                                                         Nothing,
+                                                                         diagnostics,
+                                                                         callerInfoOpt:=child)
+
+                        If invocation.Kind = BoundKind.LateInvocation AndAlso
+                           invocation.GetLateBoundAccessKind() = LateBoundAccessKind.Unknown _
+                        Then
+                            invocation = invocation.SetLateBoundAccessKind(LateBoundAccessKind.Call)
+                        End If
+
+                        sideEffectsBuilder.Add(invocation)
                     Else
 
                         sideEffectsBuilder.Add(boundChild)
@@ -1374,6 +1392,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
                             ' Ignore.
                             Continue Do
+
+                        Case SyntaxKind.XmlEmbeddedExpression
+
+                            builder.Add(enumerator.Current)
 
                         Case Else
                             Return False
