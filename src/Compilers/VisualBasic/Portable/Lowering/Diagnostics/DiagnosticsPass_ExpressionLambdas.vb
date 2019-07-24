@@ -185,7 +185,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                     GenerateDiagnostic(ERRID.ERR_ResumableLambdaInExpressionTree, node)
 
                 ElseIf Not node.WasCompilerGenerated AndAlso Not node.IsSingleLine Then
-                    GenerateDiagnostic(ERRID.ERR_StatementLambdaInExpressionTree, node)
+
+                    GoTo hack
 
                 Else
                     Select Case lambda.Syntax.Kind
@@ -196,6 +197,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                         Case SyntaxKind.SingleLineSubLambdaExpression,
                              SyntaxKind.SingleLineFunctionLambdaExpression
 
+hack:
                             Dim needDiagnostics As Boolean = True
                             Dim block As BoundBlock = node.Body
                             If block.Statements.Length = 1 OrElse

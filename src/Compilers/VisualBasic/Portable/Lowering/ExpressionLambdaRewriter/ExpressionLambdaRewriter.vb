@@ -339,8 +339,8 @@ lSelect:
 
             Debug.Assert(Not node.LambdaSymbol.IsAsync AndAlso Not node.LambdaSymbol.IsIterator,
                          "An error should have been reported by DiagnosticsPass")
-            Debug.Assert(node.WasCompilerGenerated OrElse node.IsSingleLine,
-                         "An error should have been reported by DiagnosticsPass")
+            'Debug.Assert(node.WasCompilerGenerated OrElse node.IsSingleLine,
+            '             "An error should have been reported by DiagnosticsPass")
 
             Dim translatedBody As BoundExpression = TranslateLambdaBody(node.Body)
             Dim result = _factory.Sequence(locals.ToImmutableAndFree(),
